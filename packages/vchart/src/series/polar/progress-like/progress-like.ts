@@ -181,11 +181,13 @@ export abstract class ProgressLikeSeries<T extends IProgressLikeSeriesSpec> exte
   }
 
   initMark(): void {
+    // console.log('initMark progress-like is called');
     this._initArcGroupMark();
   }
 
   initMarkStyle(): void {
     this._initArcGroupMarkStyle();
+    // this._checkAndWarnAngleAxisRange();
   }
 
   protected _initArcGroupMark() {
@@ -296,4 +298,31 @@ export abstract class ProgressLikeSeries<T extends IProgressLikeSeriesSpec> exte
     }
     return tickData;
   }
+
+  protected _checkAndWarnAngleAxisRange(): void {
+    const angleAxis = this._getAngleAxis();
+    if (angleAxis) {
+      const scale = angleAxis.getScale();
+      const domain = scale.domain();
+      if (Math.abs(domain[0] - domain[1]) < 1e-6) {
+        // console.warn('Chart may not render correctly: min and max values are equal.');
+        // this._showWarningOnChart('Chart cannot be drawn: min and max values are equal.');
+      }
+    }
+  }
+
+  // protected _showWarningOnChart(message: string): void {
+  //   const warningMark = this._createMark('text', {
+  //     style: {
+  //       text: message,
+  //       fontSize: 14,
+  //       fill: 'red',
+  //       textAlign: 'center',
+  //       textBaseline: 'middle',
+  //       x: () => this.angleAxisHelper?.center().x ?? 0,
+  //       y: () => this.angleAxisHelper?.center().y ?? 0
+  //     }
+  //   });
+  //   this._arcGroupMark?.add(warningMark);
+  // }
 }

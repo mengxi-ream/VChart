@@ -120,6 +120,7 @@ export class CircularProgressSeries<
   }
 
   private _initTrackMarkStyle() {
+    // TODO: read this
     const trackMark = this._trackMark;
     if (trackMark) {
       this.setMarkStyle(
