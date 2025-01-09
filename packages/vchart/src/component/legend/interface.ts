@@ -10,14 +10,18 @@ import type {
 } from '../../typings';
 import type { IComponent } from '../interface';
 import type { IComponentSpec } from '../base/interface';
-import type { IDiscreteLegendSpec } from './discrete';
-import type { IColorLegendSpec, ISizeLegendSpec } from './continuous';
+import type { IDiscreteLegendSpec } from './discrete/interface';
+import type { IColorLegendSpec, ISizeLegendSpec } from './continuous/interface';
 
 export type ILegend = IComponent & {
   getLegendData: () => Datum[];
   getSelectedData: () => StringOrNumber[];
   setSelectedData: (d: StringOrNumber[]) => void;
 };
+
+export interface IDiscreteLegend extends ILegend {
+  getLegendDefaultData: (originalData?: boolean) => StringOrNumber[];
+}
 
 export type NoVisibleMarkStyle<T> = Omit<T, 'visible'>;
 
@@ -83,6 +87,15 @@ export type ILegendCommonSpec = {
    * 是否进行数据筛选，默认为 true
    */
   filter?: boolean;
+  /**
+   * 自定义筛选函数
+   * @since 1.13.1
+   * @param data 当前数据
+   * @param selectedRange 选中的数据范围
+   * @param datumField 筛选数据对应的字段
+   * @returns 最终展示的数据
+   */
+  customFilter?: (data: any, selectedRange: StringOrNumber[], datumField: string) => any;
 
   /**
    * 图例标题配置

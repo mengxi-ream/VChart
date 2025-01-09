@@ -88,11 +88,19 @@ Effective only when `autoHide` is true, sets the distance in px between texts.
 
 ##${prefix} autoLimit(boolean) = false
 
-Axis label autohide switch, off by default, ** needs to be turned on manually, and `sampling` needs to be turned off**.
+Axis label auto-truncation switch, off by default, **needs to be turned on manually, and `sampling` needs to be turned off**.
 
 ##${prefix} limitEllipsis(string) = '...'
 
 Only works if `autoLimit` is true, omits placeholders, defaults to '...'. .
+
+##${prefix} autoWrap(boolean) = false
+
+Axis label automatic line wrapping is supported from version `1.12.5`.
+
+It will not be effective when `autoRotate` is set to `true`. If autoRotate is enabled, the automatic rotation strategy will be used preferentially.
+
+You can set the maximum number of line breaks through the `label.style.lineClamp` configuration item.
 
 ##${prefix} layoutFunc(function)
 
@@ -238,3 +246,33 @@ Axis title style settings.
 {{ use: graphic-text(
    prefix = '##' + ${prefix}
 ) }}
+
+#${prefix} innerOffset(Object)
+
+The inner indentation of the rectangular coordinate system axis can generate blank space inside the drawing area, which can avoid the scene where some graphics are truncated.
+
+The upper and lower axes support the configuration of `left` and `right`, and the left and right axes support the configuration of `top` and `bottom`.
+
+##${prefix} left(ILayoutNumber)
+
+The left margin of the upper and lower axes.
+
+{{ use: common-layout-number }}
+
+##${prefix} right(ILayoutNumber)
+
+The right margin of the upper and lower axes.
+
+{{ use: common-layout-number }}
+
+##${prefix} top(ILayoutNumber)
+
+The top margin of the left and right axes.
+
+{{ use: common-layout-number }}
+
+##${prefix} bottom(ILayoutNumber)
+
+The bottom margin of the left and right axes.
+
+{{ use: common-layout-number }}

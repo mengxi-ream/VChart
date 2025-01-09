@@ -1,15 +1,12 @@
 /* eslint-disable no-duplicate-imports */
-import { AttributeLevel, DEFAULT_DATA_SERIES_FIELD } from '../../constant/index';
+import { DEFAULT_DATA_SERIES_FIELD } from '../../constant/data';
 import { CartesianSeries } from '../cartesian/cartesian';
-import type { Maybe, Datum } from '../../typings';
+import type { Datum } from '../../typings';
 import { isValid } from '@visactor/vutils';
-import type { IRuleMark } from '../../mark/rule';
-import type { IMark } from '../../mark/interface';
+import type { IGroupMark, IMark, IRuleMark, ISymbolMark } from '../../mark/interface';
 import { SeriesTypeEnum } from '../interface/type';
 import { registerDataSetInstanceTransform } from '../../data/register';
-import type { ISymbolMark } from '../../mark/symbol';
 import type { IDotSeriesSpec } from '../dot/interface';
-import type { IGroupMark } from '../../mark/group';
 import { LinkSeriesTooltipHelper } from './tooltip-helper';
 import type { ILinkSeriesSpec } from './interface';
 import type { SeriesMarkMap } from '../interface';
@@ -20,6 +17,7 @@ import { linkDotInfo } from '../../data/transforms/link-dot-info';
 import { Factory } from '../../core/factory';
 import { TransformLevel } from '../../data/initialize';
 import { registerCartesianLinearAxis, registerCartesianBandAxis } from '../../component/axis/cartesian';
+import { AttributeLevel } from '../../constant/attribute';
 
 export class LinkSeries<T extends ILinkSeriesSpec = ILinkSeriesSpec> extends CartesianSeries<T> {
   static readonly type: string = SeriesTypeEnum.link;
@@ -145,13 +143,12 @@ export class LinkSeries<T extends ILinkSeriesSpec = ILinkSeriesSpec> extends Car
           y: 0,
           // 本应使用this.getLayoutRect().width, 但这该返回值为0。考虑到横向不需要裁剪，故先采用一个较大值
           width: 10000,
-          height: this._spec.clipHeight,
-          clip: true
+          height: this._spec.clipHeight
         },
         'normal',
         AttributeLevel.Series
       );
-      clipMark.setInteractive(false);
+      clipMark.setMarkConfig({ interactive: false, clip: true });
     }
 
     const containerMark = this._containerMark;
@@ -165,7 +162,7 @@ export class LinkSeries<T extends ILinkSeriesSpec = ILinkSeriesSpec> extends Car
         'normal',
         AttributeLevel.Series
       );
-      containerMark.setInteractive(false);
+      containerMark.setMarkConfig({ interactive: false });
     }
 
     const linkMark = this._linkMark;

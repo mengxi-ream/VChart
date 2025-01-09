@@ -1,11 +1,11 @@
-import type { IMark } from '../../mark/interface';
+import type { IMark, ILabelMark } from '../../mark/interface';
+import type { Datum } from '../../typings';
 import { CartesianSeries } from '../cartesian/cartesian';
 import type { SeriesMarkMap } from '../interface';
 import { SeriesTypeEnum } from '../interface/type';
 import type { ITreemapSeriesSpec } from './interface';
 import type { PanEventParam, ZoomEventParam } from '../../event/interface';
 import { DataView } from '@visactor/vdataset';
-import type { ILabelMark } from '../../mark/label';
 import { TreemapSeriesSpecTransformer } from './treemap-transform';
 export declare class TreemapSeries extends CartesianSeries<any> {
     static readonly type: string;
@@ -33,16 +33,21 @@ export declare class TreemapSeries extends CartesianSeries<any> {
     compile(): void;
     protected _runTreemapTransform(render?: boolean): void;
     protected _addDataIndexAndKey(): void;
-    getRawDataStatisticsByField(field: string, isNumeric?: boolean): any;
+    getRawDataStatisticsByField(field: string, isNumeric?: boolean): {
+        values?: any[];
+        min?: number;
+        max?: number;
+    };
     protected _createHierarchyDataStatistics(dataName: string, rawData: DataView[]): DataView;
     getStatisticFields(): {
         key: string;
-        operations: import("../../data/transforms/dimension-statistics").StatisticOperations;
+        operations: import("../../data/transforms/interface").StatisticOperations;
     }[];
     initMark(): void;
     initMarkStyle(): void;
     protected _initLeafMarkStyle(): void;
     protected _initNonLeafMarkStyle(): void;
+    _initRichStyleOfLabelMark(labelMark: ILabelMark): void;
     initLabelMarkStyle(labelMark: ILabelMark): void;
     protected initNonLeafLabelMarkStyle(labelMark: ILabelMark): void;
     initAnimation(): void;
@@ -60,5 +65,6 @@ export declare class TreemapSeries extends CartesianSeries<any> {
     getDefaultShapeType(): string;
     getActiveMarks(): IMark[];
     isHierarchyData: () => boolean;
+    getMarkData(datum: Datum): any;
 }
 export declare const registerTreemapSeries: () => void;

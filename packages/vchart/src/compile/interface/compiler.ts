@@ -1,8 +1,7 @@
+import type { Hooks } from '@visactor/vgrammar-core';
 import type { IColor, IStageParams, IStage, ILayer } from '@visactor/vrender-core';
-import type { EventSourceType, EventType } from '../../event/interface';
 import type { RenderMode } from '../../typings/spec/common';
 import type { IBoundsLike } from '@visactor/vutils';
-import type { GrammarType, IGrammarItem } from './compilable-item';
 import type { StringOrNumber } from '../../typings';
 
 export interface IRenderContainer {
@@ -22,6 +21,44 @@ export type IOptimizeType = {
   disableCheckGraphicWidthOutRange?: boolean;
 };
 
+export interface GestureConfig {
+  press?: {
+    /**
+     * @default 251
+     * Minimal press time in ms.
+     * @see http://hammerjs.github.io/recognizer-press/
+     */
+    time?: number;
+    /**
+     * @default 10
+     * Maximal movement that is allowed while pressing.
+     * @see http://hammerjs.github.io/recognizer-press/
+     */
+    threshold?: number;
+  };
+  swipe?: {
+    /**
+     * Minimal distance required before recognizing.
+     * @default 10
+     * @see https://hammerjs.github.io/recognizer-swipe/
+     */
+    threshold?: number;
+    /**
+     * Minimal velocity required before recognizing, unit is in px per ms.
+     * @default 0.3
+     * @see http://hammerjs.github.io/recognizer-swipe/
+     */
+    velocity?: number;
+  };
+  tap?: {
+    /**
+     * max time between the multi-tap taps
+     * @default 300
+     */
+    interval?: number;
+  };
+}
+
 export interface IRenderOption {
   /**
    * 配置渲染环境，默认为 'desktop-browser'，当需要在非浏览器环境渲染 VChart 时，需要配置该属性。
@@ -34,6 +71,8 @@ export interface IRenderOption {
    * @default 'desktop-browser'
    */
   mode?: RenderMode;
+
+  gestureConfig?: GestureConfig;
   /**
    * 渲染环境参数配置
    */
@@ -43,6 +82,12 @@ export interface IRenderOption {
         [key: string]: any;
       }
     | unknown;
+
+  /**
+   * 是否自动刷线dpr
+   * @since 1.12.14
+   */
+  autoRefreshDpr?: boolean;
   /**
    * 设置屏幕分辨率
    */
@@ -126,29 +171,22 @@ export interface IRenderOption {
    * 用于vrender渲染react元素，`react-dom`包导出元素
    */
   ReactDOM?: any;
-}
-
-export type CompilerListenerParameters = {
-  type: EventType;
-  event: Event;
-  source: EventSourceType;
-  // FIXME: 这里 item 应当为场景树的 Item 类型
-  item: any | null;
-  datum: any | null;
-  markId: number | null;
-  modelId: number | null;
-  markUserId: StringOrNumber | null;
-  modelUserId: StringOrNumber | null;
-};
-
-export type CompilerModel = Record<GrammarType, IProductMap<IGrammarItem>>;
-
-export interface IProductMap<T extends IGrammarItem> {
-  /** 编译产物 id 和对应的在 vchart 中的 GrammarItem */
-  [productId: string]: IGrammarItemMap<T>;
-}
-
-export interface IGrammarItemMap<T extends IGrammarItem> {
-  /** GrammarItem id 和 对应的引用 */
-  [id: number]: T;
+  /**
+   * @since 1.13.2
+   * @default 200
+   * 单位 ms
+   * 多次点击之间的最大时间，默认为 200 ms，用于判断点击次数
+   */
+  clickInterval?: number;
+  /**
+   * @since 1.13.2
+   * @default false
+   * VRender 参数 是否自动阻止事件
+   */
+  autoPreventDefault?: boolean;
+  /**
+   * @deprecated
+   * 请使用 hooks 代替
+   */
+  performanceHook?: Hooks;
 }

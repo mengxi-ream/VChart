@@ -8,7 +8,7 @@ import { RenderModeEnum } from '../../typings/spec/common';
 import { getDefaultTriggerEventByMode } from '../../component/common/trigger/config';
 import type { IZoomTrigger } from '../../component/common/trigger/interface';
 import type { ISeries } from '../../series/interface';
-import { Event_Bubble_Level, Event_Source_Type } from '../../constant';
+import { Event_Bubble_Level, Event_Source_Type } from '../../constant/event';
 import type { IDelayType } from '../../typings/event';
 import { isMiniAppLikeMode, isMobileLikeMode } from '../../util';
 import type { Gesture } from '@visactor/vrender-kits';
@@ -23,22 +23,18 @@ export interface ITriggerOption {
   delayTime: number;
   realTime: boolean;
 }
-export interface IZoomEventOptions {
-  shouldZoom?: boolean;
-  zoomCallback?: (params: { zoomDelta: number; zoomX: number; zoomY: number }, e: BaseEventParams['event']) => void;
-  shouldScroll?: boolean;
-  scrollCallback?: (params: { scrollX: number; scrollY: number }, e: BaseEventParams['event']) => void;
-}
+
+export type ZoomEventParams = { zoomDelta: number; zoomX: number; zoomY: number };
+
+export type ZoomCallback = (params: ZoomEventParams, e: BaseEventParams['event']) => Record<string, any> | void;
+
 export interface IZoomable {
   initZoomable: (evt: IEvent, mode?: RenderMode) => void;
-  initZoomEventOfSeries: (
-    s: ISeries,
-    callback?: (params: { zoomDelta: number; zoomX: number; zoomY: number }, e: BaseEventParams['event']) => void
-  ) => any;
+  initZoomEventOfSeries: (s: ISeries, callback?: ZoomCallback) => any;
   initZoomEventOfRegions: (
     regions: IRegion[],
     filter?: (s: ISeries) => boolean,
-    callback?: (params: { zoomDelta: number; zoomX: number; zoomY: number }, e: BaseEventParams['event']) => void,
+    callback?: ZoomCallback,
     option?: ITriggerOption
   ) => void;
 
@@ -104,18 +100,20 @@ export class Zoomable implements IZoomable {
     return getDefaultTriggerEventByMode(this._renderMode)[type];
   }
 
-  private _zoomEventDispatch(
-    params: BaseEventParams,
-    regionOrSeries: IRegion | ISeries,
-    callback?: (params: { zoomDelta: number; zoomX: number; zoomY: number }, e: BaseEventParams['event']) => void
-  ) {
+  private _zoomEventDispatch(params: BaseEventParams, regionOrSeries: IRegion | ISeries, callback?: ZoomCallback) {
     if (!this._isGestureListener && !params.event) {
       return;
     }
     const event = this._isGestureListener ? params : params.event.clone();
     this._zoomableTrigger.parserZoomEvent(event);
     // FIXME: event类型目前不全
-    const { zoomDelta, zoomX, zoomY } = event as any;
+    const { zoomDelta, zoomX, zoomY, path } = event as any;
+
+    // 不响应由组件触发的 zoom 事件（例如滚动分页的离散图例）
+    if (!path.some((node: any) => node.name && node.name.includes('region'))) {
+      return;
+    }
+
     if (isNil(zoomDelta)) {
       return;
     }
@@ -131,14 +129,14 @@ export class Zoomable implements IZoomable {
     ) {
       return;
     }
-
+    let extendParams: ReturnType<typeof callback> = {};
     if (callback) {
-      // zoomDelta, zoomX, zoomY can be changed in the callback
-      callback({ zoomDelta, zoomX, zoomY }, event);
+      extendParams = callback({ zoomDelta, zoomX, zoomY }, event);
     }
     this._eventObj.emit('zoom', {
       scale: event.zoomDelta,
       scaleCenter: { x: event.zoomX, y: event.zoomY },
+      ...extendParams,
       model: this
     } as unknown as ExtendEventParam);
   }
@@ -159,7 +157,7 @@ export class Zoomable implements IZoomable {
   private _bindZoomEventAsRegion(
     eventObj: IEvent,
     regionOrSeries: IRegion | ISeries,
-    callback?: (params: { zoomDelta: number; zoomX: number; zoomY: number }, e: BaseEventParams['event']) => void,
+    callback?: ZoomCallback,
     option?: ITriggerOption
   ) {
     const delayType = option?.delayType ?? 'throttle';
@@ -172,7 +170,6 @@ export class Zoomable implements IZoomable {
     const zoomEndParams: [string] | [string, EventQuery] = this._isGestureListener
       ? [this._getZoomTriggerEvent('zoomEnd')]
       : [this._getZoomTriggerEvent('zoomEnd'), { level: Event_Bubble_Level.chart, consume: false }];
-
     // pc端没有scrollEnd事件，所以漫游模式下scroll仅支持realTime
     (event as any).on(
       ...zoomEndParams,
@@ -191,11 +188,7 @@ export class Zoomable implements IZoomable {
     );
   }
 
-  initZoomEventOfSeries(
-    s: ISeries,
-    callback?: (params: { zoomDelta: number; zoomX: number; zoomY: number }, e: BaseEventParams['event']) => void,
-    option?: ITriggerOption
-  ) {
+  initZoomEventOfSeries(s: ISeries, callback?: ZoomCallback, option?: ITriggerOption) {
     if (this._option.disableTriggerEvent) {
       return;
     }
@@ -207,7 +200,7 @@ export class Zoomable implements IZoomable {
   initZoomEventOfRegions(
     regions: IRegion[],
     filter?: (s: ISeries) => boolean,
-    callback?: (params: { zoomDelta: number; zoomX: number; zoomY: number }, e: BaseEventParams['event']) => void,
+    callback?: ZoomCallback,
     option?: ITriggerOption
   ) {
     if (this._option.disableTriggerEvent) {
@@ -481,12 +474,16 @@ export class Zoomable implements IZoomable {
       this._zoomableTrigger.pointerId = null;
       this._eventObj.off(move, { level: Event_Bubble_Level.chart, source: Event_Source_Type.chart }, mousemove as any);
       this._eventObj.off(end, { level: Event_Bubble_Level.chart, source: Event_Source_Type.window }, mouseup as any);
+      this._eventObj.allow(end);
     }, delayTime);
+
     const mousemove = delayMap[delayType]((params: BaseEventParams) => {
       if (!this._zoomableTrigger.parserDragEvent(params.event)) {
         return;
       }
       this._clickEnable = false;
+      this._eventObj.prevent(end, mouseup as any);
+
       const event = params.event;
       const dx = event.canvasX - moveX;
       const dy = event.canvasY - moveY;

@@ -1,28 +1,24 @@
 import { isNil, isValid } from '@visactor/vutils';
 import type { BaseEventParams } from '../../../event/interface';
-import type { ITooltipActual, ITooltipPattern, TooltipActiveType, TooltipData } from '../../../typings';
-import type { ITooltipSpec, TooltipHandlerParams } from '../interface';
+import type { ITooltipActual, TooltipActiveType, TooltipData } from '../../../typings';
+import type { TooltipHandlerParams } from '../interface';
 // eslint-disable-next-line no-duplicate-imports
 import { TooltipResult } from '../interface/common';
 import type { Tooltip } from '../tooltip';
-import type { DimensionTooltipInfo, MouseEventData, TooltipInfo } from './interface';
-import { ChartEvent } from '../../../constant';
+import type { MouseEventData, TooltipInfo } from './interface';
+import { ChartEvent } from '../../../constant/event';
 import type { TooltipEventParams } from '../interface/event';
-import type { IDimensionData, IDimensionInfo } from '../../../event/events/dimension';
-import { getPolarDimensionInfo } from '../../../event/events/dimension/util/polar';
-import { getCartesianDimensionInfo } from '../../../event/events/dimension/util/cartesian';
-import { isDiscrete } from '@visactor/vscale';
-import type { ICartesianSeries, ISeries } from '../../../series/interface';
+import type { IDimensionInfo } from '../../../event/events/dimension';
+import type { ISeries } from '../../../series/interface';
 import { getTooltipSpecForShow } from '../utils/get-spec';
-import { getShowContent } from '../utils/compose';
-import { getTooltipPatternValue } from '../utils/get-value';
+import { isActiveTypeVisible } from '../utils/common';
+import { TOOLTIP_MAX_LINE_COUNT, TOOLTIP_OTHERS_LINE } from '../constant';
 
 export abstract class BaseTooltipProcessor {
   readonly component: Tooltip;
   abstract activeType: TooltipActiveType;
 
-  protected _cacheViewSpec: ITooltipSpec | undefined;
-  protected _cacheActualTooltip: ITooltipActual | undefined;
+  protected _cacheActiveSpec: ITooltipActual | undefined;
 
   constructor(component: Tooltip) {
     this.component = component;
@@ -30,12 +26,8 @@ export abstract class BaseTooltipProcessor {
 
   /** 触发对应类型的 tooltip */
   abstract showTooltip(info: TooltipInfo, params: BaseEventParams, changePositionOnly: boolean): TooltipResult;
-
-  /** 判断是否应该触发 tooltip */
-  abstract shouldHandleTooltip(params: BaseEventParams, mouseEventData: Partial<MouseEventData>): boolean;
-
   /** 获取触发 tooltip 需要的信息 */
-  abstract getMouseEventData(params: BaseEventParams, dimensionInfo?: DimensionTooltipInfo): MouseEventData;
+  abstract getMouseEventData(params: BaseEventParams): MouseEventData;
 
   protected _showTooltipByHandler = (data: TooltipData | undefined, params: TooltipHandlerParams): TooltipResult => {
     if (isNil(data)) {
@@ -46,26 +38,23 @@ export abstract class BaseTooltipProcessor {
       this.clearCache();
     }
 
-    // 更新 this._cacheViewSpec
-    this._updateViewSpec(params);
-    const spec = this._cacheViewSpec;
-    if (isNil(spec?.[this.activeType]) || spec.visible === false) {
+    // 更新 this._cacheActiveSpec
+    this._updateViewSpec(data, params);
+    const spec = this._cacheActiveSpec;
+    if (isNil(spec) || spec.visible === false) {
       return TooltipResult.failed;
     }
-    params.tooltipSpec = spec;
-
-    // 更新 this._cacheActualTooltip
-    this._updateActualTooltip(data, params);
-    params.tooltipActual = this._cacheActualTooltip;
+    params.tooltipSpec = this.component.getSpec();
+    params.activeTooltipSpec = spec;
 
     // 判断 tooltip 是否为空
-    const { title, content } = this._cacheActualTooltip;
+    const { title, content } = spec;
 
     const isEmpty = isNil(title?.key) && isNil(title?.value) && !content?.length;
     // 触发事件
     this.component.event.emit(ChartEvent.tooltipShow, {
       ...params,
-      isEmptyTooltip: isNil(title?.key) && isNil(title?.value) && !content?.length,
+      isEmptyTooltip: isEmpty,
       tooltipData: data,
       activeType: this.activeType,
       tooltip: this.component
@@ -107,123 +96,70 @@ export abstract class BaseTooltipProcessor {
     return undefined;
   }
 
-  protected _getDimensionInfo(params: BaseEventParams): IDimensionInfo[] {
-    let targetDimensionInfo: IDimensionInfo[] | undefined;
-    // 处理dimension info
-    const chart = this.component.getChart();
-
-    // compute layer offset
-    const layer = chart.getCompiler().getStage().getLayer(undefined);
-    const point = { x: params.event.viewX, y: params.event.viewY };
-    layer.globalTransMatrix.transformPoint({ x: params.event.viewX, y: params.event.viewY }, point);
-
-    targetDimensionInfo = [
-      ...(getCartesianDimensionInfo(chart, point, true) ?? []),
-      ...(getPolarDimensionInfo(chart, point) ?? [])
-    ];
-    if (targetDimensionInfo.length === 0) {
-      targetDimensionInfo = undefined;
-    } else if (targetDimensionInfo.length > 1) {
-      // 只保留一个轴的dimension info
-      const dimensionAxisInfo = targetDimensionInfo.filter(info => {
-        const axis = info.axis;
-        if (axis.getSpec().hasDimensionTooltip) {
-          return true;
-        }
-
-        // 优先显示离散轴 tooltip
-        if (!isDiscrete(axis.getScale().type)) {
-          return false;
-        }
-        // 下面的逻辑用来判断当前的离散轴是不是维度轴
-        let firstSeries: ICartesianSeries | undefined;
-        for (const region of axis?.getRegions() ?? []) {
-          for (const series of region.getSeries()) {
-            if (series.coordinate === 'cartesian') {
-              firstSeries = series as ICartesianSeries;
-              break;
-            }
-          }
-          if (isValid(firstSeries)) {
-            break;
-          }
-        }
-        if (isValid(firstSeries) && firstSeries.getDimensionField()[0] === firstSeries.fieldY[0]) {
-          // 维度轴为Y轴时，选择只显示Y轴tooltip
-          return axis.getOrient() === 'left' || axis.getOrient() === 'right';
-        }
-        // 维度轴为X轴时，选择只显示X轴tooltip
-        return axis.getOrient() === 'bottom' || axis.getOrient() === 'top';
-      });
-      targetDimensionInfo = dimensionAxisInfo.length ? dimensionAxisInfo : targetDimensionInfo.slice(0, 1);
-
-      // datum 去重，保证每个系列的每个数据项只对应于一行 tooltip 内容项
-      if (targetDimensionInfo.length > 1) {
-        const dimensionDataKeySet = new Set<string>();
-        targetDimensionInfo.forEach(info => {
-          info.data = info.data.filter(({ key }: IDimensionData) => {
-            if (dimensionDataKeySet.has(key)) {
-              return false;
-            }
-            dimensionDataKeySet.add(key);
-            return true;
-          });
-        });
-      }
-    }
-
-    return targetDimensionInfo;
-  }
-
   /**
    * 合成实际显示的 tooltip spec
    * @param params
    */
-  protected _updateViewSpec(params: TooltipHandlerParams) {
-    const { changePositionOnly, model, dimensionInfo } = params;
-    if (!changePositionOnly || !this._cacheViewSpec) {
+  protected _updateViewSpec(data: TooltipData, params: TooltipHandlerParams) {
+    const { changePositionOnly, model } = params;
+    if (!changePositionOnly || !this._cacheActiveSpec) {
+      const tooltipSpec = this.component.getSpec();
       /** spec 预处理 */
-      this._cacheViewSpec = getTooltipSpecForShow(
+      this._cacheActiveSpec = getTooltipSpecForShow(
         this.activeType,
         this.component.getSpec(),
         model as ISeries,
-        dimensionInfo
+        data,
+        params
       );
+
+      if (this._cacheActiveSpec) {
+        if (isNil(this._cacheActiveSpec.handler) && isValid(tooltipSpec.handler)) {
+          this._cacheActiveSpec.handler = tooltipSpec.handler;
+        }
+        const specByType = tooltipSpec[this.activeType] ?? {};
+        const updateTitle = this._cacheActiveSpec.updateTitle ?? specByType.updateTitle;
+        const updateContent = this._cacheActiveSpec.updateContent ?? specByType.updateContent;
+        const maxLineCount = this._cacheActiveSpec.maxLineCount ?? specByType.maxLineCount ?? TOOLTIP_MAX_LINE_COUNT;
+
+        if (updateTitle) {
+          this._cacheActiveSpec.title =
+            updateTitle(this._cacheActiveSpec.title, data, params) ?? this._cacheActiveSpec.title;
+        }
+
+        if (updateContent) {
+          this._cacheActiveSpec.content =
+            updateContent(this._cacheActiveSpec.content, data, params) ?? this._cacheActiveSpec.content;
+        } else if (maxLineCount >= 1 && this._cacheActiveSpec.content?.length > maxLineCount) {
+          const othersLine = this._cacheActiveSpec.othersLine ?? specByType.othersLine;
+          const otherLine = othersLine
+            ? {
+                ...TOOLTIP_OTHERS_LINE,
+                ...othersLine
+              }
+            : TOOLTIP_OTHERS_LINE;
+          this._cacheActiveSpec.content = [
+            ...this._cacheActiveSpec.content.slice(0, maxLineCount - 1),
+            {
+              ...this._cacheActiveSpec.content[maxLineCount - 1],
+              ...otherLine
+            }
+          ];
+        }
+      }
     }
   }
 
-  /**
-   * 合成 tooltip 内容
-   * @param data
-   * @param params
-   * @param changePositionOnly
-   */
-  protected _updateActualTooltip(data: TooltipData, params: TooltipHandlerParams) {
-    const pattern = this._cacheViewSpec[this.activeType] as ITooltipPattern;
-    const { changePositionOnly } = params;
-
-    if (!changePositionOnly || !this._cacheActualTooltip) {
-      // 合成 tooltip 内容
-      const tooltipContent = getShowContent(pattern, data, params);
-
-      // 判断可见性
-      const visible = isValid(tooltipContent) ? getTooltipPatternValue(pattern.visible, data, params) !== false : false; // 最终展示数据为 null 则不展示
-
-      this._cacheActualTooltip = {
-        ...tooltipContent,
-        visible,
-        activeType: pattern.activeType,
-        data
-      };
-
-      const { title, content } = this._cacheActualTooltip;
-      this._cacheActualTooltip.title = pattern.updateTitle?.(title, data, params) ?? title;
-      this._cacheActualTooltip.content = pattern.updateContent?.(content, data, params) ?? content;
+  /** 判断是否应该触发 tooltip */
+  shouldHandleTooltip(params: BaseEventParams, info: TooltipInfo): boolean {
+    if (isNil(info)) {
+      return false;
     }
+
+    return isActiveTypeVisible(this.activeType, (params.model as ISeries)?.tooltipHelper?.spec);
   }
 
   clearCache() {
-    this._cacheViewSpec = undefined;
-    this._cacheActualTooltip = undefined;
+    this._cacheActiveSpec = undefined;
   }
 }

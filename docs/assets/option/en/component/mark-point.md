@@ -50,13 +50,14 @@ Since the `1.11.0` version, you can configure the geographical location of the a
 
 ** Note that this property is used in a geographic coordinate system **
 
-### coordinates(Object)
+### coordinate(Object)
 
 Mark target: data element.
 Specifies the mark area for the data point. Draw the mark area based on the specified data point.
 
 {{ use: component-marker-data-point(
-  prefix = '###'
+  prefix = '###',
+   isSingle = true
 ) }}
 
 {{ use: component-marker-data-point-offset(
@@ -70,7 +71,8 @@ Mark target: coordinate point.
 Specifies the mark area for the coordinate point. Draw the mark area based on the specified coordinate point.
 
 {{ use: component-marker-point-like(
-  prefix = '###'
+  prefix = '###',
+   isSingle = true
 ) }}
 
 ### regionRelative(boolean) = false
@@ -295,7 +297,6 @@ For mark content type 'richText', the richText style.
 ### targetSymbol(Object)
 
 Supported since version `1.11.1`, prefixed tag.
-
 
 #### offset
 

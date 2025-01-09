@@ -4,18 +4,19 @@ import { SeriesMarkNameEnum, SeriesTypeEnum } from '../interface/type';
 import type { IGaugeSeriesSpec } from './interface';
 import { ProgressLikeSeries } from '../polar/progress-like/progress-like';
 import { registerDataSetInstanceTransform } from '../../data/register';
-import { SEGMENT_FIELD_END, SEGMENT_FIELD_START } from '../../constant';
+import { SEGMENT_FIELD_END, SEGMENT_FIELD_START } from '../../constant/data';
 import type { Datum } from '@visactor/vgrammar-core';
 import type { IStateAnimateSpec } from '../../animation/spec';
 import { animationConfig, userAnimationConfig } from '../../animation/utils';
 import { gaugeSeriesMark } from './constant';
-import { degreeToRadian, isValid } from '@visactor/vutils';
+import { clamper, degreeToRadian, isValid } from '@visactor/vutils';
 import { Factory } from '../../core/factory';
 import { registerProgressLikeAnimation } from '../polar/progress-like';
-import type { IMark } from '../../mark/interface';
+import type { IArcMark, IMark } from '../../mark/interface';
 import { GaugeSeriesSpecTransformer } from './gauge-transformer';
-import { registerArcMark, type IArcMark } from '../../mark/arc';
+import { registerArcMark } from '../../mark/arc';
 import { registerPolarLinearAxis } from '../../component/axis/polar';
+import { AttributeLevel } from '../../constant/attribute';
 
 export class GaugeSeries<T extends IGaugeSeriesSpec = IGaugeSeriesSpec> extends ProgressLikeSeries<T> {
   static readonly type: string = SeriesTypeEnum.gauge;
@@ -106,6 +107,29 @@ export class GaugeSeries<T extends IGaugeSeriesSpec = IGaugeSeriesSpec> extends 
     }
   }
 
+  protected generateRadiusStyle(spec: any) {
+    if (!spec) {
+      return;
+    }
+    const style: any = {};
+    spec.outerRadius && (style.outerRadius = () => this._computeLayoutRadius() * spec.outerRadius);
+    spec.innerRadius && (style.innerRadius = () => this._computeLayoutRadius() * spec.innerRadius);
+    return style;
+  }
+
+  initMarkStyleWithSpec(mark?: IMark, spec?: any, key?: string): void {
+    super.initMarkStyleWithSpec(mark, spec, key);
+    if (mark && mark.name === SeriesMarkNameEnum.segment) {
+      // radius 配置需要额外处理比例值
+      const segmentSpec = this.getSpec()[SeriesMarkNameEnum.segment];
+      if (segmentSpec) {
+        for (const state in segmentSpec.state || {}) {
+          this.setMarkStyle(mark, this.generateRadiusStyle(segmentSpec.state[state]), state, AttributeLevel.User_Mark);
+        }
+      }
+    }
+  }
+
   protected initTooltip() {
     super.initTooltip();
 
@@ -133,13 +157,19 @@ export class GaugeSeries<T extends IGaugeSeriesSpec = IGaugeSeriesSpec> extends 
   protected _getAngleValueStartWithoutMask(datum: Datum) {
     const startAngle = this._getAngleValueStartWithoutPadAngle(datum);
     const endAngle = this._getAngleValueEndWithoutPadAngle(datum);
-    return Math.min(startAngle + this._padAngle / 2, (startAngle + endAngle) / 2);
+    return clamper(
+      startAngle,
+      (startAngle + endAngle) / 2
+    )(startAngle + (endAngle > startAngle ? 1 : -1) * Math.abs(this._padAngle / 2));
   }
 
   protected _getAngleValueEndWithoutMask(datum: Datum) {
     const startAngle = this._getAngleValueStartWithoutPadAngle(datum);
     const endAngle = this._getAngleValueEndWithoutPadAngle(datum);
-    return Math.max(endAngle - this._padAngle / 2, (startAngle + endAngle) / 2);
+    return clamper(
+      endAngle,
+      (startAngle + endAngle) / 2
+    )(endAngle - (endAngle > startAngle ? 1 : -1) * Math.abs(this._padAngle / 2));
   }
 
   protected _getAngleValueStartWithoutPadAngle(datum: Datum) {

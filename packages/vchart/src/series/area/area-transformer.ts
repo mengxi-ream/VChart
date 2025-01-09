@@ -14,7 +14,13 @@ export class AreaSeriesSpecTransformer<
   protected _supportStack: boolean = true;
 
   protected _transformLabelSpec(spec: T): void {
-    super._transformLabelSpec(spec);
+    const isPointVisible = spec.point?.visible !== false && spec.point?.style?.visible !== false;
+
+    this._addMarkLabelSpec(spec, (spec: any) => {
+      const isAreaMiddle = spec.position === 'inside-middle';
+      return !isPointVisible || isAreaMiddle ? SeriesMarkNameEnum.area : SeriesMarkNameEnum.point;
+    });
+
     this._addMarkLabelSpec<AreaSeries>(
       spec,
       SeriesMarkNameEnum.area,
@@ -23,10 +29,6 @@ export class AreaSeriesSpecTransformer<
       undefined,
       true
     );
-    const isPointVisible = spec.point?.visible !== false && spec.point?.style?.visible !== false;
-    if (!isPointVisible) {
-      this._addMarkLabelSpec(spec, SeriesMarkNameEnum.area);
-    }
   }
 
   protected _transformSpecAfterMergingTheme(spec: T, chartSpec: any, chartSpecInfo?: IChartSpecInfo) {
@@ -63,12 +65,6 @@ export class AreaSeriesSpecTransformer<
     }
     area.style = mergeSpec({}, subSpec.style, mainSpec.style);
     area.state = mergeSpec({}, subSpec.state, mainSpec.state);
-    if (!isAreaVisible) {
-      area.style.fill = false;
-    }
-    if (!isLineVisible) {
-      area.style.stroke = false;
-    }
 
     if (area.interactive === false) {
       area.style.fillPickable = false;
@@ -78,7 +74,6 @@ export class AreaSeriesSpecTransformer<
     }
 
     area.interactive = !!(area.interactive || (line.interactive ?? true));
-    area.visible = !(!isAreaVisible && !isLineVisible);
 
     spec.area = area;
     spec.line = line;

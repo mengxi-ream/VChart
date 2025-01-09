@@ -2,9 +2,21 @@ import type { IMarkSpec, IMarkTheme } from '../../typings/spec/common';
 import type { ILiquidMarkSpec, IGroupMarkSpec, ILiquidOutlineSpec } from '../../typings/visual';
 import type { SeriesMarkNameEnum } from '../interface/type';
 import type { IAnimationSpec } from '../../animation/spec';
-import type { LiquidAppearPreset } from './animation';
 import type { SymbolType } from '@visactor/vrender-core';
-import type { ISymbolMark } from '../../mark/symbol';
+import type { ISymbolMark } from '../../mark/interface';
+
+export interface ILiquidAnimationParams {
+  height: {
+    from: () => number | number;
+    to: () => number | number;
+  };
+  dy: {
+    from: () => number | number;
+    to: () => number | number;
+  };
+}
+
+export type LiquidAppearPreset = 'wave' | 'grow' | 'waveGrow';
 
 type LiquidMarks = 'liquid';
 
@@ -45,7 +57,12 @@ export interface ILiquidSeriesSpec extends IAnimationSpec<LiquidMarks, LiquidApp
    * @default false
    */
   indicatorSmartInvert?: boolean;
-
+  /**
+   * 是否反向绘制
+   * @default false
+   * @since 1.11.10
+   */
+  reverse?: boolean;
   /**
    * 水波图元配置
    */

@@ -7,9 +7,8 @@ import { mixin } from '@visactor/vutils';
 import type { Datum } from '../../typings';
 import { animationConfig, userAnimationConfig } from '../../animation/utils';
 import { registerLineAnimation, registerScaleInOutAnimation } from '../../animation/config';
-import type { ILineSeriesSpec } from './interface';
+import type { ILineSeriesSpec, LineAppearPreset } from './interface';
 import type { IStateAnimateSpec } from '../../animation/spec';
-import type { LineAppearPreset } from './animation';
 import { lineSeriesMark } from './constant';
 import { registerLineMark } from '../../mark/line';
 import { registerSymbolMark } from '../../mark/symbol';
@@ -66,9 +65,8 @@ export class LineSeries<T extends ILineSeriesSpec = ILineSeriesSpec> extends Car
 
   protected initTooltip() {
     super.initTooltip();
-    const { dimension, group, mark } = this._tooltipHelper.activeTriggerSet;
+    const { group, mark } = this._tooltipHelper.activeTriggerSet;
     if (this._lineMark) {
-      dimension.add(this._lineMark);
       group.add(this._lineMark);
     }
     if (this._symbolMark) {

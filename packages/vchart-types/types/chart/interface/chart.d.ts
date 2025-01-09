@@ -8,7 +8,7 @@ import type { IModel, IModelConstructor, IModelSpecInfo, IUpdateSpecResult } fro
 import type { IRegion, IRegionConstructor } from '../../region/interface';
 import type { ISeries, ISeriesConstructor } from '../../series/interface';
 import type { IChartEvaluateOption, IChartLayoutOption, IChartOption, IChartRenderOption, IChartSpecInfo, IChartSpecTransformerOption, ILayoutParams } from './common';
-import type { IBoundsLike, IPadding } from '@visactor/vutils';
+import type { IBoundsLike, IPadding, Maybe } from '@visactor/vutils';
 import type { ICompilable } from '../../compile/interface';
 import type { IRegionQuerier, MaybeArray, Datum, IMarkStateSpec, StringOrNumber, IShowTooltipOption, IDataValues, ILayoutRect, IData } from '../../typings';
 import type { DataView } from '@visactor/vdataset';
@@ -46,7 +46,7 @@ export interface IChart extends ICompilable {
     updateData: (id: StringOrNumber, data: unknown, updateGlobalScale?: boolean, options?: IParserOptions) => void;
     updateFullData: (data: IDataValues | IDataValues[]) => void;
     updateGlobalScaleDomain: () => void;
-    created: () => void;
+    created: (transformer: Maybe<IChartSpecTransformer>) => void;
     init: () => void;
     onLayoutStart: (ctx: IChartLayoutOption) => void;
     onLayoutEnd: (ctx: IChartLayoutOption) => void;
@@ -79,11 +79,13 @@ export interface IChart extends ICompilable {
     getAllModels: () => IModel[];
     getMarkById: (id: number) => IMark | undefined;
     getAllMarks: () => IMark[];
+    getMarkByUserName: (name: string) => IMark[];
     updateSpec: (spec: any) => IUpdateSpecResult;
     updateState: (state: Record<string, Omit<IMarkStateSpec<unknown>, 'style'>>, filter?: (series: ISeries, mark: IMark, stateKey: string) => boolean) => void;
     setSelected: (datum: MaybeArray<any> | null, filter?: (series: ISeries, mark: IMark) => boolean, region?: IRegionQuerier) => void;
     setHovered: (datum: MaybeArray<Datum> | null, filter?: (series: ISeries, mark: IMark) => boolean, region?: IRegionQuerier) => void;
     clearState: (state: string) => void;
+    clearAllStates: () => void;
     clearSelected: () => void;
     clearHovered: () => void;
     updateViewBox: (viewBox: IBoundsLike, reLayout: boolean) => void;

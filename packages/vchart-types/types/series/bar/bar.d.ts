@@ -1,13 +1,11 @@
 import type { IBaseScale } from '@visactor/vscale';
 import { CartesianSeries } from '../cartesian/cartesian';
-import type { IMark, IMarkProgressiveConfig } from '../../mark/interface';
+import type { IMark, IRectMark, ITextMark } from '../../mark/interface';
 import { MarkTypeEnum } from '../../mark/interface/type';
 import type { Datum, DirectionType } from '../../typings';
 import type { IBarSeriesSpec } from './interface';
 import type { IAxisHelper } from '../../component/axis/cartesian/interface';
-import type { IRectMark } from '../../mark/rect';
 import type { IModelInitOption } from '../../model/interface';
-import type { ITextMark } from '../../mark/text';
 import type { SeriesMarkMap } from '../interface';
 import { SeriesMarkNameEnum, SeriesTypeEnum } from '../interface/type';
 import { SeriesData } from '../base/series-data';
@@ -27,7 +25,7 @@ export declare class BarSeries<T extends IBarSeriesSpec = IBarSeriesSpec> extend
     protected _barBackgroundMark: IRectMark;
     protected _barBackgroundViewData: SeriesData;
     initMark(): void;
-    protected _initBarBackgroundMark(progressive?: IMarkProgressiveConfig): void;
+    protected _initBarBackgroundMark(): void;
     initMarkStyle(): void;
     initLabelMarkStyle(textMark: ITextMark): void;
     protected initTooltip(): void;
@@ -40,8 +38,8 @@ export declare class BarSeries<T extends IBarSeriesSpec = IBarSeriesSpec> extend
     protected _dataToPosX1(datum: Datum): number;
     protected _dataToPosY(datum: Datum): number;
     protected _dataToPosY1(datum: Datum): number;
-    protected _getBarXStart: (datum: Datum, scale: IBaseScale) => any;
-    protected _getBarXEnd: (datum: Datum, scale: IBaseScale) => any;
+    protected _getBarXStart: (datum: Datum, scale: IBaseScale, useWholeRange?: boolean) => any;
+    protected _getBarXEnd: (datum: Datum, scale: IBaseScale, useWholeRange?: boolean) => any;
     protected _getBarYStart: (datum: Datum, scale: IBaseScale) => any;
     protected _getBarYEnd: (datum: Datum, scale: IBaseScale) => any;
     initBandRectMarkStyle(): void;

@@ -23,13 +23,19 @@ By default, each sector of the pie chart is an independent series.
 
 Value field.
 
-#${prefix} centerX(number)
+#${prefix} centerX (Number|String)
 
-Pie chart center point x coordinate.
+The x-coordinate of the pie chart center, supporting two formats:
 
-#${prefix} centerY(number)
+- `number`: Specific coordinate value
+- `string`: A percentage string like `50%`, calculating the coordinate relative to the layout width (supported since version **1.12.10**)
 
-Pie chart center point y coordinate.
+#${prefix} centerY (Number|String)
+
+The y-coordinate of the pie chart center, supporting two formats:
+
+- `number`: Specific coordinate value
+- `string`: A percentage string like `50%`, calculating the coordinate relative to the layout height (supported since version **1.12.10**)
 
 #${prefix} centerOffset(number)
 
@@ -52,11 +58,25 @@ pie: {
 }
 ```
 
+#${prefix} layoutRadius(string|number|function)
+
+Introduced in version **1.11.12**
+
+The layout radius of the polar coordinate, which is the base value for calculating the inner and outer radii. The optional values are as follows:
+
+- Not set: The default value is `Math.min(width, height) / 2`, which is equivalent to this effect before version **1.11.2**
+- `'auto'`: Automatically calculate the maximum available layout radius based on `center`, `startAngle`, and `endAngle`
+- Custom function, the type definition of the function is as follows:
+
+```ts
+(layoutRect: { width: number; height: number }, center: { x: number; y: number }) => number;
+```
+
 #${prefix} outerRadius(number)
 
 Pie chart outer sector radius. The default value is 0.6.
 
-#${prefix} outerRadius(number)
+#${prefix} innerRadius(number)
 
 Pie chart inner sector radius. The default value is 0.
 
@@ -64,11 +84,11 @@ Pie chart inner sector radius. The default value is 0.
 
 Pie chart sector corner radius. The default value is 0.
 
-#${prefix} startAngle(number)
+#${prefix} startAngle(number) = -90
 
 Sector start angle.
 
-#${prefix} endAngle(number)
+#${prefix} endAngle(number) = 270
 
 Sector end angle.
 
@@ -123,6 +143,7 @@ Optional values:
 - `'inside'`
 - `'inside-outer'`
 - `'inside-inner'`
+- `'inside-center'`(since v1.12.2)
 
 ##${prefix} offsetRadius(number)
 
@@ -179,6 +200,28 @@ Supported since version 1.4.0.
   prefix = '##' + ${prefix}
 ) }}
 
+##${prefix} customShape(function)
+Since version 1.11.11, label guide lines support custom paths.
+
+The callback function is defined as follows:
+
+```ts
+/**
+ * @params label text and base mark
+ * @params attrs vertex
+ * @params path object, user-defined drawing
+ * @return Returns the path after drawing is completed
+ */
+(
+  mark: {
+    text: IText;
+    baseMark: IGraphic;
+  },
+  attrs: Partial<ILineGraphicAttribute>,
+  path: ICustomPath2D
+) => ICustomPath2D;
+```
+
 ###${prefix} style(Object)
 
 Guide line style.
@@ -225,3 +268,39 @@ Optional values:
 
 Enable tangent constraint.
 The default value is `true`.
+
+#${prefix} emptyPlaceholder(Object)
+
+Set the placeholder to be displayed when data is empty.
+
+##${prefix} showEmptyCircle(Boolean)
+
+Supported since version `1.12.0`.
+Determines whether to show a placeholder circle when data is empty.
+The default value is `false`.
+
+##${prefix} emptyCircle(Object)
+
+Empty circle style configuration.
+
+```ts
+emptyPlaceholder: {
+  showEmptyCircle: true,
+  emptyCircle: {
+    style: {
+      innerRadius: 0.5,
+      fill: '#66ccff'
+    }
+  }
+}
+```
+
+#${prefix} showAllZero(boolean)
+
+Determines whether to display evenly divided sectors when all data are 0.
+The default value is `false`.
+
+#${prefix} supportNegative(boolean)
+
+Determines whether to treat negative values as absolute values.
+The default value is `false`.

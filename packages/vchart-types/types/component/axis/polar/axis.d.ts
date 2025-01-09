@@ -34,6 +34,7 @@ export declare abstract class PolarAxis<T extends IPolarAxisCommonSpec = IPolarA
     get endAngle(): number;
     protected _orient: IPolarOrientType;
     getOrient(): IPolarOrientType;
+    protected getDefaultInteractive(): boolean;
     protected _groupScales: IBaseScale[];
     getGroupScales(): IBaseScale[];
     private _axisStyle;
@@ -47,7 +48,6 @@ export declare abstract class PolarAxis<T extends IPolarAxisCommonSpec = IPolarA
     onRender(ctx: any): void;
     changeRegions(): void;
     protected _tickTransformOption(): IPolarTickDataOpt;
-    afterCompile(): void;
     protected updateScaleRange(): boolean;
     protected collectSeriesField(depth: number, series: IPolarSeries): string | string[];
     protected abstract computeDomain(data: {
@@ -65,14 +65,14 @@ export declare abstract class PolarAxis<T extends IPolarAxisCommonSpec = IPolarA
         pointToCoord: (point: IPoint) => IPolarPoint;
         center: () => IPoint;
         layoutRadius: () => number;
-        getScale: (depth: number) => IBaseScale;
+        getScale: (depth?: number) => IBaseScale;
         getAxisId: () => number;
         getSpec: () => T;
     };
     positionToData(position: IPoint): number;
     coordToPoint(point: IPolarPoint): IPoint;
     pointToCoord(point: IPoint): IPolarPoint;
-    getCenter(): IPoint;
+    getCenter: () => IPoint;
     getOuterRadius(): number;
     getInnerRadius(): number;
     updateLayoutAttribute(): void;
@@ -81,8 +81,8 @@ export declare abstract class PolarAxis<T extends IPolarAxisCommonSpec = IPolarA
     protected _getStartValue(): number;
     private _layoutAngleAxis;
     private _layoutRadiusAxis;
-    protected _getRelatedAngleAxis(): IPolarAxis | undefined;
-    private computeLayoutRadius;
+    protected _getRelatedAxis(index: number): IPolarAxis | undefined;
+    private _computeLayoutRadius;
     private computeLayoutOuterRadius;
     private computeLayoutInnerRadius;
     private getRefLayoutRect;

@@ -9,18 +9,28 @@ export type TooltipHandlerParams = DimensionEventParams & {
   changePositionOnly?: boolean;
   /** tooltip 组件实例 */
   tooltip: ITooltip;
-  /** 本次触发的 tooltip 对应的最终 spec（可能经过了一些补全） */
+  /** tooltip 原始的spec */
   tooltipSpec?: ITooltipSpec;
-  /** 本次触发的 tooltip 的显示数据 */
-  tooltipActual?: ITooltipActual;
+  /** TODO: 本次触发的tooltip，主要包含pattern数据，待优化 */
+  activeTooltipSpec?: ITooltipActual;
+  // Pick<ITooltipSpec, 'activeType' | 'dimension' | 'mark' | 'group' | 'visible' | 'handler'>;
   /** 和 datum 同组的数据项 */
   groupDatum?: Datum[];
 };
 
 export interface ITooltipActiveTypeAsKeys<T, K, U> {
-  mark: T;
-  dimension: K;
-  group: U;
+  /**
+   * mark tooltip对应的配置，其中mark tooltip 用于展示图元对应的数据信息，比如柱图中的柱子，散点图中的点，面积图中的点灯
+   */
+  mark?: T;
+  /**
+   * dimension tooltip 对应的配置，其中dimension tooltip 用于展示维度对应的数据信息，比如x轴对应的数据信息
+   */
+  dimension?: K;
+  /**
+   * group tooltip 对应的配置，其中group tooltip 用于展示整个分组数据对应的数据信息，比如说线图中一条线代表一个相同的分组，可以使用 group tooltip展示整条线所有点对应的数据
+   */
+  group?: U;
 }
 
 export type TotalMouseEventData = {

@@ -1,15 +1,15 @@
 import type { DataView } from '@visactor/vdataset';
 import type { Datum } from '../../typings';
 import { couldBeValidNumber } from '../../util/type';
-import { computeQuadrant, getPercentValue } from '../../util/math';
+import { getPercentValue } from '../../util/math';
 import { ARC_TRANSFORM_VALUE } from '../../constant/polar';
+import { computeQuadrant, isNil } from '@visactor/vutils';
 
 export interface IPieOpt {
-  angleField: string;
-
-  startAngle: number;
-  endAngle: number;
-  minAngle: number;
+  angleField: () => string;
+  startAngle: () => number;
+  endAngle: () => number;
+  minAngle: () => number;
 
   asStartAngle: string;
   asEndAngle: string;
@@ -18,6 +18,9 @@ export interface IPieOpt {
   asRatio: string;
   asQuadrant: string;
   asK: string;
+  showAllZero: boolean;
+  supportNegative: boolean;
+  showEmptyCircle: boolean;
 }
 
 function transformInvalidValue(value: any) {
@@ -28,23 +31,32 @@ function transformInvalidValue(value: any) {
 }
 
 export const pie = (originData: Array<DataView>, op: IPieOpt) => {
-  const data = originData.map((datum: Datum) => ({ ...datum }));
-  if (!data || data.length === 0) {
-    return data;
-  }
   const {
-    angleField,
-    startAngle,
-    endAngle,
-    minAngle,
     asStartAngle,
     asEndAngle,
     asMiddleAngle,
     asRadian,
     asRatio,
     asQuadrant,
-    asK
+    asK,
+    showAllZero,
+    supportNegative,
+    showEmptyCircle
   } = op;
+
+  const angleField = op.angleField();
+  const startAngle = op.startAngle();
+  const endAngle = op.endAngle();
+  const minAngle = op.minAngle();
+
+  const data = originData.map((datum: Datum) => ({ ...datum }));
+  if (!data || data.length === 0) {
+    return data;
+  }
+
+  if (!showAllZero && showEmptyCircle && isDataEmpty(data, angleField, supportNegative)) {
+    return data;
+  }
 
   const appendArcInfo = (data: Datum, startAngle: number, angle: number) => {
     data[asStartAngle] = startAngle;
@@ -56,10 +68,16 @@ export const pie = (originData: Array<DataView>, op: IPieOpt) => {
 
   let total = 0;
   let max = -Infinity;
+  let isAllZero = true;
   for (let index = 0; index < data.length; index++) {
-    const angleFieldValue = transformInvalidValue(data[index][angleField]);
+    const angleFieldValue = supportNegative
+      ? Math.abs(transformInvalidValue(data[index][angleField]))
+      : transformInvalidValue(data[index][angleField]);
     total += angleFieldValue;
     max = Math.max(angleFieldValue, max);
+    if (isAllZero && angleFieldValue !== 0) {
+      isAllZero = false;
+    }
 
     data[index][ARC_TRANSFORM_VALUE] = angleFieldValue;
   }
@@ -88,7 +106,7 @@ export const pie = (originData: Array<DataView>, op: IPieOpt) => {
 
     d[asRatio] = ratio;
     d[asK] = max ? angleFieldValue / max : 0;
-    d._percent_ = percents[i];
+    d._percent_ = (percents as number[])[i];
     appendArcInfo(d, dStartAngle, radian);
 
     lastAngle = dEndAngle;
@@ -117,5 +135,30 @@ export const pie = (originData: Array<DataView>, op: IPieOpt) => {
     // 防止一个扇区的角度会因为浮点数精度问题和传入的 endAngle 不相等
     data[data.length - 1][asEndAngle] = endAngle;
   }
+
+  if (isAllZero && showAllZero) {
+    const angle = angleRange / data.length;
+    data.forEach((d, index) => {
+      appendArcInfo(d, startAngle + index * angle, angle);
+    });
+  }
   return data;
+};
+
+export const isDataEmpty = (data: Datum[], angleField: string, supportNegative: boolean) => {
+  if (isNil(data)) {
+    return true;
+  }
+  if (data.length === 0) {
+    return true;
+  }
+  if (data.every(datum => transformInvalidValue(datum[angleField]) === 0)) {
+    return true;
+  }
+  // 未支持负数, 并且和为0, 则也认为是空数据
+  if (!supportNegative && data.reduce((sum, datum) => sum + transformInvalidValue(datum[angleField]), 0) === 0) {
+    return true;
+  }
+
+  return false;
 };

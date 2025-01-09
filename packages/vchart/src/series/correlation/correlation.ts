@@ -1,9 +1,8 @@
 import { PolarSeries } from '../polar/polar';
-import type { ICorrelationSeriesSpec } from './interface';
+import type { CorrelationAppearPreset, ICorrelationSeriesSpec } from './interface';
 import { SeriesMarkNameEnum, SeriesTypeEnum } from '../interface/type';
 import type { SeriesMarkMap } from '../interface';
 import { correlationSeriesMark } from './constant';
-import type { ISymbolMark } from '../../mark/symbol';
 import { registerDataSetInstanceTransform, registerDataSetInstanceParser } from '../../data/register';
 import { correlation } from '../../data/transforms/correlation';
 import { correlationCenter } from '../../data/transforms/correlation-center';
@@ -16,22 +15,21 @@ import { Bounds, isValid } from '@visactor/vutils';
 import { registerSymbolMark } from '../../mark/symbol';
 import { SeriesData } from '../base/series-data';
 import type { Datum, ISymbolMarkSpec, IRippleMarkSpec, AdaptiveSpec } from '../../typings';
-import { AttributeLevel, DEFAULT_DATA_INDEX, LayoutZIndex } from '../../constant';
+import { DEFAULT_DATA_INDEX } from '../../constant/data';
+import { AttributeLevel } from '../../constant/attribute';
+import { LayoutZIndex } from '../../constant/layout';
 import { DataView, DataSet, dataViewParser } from '@visactor/vdataset';
 import { STATE_VALUE_ENUM } from '../../compile/mark/interface';
-import type { IRippleMark } from '../../mark/ripple';
 // eslint-disable-next-line no-duplicate-imports
 import { registerRippleMark } from '../../mark/ripple';
-import type { ILabelMark } from '../../mark/label';
 // eslint-disable-next-line no-duplicate-imports
-import { CORRELATION_X, CORRELATION_Y, CORRELATION_SIZE } from '../../constant';
+import { CORRELATION_X, CORRELATION_Y, CORRELATION_SIZE } from '../../constant/correlation';
 import { animationConfig, userAnimationConfig } from '../../animation/utils';
 import { Factory } from '../../core/factory';
-import type { CorrelationAppearPreset } from './animation';
 // eslint-disable-next-line no-duplicate-imports
 import { registerCorrelationAnimation } from './animation';
 import type { IStateAnimateSpec } from '../../animation/spec';
-import type { IMark } from '../../mark/interface';
+import type { ILabelMark, IMark, IRippleMark, ISymbolMark } from '../../mark/interface';
 import { CorrelationSeriesSpecTransformer } from './correlation-transformer';
 
 export class CorrelationSeries<T extends ICorrelationSeriesSpec = ICorrelationSeriesSpec> extends PolarSeries<
@@ -140,6 +138,11 @@ export class CorrelationSeries<T extends ICorrelationSeriesSpec = ICorrelationSe
     this._centerSeriesData = new SeriesData(this._option, centerDataView);
   }
 
+  compileData() {
+    super.compileData();
+    this._centerSeriesData?.compile();
+  }
+
   protected _statisticViewData(): void {
     super._statisticViewData();
     this._data.getDataView().transform({
@@ -166,15 +169,20 @@ export class CorrelationSeries<T extends ICorrelationSeriesSpec = ICorrelationSe
   }
 
   initMark(): void {
-    const nodePointMark = this._createMark(CorrelationSeries.mark.nodePoint, {
-      groupKey: this._seriesField,
-      isSeriesMark: true,
-      key: DEFAULT_DATA_INDEX,
-      customShape: this._spec.nodePoint?.customShape,
-      stateSort: this._spec.nodePoint?.stateSort
-    }) as ISymbolMark;
+    const nodePointMark = this._createMark(
+      CorrelationSeries.mark.nodePoint,
+      {
+        groupKey: this._seriesField,
+        isSeriesMark: true,
+        key: DEFAULT_DATA_INDEX,
+        stateSort: this._spec.nodePoint?.stateSort
+      },
+      {
+        setCustomizedShape: this._spec.nodePoint?.customShape
+      }
+    ) as ISymbolMark;
     if (nodePointMark) {
-      nodePointMark.setZIndex(LayoutZIndex.Node);
+      nodePointMark.setMarkConfig({ zIndex: LayoutZIndex.Node });
       this._nodePointMark = nodePointMark;
     }
 
@@ -187,15 +195,20 @@ export class CorrelationSeries<T extends ICorrelationSeriesSpec = ICorrelationSe
       this._ripplePointMark = ripplePointMark;
     }
 
-    const centerPointMark = this._createMark(CorrelationSeries.mark.centerPoint, {
-      key: DEFAULT_DATA_INDEX,
-      dataView: this._centerSeriesData.getDataView(),
-      dataProductId: this._centerSeriesData.getProductId(),
-      customShape: this._spec.centerPoint?.customShape,
-      stateSort: this._spec.centerPoint?.stateSort
-    }) as ISymbolMark;
+    const centerPointMark = this._createMark(
+      CorrelationSeries.mark.centerPoint,
+      {
+        key: DEFAULT_DATA_INDEX,
+        dataView: this._centerSeriesData.getDataView(),
+        dataProductId: this._centerSeriesData.getProductId(),
+        stateSort: this._spec.centerPoint?.stateSort
+      },
+      {
+        setCustomizedShape: this._spec.centerPoint?.customShape
+      }
+    ) as ISymbolMark;
     if (centerPointMark) {
-      centerPointMark.setZIndex(LayoutZIndex.Node);
+      centerPointMark.setMarkConfig({ zIndex: LayoutZIndex.Node });
       this._centerPointMark = centerPointMark;
     }
   }

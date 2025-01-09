@@ -24,13 +24,19 @@
 
 数值字段。
 
-#${prefix} centerX(number)
+#${prefix} centerX (Number|String)
 
-饼图中心点 x 坐标。
+饼图中心点 x 坐标，支持两种格式：
 
-#${prefix} centerY(number)
+- `number`: 具体的坐标值
+- `string`: 格式如`50%`的百分比字符串，相对于布局宽度计算坐标（自**1.12.10**版本开始支持）
 
-饼图中心点 y 坐标。
+#${prefix} centerY (Number|String)
+
+饼图中心点 y 坐标，支持两种格式：
+
+- `number`: 具体的坐标值
+- `string`: 格式如`50%`的百分比字符串，相对于布局高度计算坐标（自**1.12.10**版本开始支持）
 
 #${prefix} centerOffset(number)
 
@@ -53,11 +59,25 @@ pie: {
 }
 ```
 
+#${prefix} layoutRadius(string|number|function)
+
+自 **1.11.12**版本开始支持
+
+极坐标的布局半径，即计算内径、外径的基准值，可选值如下：
+
+- 不设置： 默认值为`Math.min(width, height) / 2`，**1.11.2**之前的版本相当于这个效果
+- `'auto'`： 根据`center`、`startAngle`、`endAngle`自动计算最大可用的布局半径
+- 自定义函数，函数的类型定义如下：
+
+```ts
+(layoutRect: { width: number; height: number }, center: { x: number; y: number }) => number;
+```
+
 #${prefix} outerRadius(number)
 
 饼图扇区外半径。默认值为 0.6。
 
-#${prefix} outerRadius(number)
+#${prefix} innerRadius(number)
 
 饼图扇区内半径。默认值为 0。
 
@@ -65,11 +85,11 @@ pie: {
 
 饼图扇区圆角半径。默认值为 0。
 
-#${prefix} startAngle(number)
+#${prefix} startAngle(number) = -90
 
 扇区起始角度。
 
-#${prefix} endAngle(number)
+#${prefix} endAngle(number) = 270
 
 扇区结束角度。
 
@@ -124,6 +144,7 @@ pie: {
 - `'inside'`
 - `'inside-outer'`
 - `'inside-inner'`
+- `'inside-center'`（自 `1.12.2` 版本支持）
 
 ##${prefix} offsetRadius(number)
 
@@ -180,6 +201,22 @@ pie: {
   prefix = '##' + ${prefix}
 ) }}
 
+##${prefix} customShape(function)
+自 1.11.11 版本, 标签引导线支持自定义 path.
+
+回调函数的定义如下:
+
+```ts
+/**
+ * @params 标签文字和对应图元属性
+ * @params attrs 折点
+ * @params path对象, 用户自定义绘制
+ * @return 返回绘制完成后的path
+ */
+(mark: { text: IText; baseMark: IGraphic }, attrs: Partial<ILineGraphicAttribute>, path: ICustomPath2D) =>
+  ICustomPath2D;
+```
+
 ###${prefix} style(Object)
 
 引导线样式。
@@ -226,3 +263,38 @@ pie: {
 
 是否启用切线约束。
 默认值为`true`。
+
+#${prefix} emptyPlaceholder(Object)
+
+设置当数据为空时呈现的占位符。
+
+##${prefix} showEmptyCircle(Boolean)
+
+从 1.12.0 版本开始支持，是否在数据为空时显示占位圆。
+默认值为`false`。
+
+##${prefix} emptyCircle(Object)
+
+占位圆图元样式配置。
+
+```ts
+emptyPlaceholder: {
+  showEmptyCircle: true,
+  emptyCircle: {
+    style: {
+      innerRadius: 0.5,
+      fill: '#66ccff'
+    }
+  }
+}
+```
+
+#${prefix} showAllZero(boolean)
+
+是否在数据均为 0 时显示均分扇区。
+默认值为`false`。
+
+#${prefix} supportNegative(boolean)
+
+是否将负数按照绝对值进行处理。
+默认值为`false`。

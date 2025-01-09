@@ -2,16 +2,17 @@ import { DataView } from '@visactor/vdataset';
 import type { Maybe } from '@visactor/vutils';
 import type { IModelRenderOption, IModelSpecInfo } from '../../model/interface';
 import type { IRegion } from '../../region/interface';
-import type { ILayoutRect, ILayoutType, IRect } from '../../typings';
+import type { CoordinateType, ILayoutRect, ILayoutType, IRect } from '../../typings';
 import { BaseComponent } from '../base/base-component';
-import type { IDataPos, IDataPosCallback, IMarkerSpec, IMarkerSupportSeries } from './interface';
+import type { IDataPos, IDataPosCallback, IMarkerAttributeContext, IMarkerSpec, IMarkerSupportSeries, IMarkProcessOptions } from './interface';
 import type { IGraphic, IGroup } from '@visactor/vrender-core';
+import type { IOptionWithCoordinates } from '../../data/transforms/interface';
 export declare abstract class BaseMarker<T extends IMarkerSpec> extends BaseComponent<T> {
     layoutType: ILayoutType | 'none';
     static specKey: string;
     static type: string;
     static coordinateType: string;
-    coordinateType: string;
+    coordinateType: CoordinateType;
     protected _startRelativeSeries: IMarkerSupportSeries;
     protected _endRelativeSeries: IMarkerSupportSeries;
     protected _relativeSeries: IMarkerSupportSeries;
@@ -26,8 +27,12 @@ export declare abstract class BaseMarker<T extends IMarkerSpec> extends BaseComp
     protected abstract _initDataView(): void;
     protected abstract _createMarkerComponent(): IGroup;
     protected abstract _markerLayout(): void;
+    protected abstract _computeOptions(): IMarkProcessOptions;
     static _getMarkerCoordinateType(markerSpec: any): string;
     static getSpecInfo(chartSpec: any): Maybe<IModelSpecInfo[]>;
+    protected _markAttributeContext: IMarkerAttributeContext;
+    getMarkAttributeContext(): IMarkerAttributeContext;
+    protected _buildMarkerAttributeContext(): void;
     created(): void;
     protected _getAllRelativeSeries(): {
         getRelativeSeries: () => IMarkerSupportSeries;
@@ -43,7 +48,7 @@ export declare abstract class BaseMarker<T extends IMarkerSpec> extends BaseComp
         getStartRelativeSeries: () => IMarkerSupportSeries;
         getEndRelativeSeries: () => IMarkerSupportSeries;
     };
-    protected _processSpecCoo(spec: any): any;
+    protected _processSpecCoo(spec: any): IOptionWithCoordinates;
     protected _getRelativeDataView(): DataView;
     updateLayoutAttribute(): void;
     private _getSeriesByIdOrIndex;
@@ -62,4 +67,5 @@ export declare abstract class BaseMarker<T extends IMarkerSpec> extends BaseComp
         reSize: boolean;
         reCompile: boolean;
     };
+    _initCommonDataView(): void;
 }

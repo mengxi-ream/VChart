@@ -3,14 +3,15 @@ import type { IMarkTheme } from '../typings/spec';
 import type { IArcMarkSpec, IAreaMarkSpec, ILineMarkSpec, IRectMarkSpec, ISymbolMarkSpec, ITextMarkSpec, IPathMarkSpec, ILayoutPaddingSpec } from '../typings';
 import type { MarkTypeEnum } from '../mark/interface';
 import type { IColorKey, IThemeColorScheme } from './color-scheme/interface';
-import type { IGradientColor } from '@visactor/vrender-core';
+import type { IColor } from '@visactor/vrender-core';
 import type { IComponentTheme } from '../component/interface';
-import type { ITokenKey, TokenMap } from './token';
+import type { ITokenKey, TokenMap } from './token/interface';
+import type { ChartType } from '../chart/interface';
 export interface ITheme {
     name?: string;
     description?: string;
     type?: 'light' | 'dark';
-    background?: string | IGradientColor | IColorKey;
+    background?: IColor | IColorKey;
     padding?: ILayoutPaddingSpec;
     fontFamily?: string | ITokenKey;
     token?: TokenMap;
@@ -20,6 +21,7 @@ export interface ITheme {
     series?: ISeriesTheme;
     animationThreshold?: number;
     component?: IComponentTheme;
+    chart?: Record<ChartType, Omit<ITheme, 'name' | 'type' | 'description'>>;
 }
 export interface IGlobalMarkThemeByType {
     [MarkTypeEnum.line]?: Partial<IMarkTheme<ILineMarkSpec>>;

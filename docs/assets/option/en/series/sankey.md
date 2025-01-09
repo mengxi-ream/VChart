@@ -89,10 +89,12 @@ Optional:
 - `horizontal`
 
 #${prefix} nodeAlign(string)
+Node alignment type, calculated based on node depth, determines which layer the node is in:
 
-Node alignment type.
+- For horizontally laid out Sankey diagrams, used to calculate node x-coordinates
+- For vertically laid out Sankey diagrams, used to calculate node y-coordinates
 
-Optional:
+Options:
 
 - `left`
 - `right`
@@ -100,6 +102,31 @@ Optional:
 - `justify`
 - `start`
 - `end`
+
+#${prefix} crossNodeAlign(string)
+
+Supported since version **1.12.4**
+
+For horizontally laid out Sankey diagrams, sets the Y-coordinate alignment of nodes:
+
+- 'start' - 'Top alignment'
+- 'end' - 'Bottom alignment'
+- 'middle' - 'Center alignment'
+- 'parent' - 'Parent node alignment', supported since version **1.12.14**
+
+For vertically laid out Sankey diagrams, sets the X-coordinate alignment of nodes:
+
+- 'start' - 'Left alignment'
+- 'end' - 'Right alignment'
+- 'middle' - 'Center alignment'
+- 'parent' - 'Parent node alignment', supported since version **1.12.14**
+
+#${prefix} inverse(boolean)
+
+Since version **1.12.2** is supported
+Reverse display, nodes and edges are displayed in reverse
+For Sankey diagrams with a `horizontal` layout direction, nodes are displayed from left to right by default; setting `inverse: true` displays nodes from right to left;
+For Sankey diagrams with a `vertical` layout direction, nodes are displayed from top to bottom by default; setting `inverse: true` displays nodes from bottom to top;
 
 #${prefix} nodeGap(number)
 
@@ -129,12 +156,25 @@ Minimal size of nodes when data is not zero or empty.
 - This configuration can be used to avoid too thin nodes when data is too small.
 - Suggested to be less than 5px.
 
+#${prefix} maxNodeHeight(number)
+
+Supported since version **1.12.14**
+
+Maximum size of nodes when data is not zero or empty.
+
 #${prefix} minLinkHeight(number)
 
 Minimal size of edges when data is not zero or empty.
 
 - This configuration can be used to avoid too thin links when data is too small.
 - Suggested to be less than 5px.
+- When both `minNodeHeight` and `minLinkHeight` options are specified, this option should be less than `minNodeHeight`.
+  #${prefix} maxLinkHeight(number)
+
+Supported since version **1.12.14**
+
+Maximum size of edges when data is not zero or empty.
+
 - When both `minNodeHeight` and `minLinkHeight` options are specified, this option should be less than `minNodeHeight`.
 
 #${prefix} iterations(number)
@@ -211,3 +251,16 @@ Sankey Diagram provides 3 interaction linkage effects on nodes:
 - `self`: Only highlight the current node.
 - `adjacency`: Highlight the upstream and downstream nodes and associated edges of the current node, and dim other graphic elements.
 - `related`: Highlight the nodes and edges on the entire path related to the current node, and dim other graphic elements.
+
+#${prefix} overflow(string)
+
+Supported since version **1.13.0**
+
+When the width of nodes or edges is specified, this property can be configured to automatically generate scroll bars if the width exceeds the chart region width or the height exceeds the chart region height.
+
+Supported configurations are as follows:
+
+- 'scroll': Automatically generate scroll bars based on the x and y directions.
+- 'hidden': Do not generate scroll bars by default.
+- 'scroll-x': Automatically generate scroll bars in the x direction.
+- 'scroll-y': Automatically generate scroll bars in the y direction.

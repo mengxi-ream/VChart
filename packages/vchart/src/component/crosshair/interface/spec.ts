@@ -45,6 +45,9 @@ export interface ICommonCrosshairSpec extends IComponentSpec {
   gridZIndex?: number;
 }
 
+/**
+ * 笛卡尔坐标系下的 crosshair 配置
+ */
 export interface ICartesianCrosshairSpec extends ICommonCrosshairSpec {
   /**
    * 笛卡尔坐标系下 x 轴上 crosshair 配置
@@ -56,6 +59,9 @@ export interface ICartesianCrosshairSpec extends ICommonCrosshairSpec {
   yField?: ICrosshairCategoryFieldSpec;
 }
 
+/**
+ * 极坐标系下的 crosshair 配置
+ */
 export interface IPolarCrosshairSpec extends ICommonCrosshairSpec {
   /**
    * 极坐标系下 categoryField 字段对应轴上的 crosshair 配置
@@ -103,7 +109,13 @@ export type ICrosshairLineStyle = Pick<
 export type ICrosshairRectStyle = ICrosshairLineStyle & Pick<IRectMarkSpec, 'fill' | 'fillOpacity' | 'cornerRadius'>;
 
 export interface ICrosshairLineSpec {
+  /**
+   * 是否显示
+   */
   visible?: boolean;
+  /**
+   * 辅助图形的类型
+   */
   type?: 'line';
   /**
    * 线宽
@@ -112,6 +124,9 @@ export interface ICrosshairLineSpec {
   width?: number;
   /** 极坐标系下是否平滑 */
   smooth?: boolean;
+  /**
+   * 辅助图形的样式配置
+   */
   style?: ICrosshairLineStyle;
 }
 

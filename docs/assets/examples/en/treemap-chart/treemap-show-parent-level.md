@@ -4,7 +4,7 @@ group: treemap chart
 title: Treemap Displaying Parent Level
 keywords: treemap,rectangle,comparison,composition,relationship
 order: 17-1
-cover: http://lf9-dp-fe-cms-tos.byteorg.com/obj/bit-cloud/vchart/preview/treemap-chart/treemap-show-parent-level.png
+cover: https://lf9-dp-fe-cms-tos.byteorg.com/obj/bit-cloud/vchart/preview/treemap-chart/treemap-show-parent-level.png
 option: treemapChart
 ---
 
@@ -402,7 +402,21 @@ const spec = {
   label: {
     visible: true,
     style: {
-      fontSize: 12
+      fontSize: 12,
+      x: data => {
+        // Label will be placed at the center of node rect.
+        // Here we adjust the x attribute to position label to the left
+        return data?.x0 + 4;
+      },
+      y: data => {
+        // Label will be placed at the center of node rect.
+        // Here we adjust the x attribute to position label to the Top
+        return data?.y0;
+      },
+      visible: data => Math.abs(data.y1 - data.y0) >= 12,
+      maxLength: data => Math.abs(data.x1 - data.x0 - 4),
+      textAlign: 'left',
+      textBaseline: 'top'
     }
   },
   nonLeaf: {

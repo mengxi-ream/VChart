@@ -90,7 +90,10 @@ node 节点样式配置。
 
 #${prefix} nodeAlign(string)
 
-节点的对齐类型。
+节点的对齐类型，按照节点的深度，计算对齐方式，决定了节点在第几层：
+
+- 横向布局的桑基图，用于计算节点 x 坐标
+- 纵向布局的桑基图，用于计算节点 y 坐标
 
 可选：
 
@@ -100,6 +103,30 @@ node 节点样式配置。
 - `justify`
 - `start`
 - `end`
+
+#${prefix} crossNodeAlign(string)
+
+自 **1.12.4**版本开始支持
+
+横向布局的桑基图，设置节点 Y 坐标的对齐方式：
+
+- 'start' - '顶部对齐'
+- 'end' - '底部对齐'
+- 'middle' - '居中对齐'
+- 'parent' - '父节点对齐'，自 **1.12.14**版本开始支持
+-
+- 纵向布局的桑基图，设置节点 X 坐标的对齐方式：
+- 'start' - '左对齐'
+- 'end' - '右对齐'
+- 'middle' - '居中对齐'
+- 'parent' - '父节点对齐'，自 **1.12.14**版本开始支持
+
+#${prefix} inverse(boolean)
+
+自版本**1.12.2**开始支持
+反向展示，节点和边整体反向展示
+对于布局方向为`horizontal`的桑基图，默认是节点从左往右展示；设置`inverse: true`，节点从右往左展示；
+对于布局方向为`vertical`的桑基图，默认是节点从上到下展示；设置`inverse: true`，节点从下到上展示；
 
 #${prefix} nodeGap(number)
 
@@ -129,12 +156,26 @@ node 节点样式配置。
 - 这个配置可以用来避免数据太小时看不到太细的节点
 - 建议小于 5px
 
+#${prefix} maxNodeHeight(number)
+
+自`1.12.14`版本开始支持
+
+数据不为零或空时节点的最大大小。
+
 #${prefix} minLinkHeight(number)
 
 数据不为零或空时边的最小大小。
 
 - 这个配置可以用来避免数据太小的时候看不到太细的链接
 - 建议小于 5px
+- 当同时指定 `minNodeHeight` 和 `minLinkHeight` 两个选项时，此选项应小于 `minNodeHeight`
+
+#${prefix} maxLinkHeight(number)
+
+自`1.12.14`版本开始支持
+
+数据不为零或空时边的最小大小。
+
 - 当同时指定 `minNodeHeight` 和 `minLinkHeight` 两个选项时，此选项应小于 `minNodeHeight`
 
 #${prefix} iterations(number)
@@ -211,3 +252,16 @@ node 节点样式配置。
 - `self`: 仅高亮当前节点。
 - `adjacency`: 高亮当前节点上下游节点和关联的边，淡化其它图形元素。
 - `related`： 高亮与当前节点相关的整条路径上的节点和边，淡化其它图形元素。
+
+#${prefix} overflow(string)
+
+自 `1.13.0`版本开始支持
+
+当指定了节点、边的宽度的时候，可以配置这个属性，实现当宽度大于图表 region 的宽度或者高度大于图表 region 高度的时候是否自动产生滚动条
+
+支持的配置如下：
+
+- 'scroll' 根据 x 方向和 y 方向自动生成滚动条
+- 'hidden' 默认不产生滚动条
+- 'scroll-x' x 方向自动生成滚动条
+- 'scroll-y' y 方向自动生成滚动条

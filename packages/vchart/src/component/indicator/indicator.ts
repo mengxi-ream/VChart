@@ -1,5 +1,5 @@
 import { DataView } from '@visactor/vdataset';
-import { LayoutLevel, LayoutZIndex } from '../../constant';
+import { LayoutLevel, LayoutZIndex } from '../../constant/layout';
 // eslint-disable-next-line no-duplicate-imports
 import { ComponentTypeEnum } from '../interface/type';
 import { BaseComponent } from '../base/base-component';
@@ -7,9 +7,9 @@ import type { IRegion } from '../../region/interface';
 import type { IIndicator, IIndicatorItemSpec, IIndicatorSpec } from './interface';
 import type { Maybe } from '../../typings';
 import { mergeSpec } from '@visactor/vutils-extension';
-import { transformToGraphic } from '../../util/style';
+import { transformIndicatorStyle } from '../../util/style';
 import { getActualNumValue } from '../../util/space';
-import { isEqual, isValid, isFunction, array, isArray } from '@visactor/vutils';
+import { isEqual, isValid, isFunction, array, pickWithout } from '@visactor/vutils';
 import { indicatorMapper } from './util';
 import type { IModelSpecInfo } from '../../model/interface';
 import { registerDataSetInstanceTransform } from '../../data/register';
@@ -22,6 +22,7 @@ import type { FunctionType } from '../../typings/visual';
 import { Factory } from '../../core/factory';
 // eslint-disable-next-line no-duplicate-imports
 import type { IRichTextCharacter } from '@visactor/vrender-core';
+import { getSpecInfo } from '../util';
 
 export class Indicator<T extends IIndicatorSpec> extends BaseComponent<T> implements IIndicator {
   static type = ComponentTypeEnum.indicator;
@@ -47,36 +48,9 @@ export class Indicator<T extends IIndicatorSpec> extends BaseComponent<T> implem
   private _cacheAttrs: IndicatorAttributes;
 
   static getSpecInfo(chartSpec: any): Maybe<IModelSpecInfo[]> {
-    if (this.type !== Indicator.type) {
-      return null;
-    }
-    const indicatorSpec = chartSpec[this.specKey];
-    if (!isArray(indicatorSpec)) {
-      if (indicatorSpec.visible === false) {
-        return [];
-      }
-      return [
-        {
-          spec: indicatorSpec,
-          specPath: [this.specKey],
-          specInfoPath: ['component', this.specKey, 0],
-          type: ComponentTypeEnum.indicator
-        }
-      ];
-    }
-
-    const specInfos: IModelSpecInfo[] = [];
-    indicatorSpec.forEach((s, i) => {
-      if (s && s.visible !== false) {
-        specInfos.push({
-          spec: s,
-          specPath: [this.specKey, i],
-          specInfoPath: ['component', this.specKey, i],
-          type: ComponentTypeEnum.indicator
-        });
-      }
+    return getSpecInfo<IIndicatorSpec>(chartSpec, this.specKey, this.type, (s: IIndicatorSpec) => {
+      return s && s.visible !== false;
     });
-    return specInfos;
   }
 
   created() {
@@ -145,7 +119,7 @@ export class Indicator<T extends IIndicatorSpec> extends BaseComponent<T> implem
     }
   }
 
-  private updateDatum(datum: any) {
+  updateDatum(datum: any) {
     this._activeDatum = datum;
     this._displayData.updateData();
     const attrs = this._getIndicatorAttrs();
@@ -178,12 +152,19 @@ export class Indicator<T extends IIndicatorSpec> extends BaseComponent<T> implem
   }
 
   private _getIndicatorAttrs() {
+    if (this._spec.visible === false || (this._spec.fixed === false && this._activeDatum === null)) {
+      return {
+        visible: false
+      } as IndicatorAttributes;
+    }
+
     const region = this._regions[0];
     const { width, height } = region.getLayoutRect();
     const { x, y } = region.getLayoutStartPoint();
+    const { content, offsetX, offsetY, limitRatio, title, ...restSpec } = this._spec;
 
     const contentComponentSpec: IIndicatorItemSpec[] = [];
-    array(this._spec.content).forEach((eachItem: IIndicatorItemSpec) => {
+    array(content).forEach((eachItem: IIndicatorItemSpec) => {
       const contentSpec = mergeSpec({}, this._theme.content, eachItem);
       contentComponentSpec.push({
         visible: contentSpec.visible !== false && (contentSpec.field ? this._activeDatum !== null : true),
@@ -193,14 +174,14 @@ export class Indicator<T extends IIndicatorSpec> extends BaseComponent<T> implem
         fitPercent: contentSpec.fitPercent,
         fitStrategy: contentSpec.fitStrategy,
         style: {
-          ...transformToGraphic(contentSpec.style),
+          ...transformIndicatorStyle(pickWithout(contentSpec.style, ['text']), this._activeDatum),
           text: this._createText(contentSpec.field, contentSpec.style.text)
         }
       });
     });
 
     return {
-      visible: this._spec.visible !== false && (this._spec.fixed !== false || this._activeDatum !== null),
+      visible: true,
       size: {
         width: width,
         height: height
@@ -208,26 +189,36 @@ export class Indicator<T extends IIndicatorSpec> extends BaseComponent<T> implem
       zIndex: this.layoutZIndex,
       x: x,
       y: y,
-      dx: this._spec.offsetX ? getActualNumValue(this._spec.offsetX, this._computeLayoutRadius()) : 0,
-      dy: this._spec.offsetY ? getActualNumValue(this._spec.offsetY, this._computeLayoutRadius()) : 0,
-      limitRatio: this._spec.limitRatio || Infinity,
+      dx: offsetX ? getActualNumValue(offsetX, this._computeLayoutRadius()) : 0,
+      dy: offsetY ? getActualNumValue(offsetY, this._computeLayoutRadius()) : 0,
+      limitRatio: limitRatio || Infinity,
       title: {
-        visible: this._spec.title.visible !== false && (!isValid(this._spec.title.field) || this._activeDatum !== null),
-        space: this._spec.title.space || this._gap,
-        autoLimit: this._spec.title.autoLimit,
-        autoFit: this._spec.title.autoFit,
-        fitPercent: this._spec.title.fitPercent,
-        fitStrategy: this._spec.title.fitStrategy,
+        visible: title.visible !== false && (!isValid(title.field) || this._activeDatum !== null),
+        space: title.space || this._gap,
+        autoLimit: title.autoLimit,
+        autoFit: title.autoFit,
+        fitPercent: title.fitPercent,
+        fitStrategy: title.fitStrategy,
         style: {
-          ...transformToGraphic(this._spec.title.style),
-          text: this._createText(this._spec.title.field, this._spec.title.style.text as any) // FIXME: type
+          ...transformIndicatorStyle(pickWithout(title.style, ['text']), this._activeDatum),
+          text: this._createText(title.field, title.style.text as any) // FIXME: type
         }
       },
-      content: contentComponentSpec
+      content: contentComponentSpec,
+      ...(restSpec as unknown as IndicatorAttributes)
     } as IndicatorAttributes;
   }
 
-  private _createOrUpdateIndicatorComponent(attrs: IndicatorAttributes): IndicatorComponents {
+  private _createOrUpdateIndicatorComponent(attrs: IndicatorAttributes) {
+    if (attrs.visible === false) {
+      // 按照vrender-component 的设置，只切换visible: false，并不会更新组件，所以强制删掉节点
+      if (this._indicatorComponent && this._indicatorComponent.parent) {
+        this._indicatorComponent.parent.removeChild(this._indicatorComponent);
+      }
+      this._indicatorComponent = null;
+      return;
+    }
+
     if (this._indicatorComponent) {
       if (!isEqual(attrs, this._cacheAttrs)) {
         this._indicatorComponent.setAttributes(attrs);
@@ -244,7 +235,6 @@ export class Indicator<T extends IIndicatorSpec> extends BaseComponent<T> implem
       );
     }
     this._cacheAttrs = attrs;
-    return this._indicatorComponent;
   }
 
   private _createText(

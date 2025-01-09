@@ -45,12 +45,15 @@ export interface IComponent extends ILayoutModel {
 
   // 清空，用于更新等场景
   clear: () => void;
+
+  // 数据
+  getDatum: (childGraphic?: IGraphic) => any | undefined;
 }
 
 export interface IComponentConstructor extends IModelConstructor {
   type: string;
   specKey?: string;
-  getSpecInfo: (chartSpec: any, chartSpecInfo?: IChartSpecInfo) => Maybe<IModelSpecInfo[]>;
+  getSpecInfo?: (chartSpec: any, chartSpecInfo?: IChartSpecInfo) => Maybe<IModelSpecInfo[]>;
   createComponent: (specInfo: IModelSpecInfo, options: IComponentOption) => IComponent;
   new (spec: any, options: IComponentOption): IComponent;
 }

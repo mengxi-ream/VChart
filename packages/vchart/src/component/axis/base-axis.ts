@@ -1,10 +1,9 @@
-import { ticks } from '@visactor/vrender-components';
 // eslint-disable-next-line no-duplicate-imports
 import type { ITickDataOpt } from '@visactor/vrender-components';
 import type { IBaseScale } from '@visactor/vscale';
 // eslint-disable-next-line no-duplicate-imports
 import { isContinuous } from '@visactor/vscale';
-import type { IGroup, IGraphic } from '@visactor/vrender-core';
+import type { IGraphic } from '@visactor/vrender-core';
 // eslint-disable-next-line no-duplicate-imports
 import type {
   IOrientType,
@@ -17,14 +16,14 @@ import type {
 import { BaseComponent } from '../base/base-component';
 import { CompilableData } from '../../compile/data';
 import type { IAxis, ICommonAxisSpec, ITick } from './interface';
-import type { IComponentOption } from '../interface';
+import { ComponentTypeEnum, type IComponentOption } from '../interface';
 import { eachSeries, getSeries } from '../../util/model';
 // eslint-disable-next-line no-duplicate-imports
 import { mergeSpec } from '@visactor/vutils-extension';
 import type { ISeries } from '../../series/interface';
-import { ChartEvent, LayoutZIndex } from '../../constant';
+import { ChartEvent } from '../../constant/event';
+import { LayoutZIndex } from '../../constant/layout';
 import { animationConfig } from '../../animation/utils';
-import type { LooseFunction } from '@visactor/vutils';
 // eslint-disable-next-line no-duplicate-imports
 import {
   degreeToRadian,
@@ -33,7 +32,6 @@ import {
   array,
   get,
   isArray,
-  isBoolean,
   isFunction,
   isNil,
   isValid,
@@ -44,22 +42,18 @@ import { transformAxisLabelStateStyle, transformStateStyle, transformToGraphic }
 import type { ITransformOptions } from '@visactor/vdataset';
 // eslint-disable-next-line no-duplicate-imports
 import { DataView } from '@visactor/vdataset';
-import {
-  GridEnum,
-  registerAxis as registerVGrammarAxis,
-  registerGrid as registerVGrammarGrid
-} from '@visactor/vgrammar-core';
-import type { IComponentMark } from '../../mark/component';
+import { GridEnum } from '@visactor/vgrammar-core';
 // eslint-disable-next-line no-duplicate-imports
 import { registerComponentMark } from '../../mark/component';
 import { Factory } from '../../core/factory';
 // eslint-disable-next-line no-duplicate-imports
-import { GroupFadeIn, GroupTransition } from '@visactor/vrender-components';
+import { AXIS_ELEMENT_NAME, GroupTransition } from '@visactor/vrender-components';
 // eslint-disable-next-line no-duplicate-imports
-import { GroupFadeOut } from '@visactor/vrender-core';
+import { GroupFadeOut, GroupFadeIn } from '@visactor/vrender-core';
 import { scaleParser } from '../../data/parser/scale';
-import { registerDataSetInstanceParser, registerDataSetInstanceTransform } from '../../data/register';
+import { registerDataSetInstanceParser } from '../../data/register';
 import { getFormatFunction } from '../util';
+import type { IComponentMark } from '../../mark/interface/mark';
 
 export abstract class AxisComponent<T extends ICommonAxisSpec & Record<string, any> = any> // FIXME: 补充公共类型，去掉 Record<string, any>
   extends BaseComponent<T>
@@ -119,6 +113,7 @@ export abstract class AxisComponent<T extends ICommonAxisSpec & Record<string, a
   protected abstract collectSeriesField(depth: number, series: ISeries): string | string[];
   abstract transformScaleDomain(): void;
   protected abstract updateScaleRange(): boolean;
+  protected abstract getDefaultInteractive(): boolean;
 
   protected _dataFieldText: string;
   protected _axisMark: IComponentMark;
@@ -140,7 +135,10 @@ export abstract class AxisComponent<T extends ICommonAxisSpec & Record<string, a
   }
 
   getVRenderComponents() {
-    return array(this._axisMark?.getProduct()?.getGroupGraphicItem());
+    return [
+      this._axisMark?.getProduct()?.getGroupGraphicItem(),
+      this._gridMark?.getProduct()?.getGroupGraphicItem()
+    ].filter(isValid);
   }
 
   created() {
@@ -162,15 +160,18 @@ export abstract class AxisComponent<T extends ICommonAxisSpec & Record<string, a
         {
           componentType: this.getOrient() === 'angle' ? 'circleAxis' : 'axis',
           mode: this._spec.mode,
-          noSeparateStyle: true,
+          noSeparateStyle: true
+        },
+        {
           skipTheme: true // skip theme of vgrammar to avoid merge
         }
       );
       this._axisMark = axisMark;
-      axisMark.setZIndex(this.layoutZIndex);
+      axisMark.setMarkConfig({ zIndex: this.layoutZIndex });
       if (isValid(this._spec.id)) {
         axisMark.setUserId(this._spec.id);
       }
+      axisMark.setMarkConfig({ interactive: this._spec.interactive ?? this.getDefaultInteractive() });
       this._marks.addMark(axisMark);
 
       if (this._spec.grid?.visible) {
@@ -179,19 +180,18 @@ export abstract class AxisComponent<T extends ICommonAxisSpec & Record<string, a
           {
             componentType: this.getOrient() === 'angle' ? GridEnum.circleAxisGrid : GridEnum.lineAxisGrid,
             mode: this._spec.mode,
-            noSeparateStyle: true,
+            noSeparateStyle: true
+          },
+          {
             skipTheme: true
           }
         );
-        gridMark.setZIndex(this._spec.grid?.style?.zIndex ?? this._spec.grid?.zIndex ?? LayoutZIndex.Axis_Grid);
-        gridMark.setInteractive(false); // 轴网格线关闭交互
+        gridMark.setMarkConfig({
+          zIndex: this._spec.grid?.style?.zIndex ?? this._spec.grid?.zIndex ?? LayoutZIndex.Axis_Grid,
+          interactive: false // 轴网格线关闭交互
+        });
         this._marks.addMark(gridMark);
         this._gridMark = gridMark;
-      }
-
-      // interactive
-      if (isBoolean(this._spec.interactive)) {
-        this._marks.forEach(m => m.setInteractive(this._spec.interactive));
       }
 
       // Tip: 支持 spec.animationAppear.axis，并且坐标轴默认关闭动画
@@ -264,10 +264,19 @@ export abstract class AxisComponent<T extends ICommonAxisSpec & Record<string, a
             });
           } else if (viewData && viewData.latestData && viewData.latestData.length) {
             const seriesData = s.getViewDataStatistics?.();
+            const userSetBreaks =
+              this.type === ComponentTypeEnum.cartesianLinearAxis && this._spec.breaks && this._spec.breaks.length;
 
             field.forEach(f => {
               if (seriesData?.latestData?.[f]) {
-                data.push(seriesData.latestData[f]);
+                if (userSetBreaks) {
+                  data.push({
+                    ...seriesData.latestData[f],
+                    values: viewData.latestData.map((obj: Datum) => obj[f])
+                  });
+                } else {
+                  data.push(seriesData.latestData[f]);
+                }
               }
             });
           }
@@ -371,7 +380,27 @@ export abstract class AxisComponent<T extends ICommonAxisSpec & Record<string, a
   }
 
   protected computeData(updateType?: 'domain' | 'range' | 'force'): void {
-    if (this._tickData && this._tickData.length && (updateType === 'force' || !isEqual(this._scale.range(), [0, 1]))) {
+    // 对应问题#3287: 轴隐藏(tickData为[])时, dataZoom/scrollBar无法触发视图更新
+    // 解决方式: dataZoom/scrollBar更新时, 使用force, 此时即使没有tickData也要触发视图更新
+    // ps:
+    // 1. 其他逻辑没有使用force更新, 所以不会带来额外影响
+    // 2. force更新时, 如果有tickData仍然走老逻辑, 这里只考虑force && 无tickData的情况
+    if (updateType === 'force' && (!this._tickData || !this._tickData.length)) {
+      eachSeries(
+        this._regions,
+        s => {
+          s.getViewData()?.reRunAllTransform();
+        },
+        {
+          userId: this._seriesUserId,
+          specIndex: this._seriesIndex
+        }
+      );
+    } else if (
+      this._tickData &&
+      this._tickData.length &&
+      (updateType === 'force' || !isEqual(this._scale.range(), [0, 1]))
+    ) {
       this._tickData.forEach(tickData => {
         tickData.getDataView().reRunAllTransform();
         tickData.updateData();
@@ -406,22 +435,24 @@ export abstract class AxisComponent<T extends ICommonAxisSpec & Record<string, a
   /** Update API **/
   _compareSpec(spec: T, prevSpec: T) {
     const result = super._compareSpec(spec, prevSpec);
+    if (result.reMake) {
+      return result;
+    }
+
     result.reRender = true;
     /**
      * 存在轴同步相关配置的时候，暂时通过`reMake`触发更新
      */
-    if (prevSpec?.type !== spec?.type) {
+    if (prevSpec?.type !== spec?.type || prevSpec?.visible !== spec?.visible) {
       result.reMake = true;
       return result;
     }
-    return result;
-  }
 
-  protected _delegateAxisContainerEvent(component: IGroup) {
-    if (component.listenerCount('*') === 0) {
-      component.addEventListener('*', ((event: any, type: string) =>
-        this._delegateEvent(component as unknown as IGraphic, event, type)) as LooseFunction);
-    }
+    result.reMake = ['grid', 'subGrid', 'tick', 'subTick', 'label', 'domainLine', 'title'].some(k => {
+      return prevSpec?.[k]?.visible !== spec?.[k]?.visible;
+    });
+
+    return result;
   }
 
   protected _getAxisAttributes() {
@@ -528,7 +559,7 @@ export abstract class AxisComponent<T extends ICommonAxisSpec & Record<string, a
         // 处理纵轴的标题样式
         if (autoRotate && isNil(titleAngle)) {
           titleAngle = spec.orient === 'left' ? -90 : 90;
-          titleTextStyle = DEFAULT_TITLE_STYLE[spec.orient];
+          titleTextStyle = (DEFAULT_TITLE_STYLE as any)[spec.orient];
         }
       }
 
@@ -625,16 +656,18 @@ export abstract class AxisComponent<T extends ICommonAxisSpec & Record<string, a
     return formatFunc ? (value: any, datum: any, index: number) => formatFunc(datum.rawValue, datum, formatter) : null;
   }
 
+  protected abstract registerTicksTransform(): string;
+
   protected _initTickDataSet<T extends ITickDataOpt>(options: T, index: number = 0) {
     registerDataSetInstanceParser(this._option.dataSet, 'scale', scaleParser);
-    registerDataSetInstanceTransform(this._option.dataSet, 'ticks', ticks);
+    const name = this.registerTicksTransform();
     const tickData = new DataView(this._option.dataSet, { name: `${this.type}_${this.id}_ticks_${index}` })
       .parse(this._scales[index], {
         type: 'scale'
       })
       .transform(
         {
-          type: 'ticks',
+          type: name,
           options
         },
         false
@@ -671,11 +704,19 @@ export abstract class AxisComponent<T extends ICommonAxisSpec & Record<string, a
   dataToPosition(values: any[]): number {
     return this._scale.scale(values);
   }
+
+  getDatum(childGraphic?: IGraphic) {
+    if (childGraphic && childGraphic.name === AXIS_ELEMENT_NAME.label) {
+      return childGraphic.data;
+    }
+
+    if (this._axisMark) {
+      return this._axisMark.getProduct()?.getGroupGraphicItem()?.attribute.items;
+    }
+  }
 }
 
 export const registerAxis = () => {
-  registerVGrammarAxis();
-  registerVGrammarGrid();
   registerComponentMark();
   Factory.registerAnimation('axis', () => ({
     appear: {

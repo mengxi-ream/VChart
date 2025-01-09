@@ -4,28 +4,13 @@ import type { Maybe } from '../typings';
 import { warn } from '../util/debug';
 import type { IGroupMarkSpec } from '../typings/visual';
 import { BaseMark } from './base/base-mark';
-import type { IMark, IMarkRaw, IMarkStyle, MarkType } from './interface';
+import type { IGroupMark, IMark, IMarkStyle, MarkType } from './interface';
 // eslint-disable-next-line no-duplicate-imports
 import { MarkTypeEnum } from './interface/type';
 import type { IGroupMark as IVGrammarGroupMark } from '@visactor/vgrammar-core';
 // eslint-disable-next-line no-duplicate-imports
 import { registerGroupGraphic } from '@visactor/vgrammar-core';
 import type { IMarkCompileOption } from '../compile/mark';
-
-export interface IGroupMark extends IMarkRaw<IGroupMarkSpec> {
-  // groupMark的zIndex只能配在外层，encode里不生效，且无法写成signal
-  // {type:'group', zIndex: 100} ✅
-  // {type:'group', encode:{enter:{zIndex:{value:100}}}} ❌
-  // {type:'group', zIndex: {signal: }} ❌
-
-  addMark: (m: IMark) => boolean;
-  removeMark: (m: IMark) => boolean;
-  // TODO: 这里可能会出现mark嵌套的问题
-  getMarks: () => IMark[];
-  getMarkInType: (type: MarkType) => IMark[];
-  getMarkInId: (id: number) => IMark | undefined;
-  getMarkInName: (name: string) => IMark | undefined;
-}
 
 export class GroupMark extends BaseMark<IGroupMarkSpec> implements IGroupMark {
   static readonly type = MarkTypeEnum.group;
@@ -47,7 +32,7 @@ export class GroupMark extends BaseMark<IGroupMarkSpec> implements IGroupMark {
   }
 
   protected isMarkExist(mark: IMark): boolean {
-    return this._marks.find(m => m.id === mark.id || m.name === mark.name) !== undefined;
+    return this._marks.find(m => m.id === mark.id) !== undefined;
   }
 
   addMark(mark: IMark): boolean {
@@ -78,8 +63,31 @@ export class GroupMark extends BaseMark<IGroupMarkSpec> implements IGroupMark {
     return this._marks.find(m => m.id === id);
   }
 
+  getMarkInUserId(id: string | number) {
+    let result: IMark | undefined;
+    this._marks.forEach(m => {
+      if (m.getUserId() === id) {
+        result = m;
+      }
+    });
+
+    if (!result) {
+      for (let i = 0; i < this._marks.length; i++) {
+        const mark = this._marks[i];
+        if (mark.type === 'group') {
+          result = (mark as GroupMark).getMarkInUserId(id);
+        }
+        if (result) {
+          break;
+        }
+      }
+    }
+
+    return result;
+  }
+
   getMarkInName(name: string) {
-    return this._marks.find(m => m.name === name);
+    return this._marks.filter(m => m.name === name);
   }
 
   protected _compileProduct(option?: IMarkCompileOption): void {
@@ -88,7 +96,7 @@ export class GroupMark extends BaseMark<IGroupMarkSpec> implements IGroupMark {
 
     // 设置zIndex
     this._product.configure({
-      zIndex: this.getZIndex()
+      zIndex: this._markConfig.zIndex
     });
 
     // 编译子元素

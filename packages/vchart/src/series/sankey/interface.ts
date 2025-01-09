@@ -2,9 +2,26 @@ import type { ISeriesSpec, DirectionType, IMarkTheme } from '../../typings';
 import type { IMarkSpec } from '../../typings/spec/common';
 import type { IRectMarkSpec, ILinkPathMarkSpec } from '../../typings/visual';
 import type { IAnimationSpec } from '../../animation/spec';
-import type { SankeyAppearPreset, SankeyMark } from './animation';
 import type { SeriesMarkNameEnum } from '../interface/type';
-import type { ILabelSpec } from '../../component/label';
+import type { ILabelSpec } from '../../component/label/interface';
+
+export type SankeyMark = 'node' | 'link' | 'label';
+
+export type SankeyAppearPreset = 'growIn' | 'fadeIn';
+export interface ISankeyAnimationParams {
+  direction: DirectionType;
+  growFrom: () => number;
+}
+
+export type ISankeyLabelSpec = ILabelSpec & {
+  /**
+   * 标签布局方式
+   * @default 'outside'
+   */
+  position?: 'outside' | 'inside-start' | 'inside-middle' | 'inside-end' | 'left' | 'right';
+  /** 标签文字缩略 */
+  limit?: number;
+};
 
 export interface ISankeySeriesSpec extends Omit<ISeriesSpec, 'data'>, IAnimationSpec<SankeyMark, SankeyAppearPreset> {
   nameKey: any;
@@ -31,9 +48,31 @@ export interface ISankeySeriesSpec extends Omit<ISeriesSpec, 'data'>, IAnimation
    */
   direction?: DirectionType;
   /**
-   * 节点的对齐类型
+   * 节点的对齐类型，所有深度相同的节点，采用什么对齐方式，决定了节点在第几层：
+   * - 横向布局的桑基图，用于计算节点x坐标
+   * - 纵向布局的桑基图，用于计算节点y坐标
    */
   nodeAlign?: 'left' | 'right' | 'center' | 'justify' | 'start' | 'end';
+  /**
+   * 横向布局的桑基图，设置节点Y坐标的对齐方式：
+   * 'start' - '顶部对齐'
+   * 'end' - '底部对齐'
+   * 'middle' - '居中对齐'
+   *
+   * 纵向布局的桑基图，设置节点X坐标的对齐方式：
+   * 'start' - '左对齐'
+   * 'end' - '右对齐'
+   * 'middle' - '居中对齐'
+   * 'parent' - '父节点'，从1.12.14版本开始支持
+   *
+   * @since 1.12.4
+   */
+  crossNodeAlign?: 'start' | 'end' | 'middle' | 'parent';
+  /**
+   * 是否反向
+   * @since 1.12.2
+   */
+  inverse?: boolean;
   /**
    * 同一层中两个节点之间的间隙大小
    */
@@ -66,6 +105,17 @@ export interface ISankeySeriesSpec extends Omit<ISeriesSpec, 'data'>, IAnimation
    *  - 当同时指定 `minNodeHeight` 和 `minLinkHeight` 两个选项时，此选项应小于 `minNodeHeight`
    */
   minLinkHeight?: number;
+  /**
+   * 数据不为零或空时节点的最大大小
+   * @since 1.12.14
+   */
+  maxNodeHeight?: number;
+  /**
+   * 数据不为零或空时边的最大大小
+   * - 当同时指定 `maxNodeHeight` 和 `maxLinkHeight` 两个选项时，此选项应小于 `maxNodeHeight`
+   * @since 1.12.14
+   */
+  maxLinkHeight?: number;
   /** 布局的迭代次数 */
   iterations?: number;
   /** 解析node的key，defaultValue */
@@ -125,15 +175,14 @@ export interface ISankeySeriesSpec extends Omit<ISeriesSpec, 'data'>, IAnimation
   };
 
   /** 标签配置 */
-  [SeriesMarkNameEnum.label]?: ILabelSpec & {
-    /**
-     * 标签布局方式
-     * @default 'outside'
-     */
-    position?: 'outside' | 'inside-start' | 'inside-middle' | 'inside-end' | 'left' | 'right';
-    /** 标签文字缩略 */
-    limit?: number;
-  };
+  [SeriesMarkNameEnum.label]?: ISankeyLabelSpec | ISankeyLabelSpec[];
+
+  /**
+   * 当制定了节点、边的宽度的时候，可以配置这个属性
+   * 当宽度大于图表region的宽度、高度大于图表resion高度的时候是否自动产生滚动条
+   * @since 1.13.0
+   */
+  overflow?: 'scroll' | 'hidden' | 'scroll-x' | 'scroll-y';
 
   /** 进度条配置 */
   // scroll?: IScrollSpec & {

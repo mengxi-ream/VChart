@@ -1,8 +1,8 @@
-import { POLAR_DEFAULT_RADIUS, POLAR_END_RADIAN } from '../../../constant/polar';
+import { POLAR_DEFAULT_RADIUS, POLAR_END_RADIAN, POLAR_START_RADIAN } from '../../../constant/polar';
 import type { IBaseScale, BandScale } from '@visactor/vscale';
 // eslint-disable-next-line no-duplicate-imports
 import { isContinuous } from '@visactor/vscale';
-import { LayoutZIndex, POLAR_START_RADIAN } from '../../../constant';
+import { LayoutZIndex } from '../../../constant/layout';
 import type { IPolarAxis, IPolarAxisCommonSpec } from './interface';
 import type { IComponentOption } from '../../interface';
 // eslint-disable-next-line no-duplicate-imports
@@ -22,7 +22,7 @@ import type {
   ILayoutNumber
 } from '../../../typings';
 import { isPolarAxisSeries } from '../../../series/util/utils';
-import { getAxisItem, getAxisLabelOffset, isValidPolarAxis } from '../util';
+import { getAxisItem, getAxisLabelOffset, isValidPolarAxis, shouldUpdateAxis } from '../util';
 import type { Dict, Maybe } from '@visactor/vutils';
 // eslint-disable-next-line no-duplicate-imports
 import {
@@ -31,16 +31,13 @@ import {
   isValid,
   isArray,
   isValidNumber,
-  isNumber,
-  isFunction,
-  calculateMaxRadius,
-  polarToCartesian
+  polarToCartesian,
+  cartesianToPolar
 } from '@visactor/vutils';
 import type { IEffect, IModelSpecInfo } from '../../../model/interface';
 import { AxisComponent } from '../base-axis';
 import type { IBandAxisSpec, ITick } from '../interface';
-import { HOOK_EVENT } from '@visactor/vgrammar-core';
-import { getPolarAxisInfo } from './util';
+import { computeLayoutRadius, getPolarAxisInfo } from './util';
 // eslint-disable-next-line no-duplicate-imports
 import { mergeSpec } from '@visactor/vutils-extension';
 import { calcLayoutNumber } from '../../../util/space';
@@ -83,6 +80,10 @@ export abstract class PolarAxis<T extends IPolarAxisCommonSpec = IPolarAxisCommo
     return this._orient;
   }
 
+  protected getDefaultInteractive() {
+    return this._orient !== 'angle';
+  }
+
   protected _groupScales: IBaseScale[] = [];
   getGroupScales() {
     return this._groupScales;
@@ -92,37 +93,17 @@ export abstract class PolarAxis<T extends IPolarAxisCommonSpec = IPolarAxisCommo
   private _gridStyle: any;
 
   static getSpecInfo(chartSpec: any): Maybe<IModelSpecInfo[]> {
-    const axesSpec = chartSpec[this.specKey];
-    if (!axesSpec) {
+    if (!chartSpec[this.specKey]) {
       return null;
     }
-
-    if (!isArray(axesSpec)) {
-      if (!isValidPolarAxis(axesSpec)) {
-        return null;
-      }
-      const { axisType, componentName, startAngle, endAngle, center, outerRadius, layoutRadius } = getPolarAxisInfo(
-        axesSpec,
-        chartSpec
-      );
-      axesSpec.center = center;
-      axesSpec.startAngle = startAngle;
-      axesSpec.endAngle = endAngle;
-      axesSpec.outerRadius = outerRadius;
-      axesSpec.type = axisType;
-      axesSpec.layoutRadius = layoutRadius;
-      return [
-        {
-          spec: axesSpec,
-          specPath: [this.specKey],
-          specInfoPath: ['component', this.specKey, 0],
-          type: componentName
-        }
-      ];
-    }
+    const isArraySpec = isArray(chartSpec[this.specKey]);
+    const axesSpec = isArraySpec ? chartSpec[this.specKey] : [chartSpec[this.specKey]];
     const specInfos: IModelSpecInfo[] = [];
     let angleAxisIndex: number;
+    let radiusAxisIndex: number;
     const radiusAxisSpecInfos: IModelSpecInfo[] = [];
+    const angleAxisSpecInfos: IModelSpecInfo[] = [];
+
     axesSpec.forEach((s: any, i: number) => {
       if (!isValidPolarAxis(s)) {
         return;
@@ -139,19 +120,25 @@ export abstract class PolarAxis<T extends IPolarAxisCommonSpec = IPolarAxisCommo
       s.layoutRadius = layoutRadius;
       const info = {
         spec: s,
-        specPath: [this.specKey, i],
+        specPath: isArraySpec ? [this.specKey, i] : [this.specKey],
         specInfoPath: ['component', this.specKey, i],
         type: componentName
       };
       specInfos.push(info);
       if (s.orient === 'radius') {
         radiusAxisSpecInfos.push(info);
+        radiusAxisIndex = i;
       } else {
+        angleAxisSpecInfos.push(info);
         angleAxisIndex = i;
       }
     });
     radiusAxisSpecInfos.forEach(info => {
       (info as any).angleAxisIndex = angleAxisIndex;
+    });
+
+    angleAxisSpecInfos.forEach(info => {
+      (info as any).radiusAxisIndex = radiusAxisIndex;
     });
     return specInfos;
   }
@@ -182,9 +169,25 @@ export abstract class PolarAxis<T extends IPolarAxisCommonSpec = IPolarAxisCommo
         this._regions,
         s => {
           if (this.getOrient() === 'radius') {
-            (s as IPolarSeries).radiusAxisHelper = this.axisHelper();
+            if (
+              shouldUpdateAxis(
+                (s as IPolarSeries).radiusAxisHelper,
+                this.axisHelper(),
+                isValid(this._seriesUserId) || isValid(this._seriesIndex)
+              )
+            ) {
+              (s as IPolarSeries).radiusAxisHelper = this.axisHelper();
+            }
           } else {
-            (s as IPolarSeries).angleAxisHelper = this.axisHelper();
+            if (
+              shouldUpdateAxis(
+                (s as IPolarSeries).angleAxisHelper,
+                this.axisHelper(),
+                isValid(this._seriesUserId) || isValid(this._seriesIndex)
+              )
+            ) {
+              (s as IPolarSeries).angleAxisHelper = this.axisHelper();
+            }
           }
         },
         {
@@ -235,18 +238,6 @@ export abstract class PolarAxis<T extends IPolarAxisCommonSpec = IPolarAxisCommo
     } as IPolarTickDataOpt;
   }
 
-  afterCompile() {
-    const product = this._axisMark?.getProduct();
-    if (product) {
-      product.addEventListener(HOOK_EVENT.AFTER_ELEMENT_ENCODE, () => {
-        if (this._isLayout === false) {
-          // 布局结束之后再进行插件的调用
-          this._delegateAxisContainerEvent(product.getGroupGraphicItem());
-        }
-      });
-    }
-  }
-
   protected updateScaleRange() {
     const prevRange = this._scale.range();
     let newRange: [number, number];
@@ -286,11 +277,27 @@ export abstract class PolarAxis<T extends IPolarAxisCommonSpec = IPolarAxisCommo
       this._regions,
       s => {
         if (this.getOrient() === 'radius') {
-          (s as IPolarSeries).setRadiusScale(this._scale);
-          (s as IPolarSeries).radiusAxisHelper = this.axisHelper();
+          if (
+            shouldUpdateAxis(
+              (s as IPolarSeries).radiusAxisHelper,
+              this.axisHelper(),
+              isValid(this._seriesUserId) || isValid(this._seriesIndex)
+            )
+          ) {
+            (s as IPolarSeries).setRadiusScale(this._scale);
+            (s as IPolarSeries).radiusAxisHelper = this.axisHelper();
+          }
         } else {
-          (s as IPolarSeries).setAngleScale(this._scale);
-          (s as IPolarSeries).angleAxisHelper = this.axisHelper();
+          if (
+            shouldUpdateAxis(
+              (s as IPolarSeries).angleAxisHelper,
+              this.axisHelper(),
+              isValid(this._seriesUserId) || isValid(this._seriesIndex)
+            )
+          ) {
+            (s as IPolarSeries).setAngleScale(this._scale);
+            (s as IPolarSeries).angleAxisHelper = this.axisHelper();
+          }
         }
       },
       {
@@ -324,7 +331,7 @@ export abstract class PolarAxis<T extends IPolarAxisCommonSpec = IPolarAxisCommo
       coordToPoint: this.coordToPoint.bind(this),
       pointToCoord: this.pointToCoord.bind(this),
       center: this.getCenter.bind(this),
-      layoutRadius: this.computeLayoutRadius.bind(this),
+      layoutRadius: this._computeLayoutRadius.bind(this),
       getScale,
       getAxisId: () => this.id,
       getSpec: () => this._spec
@@ -358,37 +365,17 @@ export abstract class PolarAxis<T extends IPolarAxisCommonSpec = IPolarAxisCommo
    * @returns 角度 & 弧度信息 { radius, angle }
    */
   pointToCoord(point: IPoint): IPolarPoint {
-    const { x: centerX, y: centerY } = this.getCenter();
-    let dx = point.x - centerX;
-    let dy = point.y - centerY;
+    const center = this.getCenter();
     const startAngle = this._startAngle;
     const endAngle = this._endAngle;
-    const radius = Math.sqrt(dx * dx + dy * dy);
-    dx /= radius;
-    dy /= radius;
-
-    let radian = Math.atan2(dy, dx);
-    if (radian < startAngle) {
-      while (radian <= startAngle) {
-        radian += Math.PI * 2;
-      }
-    }
-    if (radian > endAngle) {
-      while (radian >= endAngle) {
-        radian -= Math.PI * 2;
-      }
-    }
-    return {
-      radius,
-      angle: radian
-    };
+    return cartesianToPolar(point, center, startAngle, endAngle);
   }
 
   /**
    * 获取坐标轴圆心位置
    * @returns 圆心位置
    */
-  getCenter(): IPoint {
+  getCenter = (): IPoint => {
     const layoutRect = this.getRefLayoutRect();
     const { width, height } = layoutRect;
 
@@ -396,7 +383,7 @@ export abstract class PolarAxis<T extends IPolarAxisCommonSpec = IPolarAxisCommo
       x: calcLayoutNumber(this._center?.x as ILayoutNumber, width, layoutRect, width / 2),
       y: calcLayoutNumber(this._center?.y as ILayoutNumber, height, layoutRect, height / 2)
     };
-  }
+  };
 
   /**
    * 获取极坐标半径值
@@ -462,10 +449,14 @@ export abstract class PolarAxis<T extends IPolarAxisCommonSpec = IPolarAxisCommo
       radius,
       innerRadius,
       startAngle: this._startAngle,
-      endAngle: this._endAngle
+      endAngle: this._endAngle,
+      sides: this._getRelatedAxis((this._option as any).radiusAxisIndex)?.getSpec()?.grid?.smooth
+        ? undefined
+        : this.getScale().domain().length
     };
     const attrs: any = {
       ...commonAttrs,
+      size: this.getRefLayoutRect(),
       title: {
         text: this._spec.title.text || this._dataFieldText
       },
@@ -511,7 +502,9 @@ export abstract class PolarAxis<T extends IPolarAxisCommonSpec = IPolarAxisCommo
         type: this._spec.grid?.smooth ? 'circle' : 'polygon',
         center,
         closed: true,
-        sides: this._getRelatedAngleAxis()?.getScale().domain().length,
+        sides: this._getRelatedAxis((this._option as any).angleAxisIndex)
+          ?.getScale()
+          .domain().length,
         startAngle: this._startAngle,
         endAngle: this._endAngle,
         ...commonAttrs
@@ -520,30 +513,20 @@ export abstract class PolarAxis<T extends IPolarAxisCommonSpec = IPolarAxisCommo
     this._update(attrs);
   }
 
-  protected _getRelatedAngleAxis(): IPolarAxis | undefined {
-    const index = (this._option as any).angleAxisIndex;
+  protected _getRelatedAxis(index: number): IPolarAxis | undefined {
     if (isValid(index)) {
       return this._option.getComponentByIndex(this.specKey, index) as IPolarAxis;
     }
     return undefined;
   }
 
-  private computeLayoutRadius() {
-    const layoutRect = this.getRefLayoutRect();
-
-    if (isNumber(this._spec.layoutRadius)) {
-      return this._spec.layoutRadius;
-    } else if (isFunction(this._spec.layoutRadius)) {
-      return this._spec.layoutRadius(layoutRect, this.getCenter());
-    }
-
-    const { width, height } = layoutRect;
-
-    if (this._spec.layoutRadius === 'auto' && width > 0 && height > 0) {
-      return calculateMaxRadius(layoutRect, this.getCenter(), this._startAngle, this._endAngle);
-    }
-
-    return Math.min(width / 2, height / 2);
+  private _computeLayoutRadius() {
+    return computeLayoutRadius(
+      () => this._spec.layoutRadius,
+      this.getRefLayoutRect,
+      this.getCenter,
+      () => ({ startAngle: this._startAngle, endAngle: this._endAngle })
+    );
   }
 
   private computeLayoutOuterRadius() {
@@ -553,17 +536,17 @@ export abstract class PolarAxis<T extends IPolarAxisCommonSpec = IPolarAxisCommo
      */
     const radius = this._spec.outerRadius ?? this._spec.radius;
     const outerRadius = radius ?? this.getRefSeriesRadius().outerRadius;
-    return this.computeLayoutRadius() * outerRadius;
+    return this._computeLayoutRadius() * outerRadius;
   }
 
   private computeLayoutInnerRadius() {
     const innerRadius = this._spec.innerRadius ?? this.getRefSeriesRadius().innerRadius;
-    return this.computeLayoutRadius() * innerRadius;
+    return this._computeLayoutRadius() * innerRadius;
   }
 
-  private getRefLayoutRect() {
+  private getRefLayoutRect = () => {
     return this.getRegions()[0].getLayoutRect();
-  }
+  };
 
   private getRefSeriesRadius() {
     let outerRadius: number = POLAR_DEFAULT_RADIUS;

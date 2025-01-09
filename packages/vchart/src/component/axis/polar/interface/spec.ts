@@ -1,9 +1,21 @@
-import type { ILayoutRect, IPoint, IPolarOrientType } from '../../../../typings';
+import type { IPointLike } from '@visactor/vutils';
+import type { AxisLabelOverlap } from '@visactor/vrender-components';
+import type { ILayoutRect, IPolarOrientType } from '../../../../typings';
 import type { IBandAxisSpec, IDomainLine, ILinearAxisSpec, ITitle, ILabel, ICommonAxisSpec } from '../../interface';
 import type { IPolarGrid } from './common';
 
 /** spec */
 export type IPolarAxisSpec = IPolarLinearAxisSpec | IPolarBandAxisSpec;
+
+/**
+ * 自1.12.6版本，角度轴也支持自动省略、自动隐藏、自动换行等功能
+ * @since 1.12.6
+ */
+export type IPolarAxisLabel = ILabel &
+  Pick<
+    AxisLabelOverlap,
+    'autoHide' | 'autoHideMethod' | 'autoHideSeparation' | 'autoLimit' | 'limitEllipsis' | 'layoutFunc' | 'autoWrap'
+  >;
 
 export type IPolarAxisCommonSpec = Omit<ICommonAxisSpec, 'center'> & {
   /**
@@ -11,7 +23,7 @@ export type IPolarAxisCommonSpec = Omit<ICommonAxisSpec, 'center'> & {
    * 默认值为: region宽度、高度最小值的一般
    * @since 1.11.2
    */
-  layoutRadius?: 'auto' | number | ((layoutRect: ILayoutRect, center: IPoint) => number);
+  layoutRadius?: 'auto' | number | ((layoutRect: ILayoutRect, center: IPointLike) => number);
   /**
    * 当配置了 innerRadius 时，可以通过设置 inside: true，将坐标轴展示在内圆。
    * @default false
@@ -42,7 +54,7 @@ export type IPolarAxisCommonSpec = Omit<ICommonAxisSpec, 'center'> & {
   /**
    * 轴标签配置
    */
-  label?: ILabel;
+  label?: IPolarAxisLabel;
   /**
    * 轴标题配置
    */

@@ -1,16 +1,14 @@
 import { Direction } from '../../typings/space';
-// eslint-disable-next-line no-duplicate-imports
-import type { DirectionType } from '../../typings';
 import type { IAnimationTypeConfig } from '@visactor/vgrammar-core';
+import type { ILineAnimationParams, LineAppearPreset } from './interface';
 
-export interface ILineAnimationParams {
-  direction: DirectionType;
-}
-
-export type LineAppearPreset = 'clipIn' | 'fadeIn' | 'grow';
-
-const Appear_ClipIn: IAnimationTypeConfig = {
-  type: 'clipIn'
+const Appear_ClipIn = (params: ILineAnimationParams): IAnimationTypeConfig => {
+  return {
+    type: 'clipIn',
+    options: {
+      clipDimension: params.direction === Direction.horizontal ? 'y' : 'x'
+    }
+  };
 };
 
 const Appear_FadeIn: IAnimationTypeConfig = {
@@ -33,6 +31,6 @@ export function linePresetAnimation(params: ILineAnimationParams, preset: LineAp
     case 'fadeIn':
       return Appear_FadeIn;
     default:
-      return Appear_ClipIn;
+      return Appear_ClipIn(params);
   }
 }

@@ -1,7 +1,7 @@
 /* eslint-disable no-duplicate-imports */
 import { TagPointsUpdate, ClipDirectionAnimate } from '@visactor/vrender-core';
 import type { IElement } from '@visactor/vgrammar-core';
-import type { ILineAnimationParams, LineAppearPreset } from '../series/line/animation';
+import type { ILineAnimationParams, LineAppearPreset } from '../series/line/interface';
 import { linePresetAnimation } from '../series/line/animation';
 import type { MarkAnimationSpec, ICartesianGroupAnimationParams } from './interface';
 import { Factory } from '../core/factory';
@@ -35,6 +35,7 @@ import {
   registerRotateOutAnimation,
   registerUpdateAnimation
 } from '@visactor/vgrammar-core';
+import { Direction } from '../typings/space';
 
 export const DEFAULT_ANIMATION_CONFIG = {
   appear: {
@@ -57,6 +58,10 @@ export const DEFAULT_ANIMATION_CONFIG = {
   disappear: {
     duration: 500,
     easing: 'cubicIn'
+  },
+  state: {
+    duration: 300,
+    easing: 'linear'
   }
 };
 
@@ -123,13 +128,16 @@ const lineOrAreaAnimation = (params: ILineAnimationParams, preset: LineAppearPre
     update: [
       {
         type: 'update',
-        options: { excludeChannels: ['points', 'defined'] }
+        options: { excludeChannels: ['points', 'defined', 'segments'] }
       },
       {
-        channel: ['points'],
+        channel: ['points', 'segments'],
         custom: TagPointsUpdate,
         duration: DEFAULT_ANIMATION_CONFIG.update.duration,
-        easing: DEFAULT_ANIMATION_CONFIG.update.easing
+        easing: DEFAULT_ANIMATION_CONFIG.update.easing,
+        customParameters: {
+          clipRangeByDimension: params.direction === Direction.horizontal ? 'y' : 'x'
+        }
       }
     ],
     disappear: { type: 'clipOut' }

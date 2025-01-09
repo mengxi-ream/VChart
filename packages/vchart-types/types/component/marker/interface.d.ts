@@ -1,12 +1,12 @@
 import type { DataView } from '@visactor/vdataset';
 import type { IPadding } from '@visactor/vutils';
-import type { SymbolType } from '@visactor/vrender-core';
+import type { SymbolType, IGraphicAttribute, ICustomPath2D, ITextGraphicAttribute, IRichTextGraphicAttribute } from '@visactor/vrender-core';
 import type { IComposedTextMarkSpec, IFormatMethod, IRectMarkSpec, IRichTextFormatMethod, ISymbolMarkSpec, StringOrNumber } from '../../typings';
 import type { IComponentSpec } from '../base/interface';
 import type { Datum } from '@visactor/vrender-components';
 import type { ICartesianSeries, IGeoSeries, IPolarSeries } from '../../series/interface';
-import type { IOptionAggr, IOptionAggrField, IOptionSeries } from '../../data/transforms/aggregation';
-import type { IOptionRegr } from '../../data/transforms/regression';
+import type { IOptionAggr, IOptionAggrField, IOptionRegr, IOptionSeries, IOptionWithCoordinates } from '../../data/transforms/interface';
+import type { IVChart } from '../../core/interface';
 export type IMarkerSupportSeries = ICartesianSeries | IPolarSeries | IGeoSeries;
 export type IPolarPoint = {
     angle: number;
@@ -44,7 +44,7 @@ export type ICoordinateOption = {
     getRefRelativeSeries?: () => IMarkerSupportSeries;
 } & IOptionSeries;
 export type IMarkerPositionsSpec = {
-    positions: MarkerPositionPoint[];
+    positions: MarkerPositionPoint[] | ((seriesData: Datum[], relativeSeries: IMarkerSupportSeries) => MarkerPositionPoint[]);
     regionRelative?: boolean;
 };
 export type IMarkerLabelWithoutRefSpec = {
@@ -54,6 +54,7 @@ export type IMarkerLabelWithoutRefSpec = {
     maxWidth?: number;
     labelBackground?: {
         visible?: boolean;
+        customShape?: (text: ITextGraphicAttribute | IRichTextGraphicAttribute, attrs: Partial<IGraphicAttribute>, path: ICustomPath2D) => ICustomPath2D;
         padding?: IPadding | number[] | number;
     } & Partial<IMarkerState<Omit<IRectMarkSpec, 'visible'>>>;
     type?: 'rich' | 'text';
@@ -97,8 +98,8 @@ export type IMarkerSymbol = IMarkerRef & {
     symbolType?: SymbolType;
     size?: number;
 } & Partial<IMarkerState<Omit<ISymbolMarkSpec, 'visible'>>>;
-export type MarkerStyleCallback<T> = (markerData: DataView) => T;
-export type MarkerStateCallback<T> = (markerData: DataView) => T;
+export type MarkerStyleCallback<T> = (markerData: DataView, context: IMarkerAttributeContext) => T;
+export type MarkerStateCallback<T> = (markerData: DataView, context: IMarkerAttributeContext) => T;
 export type MarkerStateValue = 'hover' | 'hover_reverse' | 'selected' | 'selected_reverse';
 export type IMarkerState<T> = {
     style?: T | MarkerStyleCallback<T>;
@@ -106,8 +107,14 @@ export type IMarkerState<T> = {
 };
 export type MarkCoordinateType = 'cartesian' | 'polar' | 'geo';
 export type IMarkProcessOptions = {
-    options: IOptionAggr[] | IOptionRegr;
+    options: IOptionAggr[] | IOptionRegr | IOptionWithCoordinates;
     needAggr?: boolean;
     needRegr?: boolean;
     processData?: DataView;
+};
+export type IMarkerAttributeContext = {
+    vchart: IVChart;
+    relativeSeries: IMarkerSupportSeries;
+    startRelativeSeries: IMarkerSupportSeries;
+    endRelativeSeries: IMarkerSupportSeries;
 };

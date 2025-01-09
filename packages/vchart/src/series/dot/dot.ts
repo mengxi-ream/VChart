@@ -1,21 +1,15 @@
 /* eslint-disable no-duplicate-imports */
-import { AttributeLevel, DEFAULT_DATA_SERIES_FIELD } from '../../constant/index';
+import { DEFAULT_DATA_SERIES_FIELD } from '../../constant/data';
 import { CartesianSeries } from '../cartesian/cartesian';
 import type { Datum } from '../../typings';
 import { mergeSpec } from '@visactor/vutils-extension';
 import { isValid } from '@visactor/vutils';
-import type { ISymbolMark } from '../../mark/symbol';
-import type { ITextMark } from '../../mark/text';
-import type { IRuleMark } from '../../mark/rule';
-import type { IMark } from '../../mark/interface';
-import { MarkTypeEnum } from '../../mark/interface/type';
+import type { IGroupMark, IMark, IRectMark, IRuleMark, ISymbolMark, ITextMark } from '../../mark/interface';
 import { SeriesTypeEnum } from '../interface/type';
 import { dataViewParser } from '@visactor/vdataset';
 import { registerDataSetInstanceParser, registerDataSetInstanceTransform } from '../../data/register';
-import type { IGroupMark } from '../../mark/group';
 import type { IModelEvaluateOption } from '../../model/interface';
 import { DotSeriesTooltipHelper } from './tooltip-helper';
-import type { IRectMark } from '../../mark/rect';
 import type { FunctionType, IFillMarkSpec, VisualType } from '../../typings/visual';
 import type { IDotSeriesSpec } from './interface';
 import { copyDataView } from '../../data/transforms/copy-data-view';
@@ -30,6 +24,7 @@ import { registerRectMark } from '../../mark/rect';
 import { dotSeriesMark } from './constant';
 import { Factory } from '../../core/factory';
 import { TransformLevel } from '../../data/initialize';
+import { AttributeLevel } from '../../constant/attribute';
 
 export class DotSeries<T extends IDotSeriesSpec = IDotSeriesSpec> extends CartesianSeries<T> {
   static readonly type: string = SeriesTypeEnum.dot;
@@ -119,18 +114,6 @@ export class DotSeries<T extends IDotSeriesSpec = IDotSeriesSpec> extends Cartes
     );
   }
 
-  /**
-   * @override
-   */
-  setSeriesField(field: string) {
-    if (isValid(field)) {
-      this._seriesField = field;
-      this.getMarksInType([MarkTypeEnum.line, MarkTypeEnum.area]).forEach(m => {
-        m.setFacet(this._seriesField);
-      });
-    }
-  }
-
   getStatisticFields() {
     return [{ key: this._fieldY[0], operations: ['values'], customize: this._xDimensionStatisticsDomain }] as {
       key: string;
@@ -210,13 +193,12 @@ export class DotSeries<T extends IDotSeriesSpec = IDotSeriesSpec> extends Cartes
           y: 0,
           // 本应使用this.getLayoutRect().width, 但这该返回值为0。考虑到横向不需要裁剪，故先采用一个较大值
           width: 10000,
-          height: this._spec.clipHeight,
-          clip: true
+          height: this._spec.clipHeight
         },
         'normal',
         AttributeLevel.Series
       );
-      clipMark.setInteractive(false);
+      clipMark.setMarkConfig({ interactive: false, clip: true });
     }
 
     const containerMark = this._containerMark;
@@ -229,7 +211,7 @@ export class DotSeries<T extends IDotSeriesSpec = IDotSeriesSpec> extends Cartes
         'normal',
         AttributeLevel.Series
       );
-      containerMark.setInteractive(false);
+      containerMark.setMarkConfig({ interactive: false });
     }
 
     const gridBackgroundMark = this._gridBackgroundMark;
@@ -247,7 +229,6 @@ export class DotSeries<T extends IDotSeriesSpec = IDotSeriesSpec> extends Cartes
         'normal',
         AttributeLevel.Series
       );
-      // this._tooltipHelper?.activeTriggerSet.mark.add(gridMark);
     }
 
     const gridMark = this._gridMark;
@@ -264,7 +245,6 @@ export class DotSeries<T extends IDotSeriesSpec = IDotSeriesSpec> extends Cartes
         'normal',
         AttributeLevel.Series
       );
-      // this._tooltipHelper?.activeTriggerSet.mark.add(gridMark);
     }
 
     const dotMark = this._dotMark;
@@ -297,7 +277,6 @@ export class DotSeries<T extends IDotSeriesSpec = IDotSeriesSpec> extends Cartes
         'normal',
         AttributeLevel.Series
       );
-      // this._tooltipHelper?.activeTriggerSet.mark.add(titleMark);
     }
 
     const subTitleMark = this._subTitleMark;
@@ -315,7 +294,6 @@ export class DotSeries<T extends IDotSeriesSpec = IDotSeriesSpec> extends Cartes
         'normal',
         AttributeLevel.Series
       );
-      // this._tooltipHelper?.activeTriggerSet.mark.add(subTitleMark);
     }
 
     const symbolMark = this._symbolMark;
@@ -330,7 +308,6 @@ export class DotSeries<T extends IDotSeriesSpec = IDotSeriesSpec> extends Cartes
         'normal',
         AttributeLevel.Series
       );
-      // this._tooltipHelper?.activeTriggerSet.mark.add(symbolMark);
     }
   }
 

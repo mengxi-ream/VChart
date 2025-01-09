@@ -4,7 +4,7 @@ group: chart-3d
 title: 3D 折线图
 keywords: space
 order: 23-3
-cover: http://lf9-dp-fe-cms-tos.byteorg.com/obj/bit-cloud/vchart/preview/chart-3d/line3d.png
+cover: https://lf9-dp-fe-cms-tos.byteorg.com/obj/bit-cloud/vchart/preview/chart-3d/line3d.png
 option: lineChart
 ---
 
@@ -22,6 +22,14 @@ option: lineChart
 ## 代码演示
 
 ```javascript livedemo
+/**
+ * 自1.12.0后，普通图表开启3d渲染的功能，需要手动加载3d插件，
+ *
+ * import { register3DPlugin } from '@visactor/vchart';
+ *
+ * register3DPlugin();
+ */
+VCHART_MODULE.register3DPlugin();
 const latestData = [
   {
     country: 1875,

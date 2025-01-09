@@ -164,16 +164,16 @@ You can get started with using VChart through this type of task. VChart provides
 
 After completing the task, you can submit the self-made case to the official website demo for more people in need to learn and use.
 
-All demos are stored in the `docs/assets/examples `directory
+All demos are stored in the `docs/assets/examples` directory
 
-1.  Please create a new `docs/*** `or `demo/*** `branch based on the develop branch for development
+1.  Please create a new `docs/***` or `demo/***` branch based on the develop branch for development
 2.  (If you have already installed, skip this step) Global installation [@microsoft/rush](https://rushjs.io/pages/intro/get_started/): `npm i --global @microsoft/rush`
 3.  Run `rush update`
-4.  Run `rush docs `to preview the current demo content locally
-5.  `Docs `directory
-    1.  `Docs/assets/examples/menu.json `Add your demo information to the directory file
-    2.  Complete the Chinese and English demo documents in the `zh `/ `en `directory respectively
-    3.  Add the demo preview image in the `docs/public/vchart/preview `directory and update the relative path in the demo document
+4.  Run `rush docs` to preview the current demo content locally
+5.  `Docs` directory
+    1.  `Docs/assets/examples/menu.json` Add your demo information to the directory file
+    2.  Complete the Chinese and English demo documents in the `zh`/`en` directory respectively
+    3.  Add the demo preview image in the `docs/public/vchart/preview` directory and update the path in the demo document accordingly, for example, `/vchart/preview/basic-map_1.9.1.png`
 6.  Submit all code and create a Pull Request on Github, inviting others to review
 
 ### Feature Task Development Guide
@@ -191,6 +191,16 @@ You can understand the VChart code architecture faster through requirement devel
 6.  After development is finished, run `rush change `command, write changelog and submit
 7.  Submit all code and create a Pull Request on Github, inviting others to review
 
+### Promotion Task Contribution Guide
+
+A promotion task refers to the action of publicly releasing materials related to VisActor, such as articles, demos, videos, etc., across various media channels.
+
+You can create a new issue, select the type others and tag it with promotion. Then, post it along with relevant links, screenshots, summaries, etc.
+
+For example, see https://github.com/VisActor/VChart/issues/2858.
+
+Every quarter, we will select some promotional works for VisActor and provide the authors with material rewards.
+
 ## Embrace the VisActor community
 
 In addition to contributing code to VisActor, we encourage you to participate in other things that make the community more prosperous, such as:
@@ -204,3 +214,21 @@ VisActor is also working hard to help colleagues who participate in community bu
 1.  Data lake visualization development training based on VisActor helps participating colleagues grow rapidly in programming skills, visualization theory, architecture design and other aspects.
 2.  Regularly select "Code Contribution Award" and "Community Promotion Award".
 3.  Organize community members to participate in open source activities
+
+## FAQ
+
+### node-canvas installation failure
+
+VChart is a monorepo project, and when running VChart on the node side, we rely on the [node-canvas](https://github.com/Automattic/node-canvas) library. Therefore, when executing `rush update`, the `node-canvas` package needs to be installed. However, this package may fail to install on different operating systems. You can refer to the [node-canvas](https://github.com/Automattic/node-canvas) readme for installation dependencies. The installation methods for various operating systems are as follows:
+
+| OS      | Command                                                                                                                       |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| macOS   | Using [Homebrew](https://brew.sh/): `brew install pkg-config cairo pango libpng jpeg giflib librsvg pixman python-setuptools` |
+| Ubuntu  | `sudo apt-get install build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev`                      |
+| Fedora  | `sudo yum install gcc-c++ cairo-devel pango-devel libjpeg-turbo-devel giflib-devel`                                           |
+| Solaris | `pkgin install cairo pango pkg-config xproto renderproto kbproto xextproto`                                                   |
+| OpenBSD | `doas pkg_add cairo pango png jpeg giflib`                                                                                    |
+| Windows | See the [wiki](https://github.com/Automattic/node-canvas/wiki/Installation:-Windows)                                          |
+| Others  | See the [wiki](https://github.com/Automattic/node-canvas/wiki)                                                                |
+
+If you encounter other node-canvas related issues, you can also search in the [node-canvas issue list](https://github.com/Automattic/node-canvas/issues).

@@ -15,7 +15,7 @@ import type {
 } from '../../typings';
 import type { IAnimationSpec } from '../../animation/spec';
 import type { SeriesMarkNameEnum } from '../interface/type';
-import { ILabelSpec } from '../../component';
+import type { ILabelSpec } from '../../component/label/interface';
 
 type FunnelMarks = 'funnel';
 
@@ -137,7 +137,14 @@ export interface IFunnelOuterLabelSpec extends IMarkSpec<IComposedTextMarkSpec> 
   /**
    *  标签引导线样式
    */
-  line?: IMarkSpec<IRuleMarkSpec>;
+  line?: {
+    /**
+     * 标签引导线最小长度
+     * @default 20
+     * @since 1.12.7
+     */
+    minLength?: number;
+  } & IMarkSpec<IRuleMarkSpec>;
 }
 
 export interface IFunnelSeriesTheme {

@@ -28,7 +28,8 @@ const plugins = bundle_analyze_mode
         open: true,
         gzipSize: true,
         emitFile: true,
-        filename: `stats-${bundle_analyze_mode}`,
+        filename: `stats-${bundle_analyze_mode}.html`,
+        // 可选项：sunburst, treemap, network, raw-data, list.
         template: 'treemap'
       }),
       gzipPlugin({
@@ -39,7 +40,7 @@ const plugins = bundle_analyze_mode
     ]
   : [];
 
-const crossEnvs = {
+const crossEnvs = bundle_analyze_mode ? {} : {
   lark: {
     input: 'index-lark',
     output: '../lark-vchart/src/vchart/index.js'
@@ -59,8 +60,10 @@ const crossEnvs = {
   'index-wx-simple':{
     input:'index-wx-simple',
     output:'./dist/index-wx-simple.min.js'
-  }
+  },
 };
+
+const esEntries = bundle_analyze_mode ? [] : ['index-harmony', 'index-harmony-simple'];
 const umdEntries = Object.keys(crossEnvs)
   .map(env => crossEnvs[env].input)
   .filter((input, index, arr) => arr.indexOf(input, 0) === index);
@@ -94,6 +97,7 @@ module.exports = {
     // '@visactor/vrender'
   ],
   umdEntries,
+  esEntries,
   postTasks: {
     // generateEntries: (config, projectRoot, rawPackageJson) => {
     //   ['core', 'chart', 'series', 'mark', 'component', 'layout'].forEach(entryName => {
@@ -104,27 +108,32 @@ module.exports = {
     //     fs.writeFileSync(path.join(__dirname, `./${entryName}.d.ts`), dtsCode, 'utf-8');
     //   });
     // },
-    copyCrossEnv: config => {
+    copyCrossEnv: (config, projRoot, packageJson, debug) => {
       Object.keys(crossEnvs).forEach(env => {
         const source = `${crossEnvs[env].input}.min.js`;
         const dest = crossEnvs[env].output;
         const envSource = path.join(__dirname, config.outputDir.umd, source);
         copyFile(envSource, path.join(__dirname, dest));
+
+        debug('[copy file] ', `copy ${envSource} to ${path.join(__dirname, dest)}`)
+      });
+      esEntries.forEach(env => {
+        try {
+          // harmonyOS
+          const source = `${env}.es.min.js`;
+          const dest = `../harmony_vchart/library/src/main/ets/${source}`;
+          const envSource = path.join(__dirname, config.outputDir.umd, source);
+          copyFile(envSource, path.join(__dirname, dest));
+          fs.unlinkSync(path.join(__dirname, config.outputDir.umd, source));
+
+          debug('[copy file]', `copy ${envSource} to ${path.join(__dirname, dest)}`)
+        } catch(e) {
+          debug('[copyCrossEnv Error]', `can't copy es5/index.es.js to harmony`)
+        }
       });
       umdEntries.forEach(entry => {
         fs.unlinkSync(path.join(__dirname, config.outputDir.umd, `${entry}.min.js`));
       });
-
-      try {
-        // harmonyOS
-        const source = 'es5/index.es.js';
-        const dest = '../harmony_vchart/library/src/main/ets/vchart_dist.js';
-        const envSource = path.join(__dirname, config.outputDir.umd, source);
-        copyFile(envSource, path.join(__dirname, dest));
-        fs.unlinkSync(path.join(__dirname, config.outputDir.umd, source));
-      } catch(e) {
-        console.log(`[Error] can't copy es5/index.es.js to harmony`)
-      }
     }
   }
 };

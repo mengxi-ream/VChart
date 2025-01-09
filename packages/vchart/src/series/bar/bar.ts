@@ -3,32 +3,30 @@ import type { IBaseScale } from '@visactor/vscale';
 import { isContinuous } from '@visactor/vscale';
 import { Direction } from '../../typings/space';
 import { CartesianSeries } from '../cartesian/cartesian';
-import type { IMark, IMarkProgressiveConfig } from '../../mark/interface';
+import type { IMark, IRectMark, ITextMark } from '../../mark/interface';
 import { MarkTypeEnum } from '../../mark/interface/type';
 import {
-  AttributeLevel,
+  DEFAULT_DATA_KEY,
   STACK_FIELD_END,
   STACK_FIELD_END_PERCENT,
   STACK_FIELD_START,
   STACK_FIELD_START_PERCENT
-} from '../../constant';
+} from '../../constant/data';
+import { AttributeLevel } from '../../constant/attribute';
 import type { Datum, DirectionType } from '../../typings';
 import { valueInScaleRange } from '../../util/scale';
 import { getRegionStackGroup } from '../../util/data';
 import { getActualNumValue } from '../../util/space';
-import type { BarAppearPreset, IBarAnimationParams } from './animation';
 import { registerBarAnimation } from './animation';
 import { animationConfig, shouldMarkDoMorph, userAnimationConfig } from '../../animation/utils';
-import type { IBarSeriesSpec } from './interface';
+import type { BarAppearPreset, IBarAnimationParams, IBarSeriesSpec } from './interface';
 import type { IAxisHelper } from '../../component/axis/cartesian/interface';
-import type { IRectMark } from '../../mark/rect';
 import type { IModelInitOption } from '../../model/interface';
-import type { ITextMark } from '../../mark/text';
 import type { SeriesMarkMap } from '../interface';
 import { SeriesMarkNameEnum, SeriesTypeEnum } from '../interface/type';
 import type { IStateAnimateSpec } from '../../animation/spec';
 import { registerRectMark } from '../../mark/rect';
-import { array, isNil, isValid, last } from '@visactor/vutils';
+import { array, isFunction, isNil, isValid, last } from '@visactor/vutils';
 import { barSeriesMark } from './constant';
 import { stackWithMinHeight } from '../util/stack';
 import { Factory } from '../../core/factory';
@@ -64,14 +62,7 @@ export class BarSeries<T extends IBarSeriesSpec = IBarSeriesSpec> extends Cartes
   protected _barBackgroundViewData: SeriesData;
 
   initMark(): void {
-    const progressive = {
-      progressiveStep: this._spec.progressiveStep,
-      progressiveThreshold: this._spec.progressiveThreshold,
-      large: this._spec.large,
-      largeThreshold: this._spec.largeThreshold
-    };
-
-    this._initBarBackgroundMark(progressive);
+    this._initBarBackgroundMark();
 
     this._barMark = this._createMark(
       {
@@ -80,26 +71,39 @@ export class BarSeries<T extends IBarSeriesSpec = IBarSeriesSpec> extends Cartes
         type: this._barMarkType
       },
       {
-        morph: shouldMarkDoMorph(this._spec, this._barMarkName),
-        defaultMorphElementKey: this.getDimensionField()[0],
         groupKey: this._seriesField,
         isSeriesMark: true,
-        progressive,
-        customShape: this._spec.bar?.customShape,
         stateSort: this._spec.bar?.stateSort
+      },
+      {
+        progressiveStep: this._spec.progressiveStep,
+        progressiveThreshold: this._spec.progressiveThreshold,
+        large: this._spec.large,
+        largeThreshold: this._spec.largeThreshold,
+        morphElementKey: this.getDimensionField()[0],
+        morph: shouldMarkDoMorph(this._spec, this._barMarkName),
+        setCustomizedShape: this._spec.bar?.customShape
       }
     ) as IRectMark;
   }
 
-  protected _initBarBackgroundMark(progressive?: IMarkProgressiveConfig): void {
+  protected _initBarBackgroundMark(): void {
     if (this._spec.barBackground && this._spec.barBackground.visible) {
-      this._barBackgroundMark = this._createMark(BarSeries.mark.barBackground, {
-        dataView: this._barBackgroundViewData.getDataView(),
-        dataProductId: this._barBackgroundViewData.getProductId(),
-        progressive,
-        customShape: this._spec.barBackground.customShape,
-        stateSort: this._spec.barBackground.stateSort
-      }) as IRectMark;
+      this._barBackgroundMark = this._createMark(
+        BarSeries.mark.barBackground,
+        {
+          dataView: this._barBackgroundViewData.getDataView(),
+          dataProductId: this._barBackgroundViewData.getProductId(),
+          stateSort: this._spec.barBackground.stateSort
+        },
+        {
+          setCustomizedShape: this._spec.barBackground.customShape,
+          progressiveStep: this._spec.progressiveStep,
+          progressiveThreshold: this._spec.progressiveThreshold,
+          large: this._spec.large,
+          largeThreshold: this._spec.largeThreshold
+        }
+      ) as IRectMark;
     }
   }
 
@@ -171,11 +175,13 @@ export class BarSeries<T extends IBarSeriesSpec = IBarSeriesSpec> extends Cartes
             continue;
           }
           const newDataCollect: Datum[] = [];
+          const dataKey = (this._spec.dataKey as string) ?? DEFAULT_DATA_KEY;
           for (let j = 0; j < values.length; j++) {
             for (let k = 0; k < dataCollect.length; k++) {
               newDataCollect.push({
                 ...dataCollect[k],
-                [field]: values[j]
+                [field]: values[j],
+                [dataKey]: values[j]
               });
             }
           }
@@ -320,7 +326,7 @@ export class BarSeries<T extends IBarSeriesSpec = IBarSeriesSpec> extends Cartes
     }
   }
 
-  private _calculateRectPosition(datum: Datum, isVertical: boolean) {
+  private _calculateRectPosition(datum: Datum, isVertical: boolean, useWholeRange?: boolean) {
     let startMethod: string;
     let endMethod: string;
     let axisHelper: string;
@@ -337,8 +343,8 @@ export class BarSeries<T extends IBarSeriesSpec = IBarSeriesSpec> extends Cartes
     const seriesScale = this[axisHelper].getScale?.(0);
     const inverse = this[axisHelper].isInverse();
     const barMinHeight = this._spec.barMinHeight;
-    const y1 = valueInScaleRange(this[startMethod](datum), seriesScale);
-    const y = valueInScaleRange(this[endMethod](datum), seriesScale);
+    const y1 = valueInScaleRange(this[startMethod](datum), seriesScale, useWholeRange);
+    const y = valueInScaleRange(this[endMethod](datum), seriesScale, useWholeRange);
 
     let height = Math.abs(y1 - y);
     if (height < barMinHeight) {
@@ -374,26 +380,26 @@ export class BarSeries<T extends IBarSeriesSpec = IBarSeriesSpec> extends Cartes
     return this.dataToPositionY1(datum);
   }
 
-  protected _getBarXStart = (datum: Datum, scale: IBaseScale) => {
+  protected _getBarXStart = (datum: Datum, scale: IBaseScale, useWholeRange?: boolean) => {
     if (this._shouldDoPreCalculate()) {
       this._calculateStackRectPosition(false);
       return datum[RECT_X];
     }
 
     if (this._spec.barMinHeight) {
-      return this._calculateRectPosition(datum, false);
+      return this._calculateRectPosition(datum, false, useWholeRange);
     }
 
-    return valueInScaleRange(this._dataToPosX(datum), scale);
+    return valueInScaleRange(this._dataToPosX(datum), scale, useWholeRange);
   };
 
-  protected _getBarXEnd = (datum: Datum, scale: IBaseScale) => {
+  protected _getBarXEnd = (datum: Datum, scale: IBaseScale, useWholeRange?: boolean) => {
     if (this._shouldDoPreCalculate()) {
       this._calculateStackRectPosition(false);
       return datum[RECT_X1];
     }
 
-    return valueInScaleRange(this._dataToPosX1(datum), scale);
+    return valueInScaleRange(this._dataToPosX1(datum), scale, useWholeRange);
   };
 
   protected _getBarYStart = (datum: Datum, scale: IBaseScale) => {
@@ -466,41 +472,42 @@ export class BarSeries<T extends IBarSeriesSpec = IBarSeriesSpec> extends Cartes
     const xScale = this._xAxisHelper?.getScale?.(0);
     const yScale = this._yAxisHelper?.getScale?.(0);
 
-    this._barMark.setClip(() => {
-      const rectPaths: any[] = [];
-      this._forEachStackGroup(node => {
-        let min = Infinity;
-        let max = -Infinity;
-        let hasPercent = false;
-        let minPercent = Infinity;
-        let maxPercent = -Infinity;
-        node.values.forEach(datum => {
-          const start = datum[STACK_FIELD_START];
-          const end = datum[STACK_FIELD_END];
-          const startPercent = datum[STACK_FIELD_START_PERCENT];
-          const endPercent = datum[STACK_FIELD_END_PERCENT];
-          min = Math.min(min, start, end);
-          max = Math.max(max, start, end);
-          if (isValid(startPercent) && isValid(endPercent)) {
-            hasPercent = true;
-            minPercent = Math.min(minPercent, startPercent, endPercent);
-            maxPercent = Math.max(maxPercent, startPercent, endPercent);
-          }
-        });
-        const mockDatum = {
-          ...node.values[0],
-          [STACK_FIELD_START]: min,
-          [STACK_FIELD_END]: max,
-          ...(hasPercent
-            ? {
-                [STACK_FIELD_START_PERCENT]: minPercent,
-                [STACK_FIELD_END_PERCENT]: maxPercent
-              }
-            : undefined)
-        };
-        rectPaths.push(
-          createRect({
-            ...(this.direction === Direction.horizontal
+    this._barMark.setMarkConfig({
+      clip: true,
+      clipPath: () => {
+        const rectPaths: any[] = [];
+        this._forEachStackGroup(node => {
+          let min = Infinity;
+          let max = -Infinity;
+          let hasPercent = false;
+          let minPercent = Infinity;
+          let maxPercent = -Infinity;
+          node.values.forEach(datum => {
+            const start = datum[STACK_FIELD_START];
+            const end = datum[STACK_FIELD_END];
+            const startPercent = datum[STACK_FIELD_START_PERCENT];
+            const endPercent = datum[STACK_FIELD_END_PERCENT];
+            min = Math.min(min, start, end);
+            max = Math.max(max, start, end);
+            if (isValid(startPercent) && isValid(endPercent)) {
+              hasPercent = true;
+              minPercent = Math.min(minPercent, startPercent, endPercent);
+              maxPercent = Math.max(maxPercent, startPercent, endPercent);
+            }
+          });
+          const mockDatum = {
+            ...node.values[0],
+            [STACK_FIELD_START]: min,
+            [STACK_FIELD_END]: max,
+            ...(hasPercent
+              ? {
+                  [STACK_FIELD_START_PERCENT]: minPercent,
+                  [STACK_FIELD_END_PERCENT]: maxPercent
+                }
+              : undefined)
+          };
+          const rectAttr =
+            this.direction === Direction.horizontal
               ? {
                   x: this._getBarXStart(mockDatum, xScale),
                   x1: this._getBarXEnd(mockDatum, xScale),
@@ -512,13 +519,19 @@ export class BarSeries<T extends IBarSeriesSpec = IBarSeriesSpec> extends Cartes
                   y1: this._getBarYEnd(mockDatum, yScale),
                   x: this._getPosition(this.direction, mockDatum),
                   width: this._getBarWidth(this._xAxisHelper)
-                }),
-            cornerRadius: this._spec.stackCornerRadius,
-            fill: true
-          })
-        );
-      });
-      return rectPaths;
+                };
+          rectPaths.push(
+            createRect({
+              ...rectAttr,
+              cornerRadius: isFunction(this._spec.stackCornerRadius)
+                ? this._spec.stackCornerRadius(rectAttr, mockDatum, this._markAttributeContext)
+                : this._spec.stackCornerRadius,
+              fill: true
+            })
+          );
+        });
+        return rectPaths;
+      }
     });
   }
 
@@ -529,20 +542,20 @@ export class BarSeries<T extends IBarSeriesSpec = IBarSeriesSpec> extends Cartes
     if (this.direction === Direction.horizontal) {
       const yChannels = isValid(this._fieldY2)
         ? {
-            y: (datum: Datum) => valueInScaleRange(this._dataToPosY(datum), yScale),
-            y1: (datum: Datum) => valueInScaleRange(this._dataToPosY1(datum), yScale)
+            y: (datum: Datum) => valueInScaleRange(this._dataToPosY(datum), yScale, true),
+            y1: (datum: Datum) => valueInScaleRange(this._dataToPosY1(datum), yScale, true)
           }
         : {
             y: (datum: Datum) =>
-              valueInScaleRange(this._dataToPosY(datum) - this._getBarWidth(this._yAxisHelper) / 2, yScale),
+              valueInScaleRange(this._dataToPosY(datum) - this._getBarWidth(this._yAxisHelper) / 2, yScale, true),
             height: (datum: Datum) => this._getBarWidth(this._yAxisHelper)
           };
 
       this.setMarkStyle(
         this._barMark,
         {
-          x: (datum: Datum) => this._getBarXStart(datum, xScale),
-          x1: (datum: Datum) => this._getBarXEnd(datum, xScale),
+          x: (datum: Datum) => this._getBarXStart(datum, xScale, true),
+          x1: (datum: Datum) => this._getBarXEnd(datum, xScale, true),
           ...yChannels
         },
         'normal',
@@ -561,12 +574,12 @@ export class BarSeries<T extends IBarSeriesSpec = IBarSeriesSpec> extends Cartes
     } else {
       const xChannels = isValid(this._fieldX2)
         ? {
-            x: (datum: Datum) => valueInScaleRange(this._dataToPosX(datum), xScale),
-            x1: (datum: Datum) => valueInScaleRange(this._dataToPosX1(datum), xScale)
+            x: (datum: Datum) => valueInScaleRange(this._dataToPosX(datum), xScale, true),
+            x1: (datum: Datum) => valueInScaleRange(this._dataToPosX1(datum), xScale, true)
           }
         : {
             x: (datum: Datum) =>
-              valueInScaleRange(this._dataToPosX(datum) - this._getBarWidth(this._xAxisHelper) / 2, xScale),
+              valueInScaleRange(this._dataToPosX(datum) - this._getBarWidth(this._xAxisHelper) / 2, xScale, true),
             width: (datum: Datum) => this._getBarWidth(this._xAxisHelper)
           };
       this.setMarkStyle(
@@ -687,14 +700,14 @@ export class BarSeries<T extends IBarSeriesSpec = IBarSeriesSpec> extends Cartes
     const depth = isNil(scaleDepth) ? depthFromSpec : Math.min(depthFromSpec, scaleDepth);
 
     const bandWidth = axisHelper.getBandwidth?.(depth - 1) ?? DefaultBandWidth;
-    const hasBarWidth = this._spec.barWidth !== undefined && depth === depthFromSpec;
+    const hasBarWidth = isValid(this._spec.barWidth) && depth === depthFromSpec;
 
-    if (hasBarWidth) {
-      return getActualNumValue(this._spec.barWidth, bandWidth);
-    }
-    const hasBarMinWidth = this._spec.barMinWidth !== undefined;
-    const hasBarMaxWidth = this._spec.barMaxWidth !== undefined;
+    const hasBarMinWidth = isValid(this._spec.barMinWidth);
+    const hasBarMaxWidth = isValid(this._spec.barMaxWidth);
     let width = bandWidth;
+    if (hasBarWidth) {
+      width = getActualNumValue(this._spec.barWidth, bandWidth);
+    }
     if (hasBarMinWidth) {
       width = Math.max(width, getActualNumValue(this._spec.barMinWidth, bandWidth));
     }

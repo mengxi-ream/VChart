@@ -402,6 +402,20 @@
               }
             },
             {
+              "path": "Mosaic",
+              "title": {
+                "zh": "马赛克图",
+                "en": "Mosaic Chart"
+              }
+            },
+            {
+              "path": "Pictogram",
+              "title": {
+                "zh": "象形图",
+                "en": "Pictogram Chart"
+              }
+            },
+            {
               "path": "3d_Line",
               "title": {
                 "zh": "3d 折线图",
@@ -547,6 +561,13 @@
               "title": {
                 "zh": "自定义 mark",
                 "en": "Custom Mark"
+              }
+            },
+            {
+              "path": "Richtext_and_Dom",
+              "title": {
+                "zh": "富文本和 Dom 扩展",
+                "en": "Richtext and dom extension"
               }
             }
           ]
@@ -803,6 +824,20 @@
                 "zh": "Harmony VChart",
                 "en": "Harmony VChart"
               }
+            },
+            {
+              "path": "univer",
+              "title": {
+                "zh": "univer",
+                "en": "univer"
+              }
+            },
+            {
+              "path": "svg",
+              "title": {
+                "zh": "svg 插件",
+                "en": "svg plugin"
+              }
             }
           ]
         },
@@ -821,13 +856,6 @@
           }
         },
         {
-          "path": "Richtext_and_Dom",
-          "title": {
-            "zh": "富文本和 Dom 扩展",
-            "en": "Richtext and dom extension"
-          }
-        },
-        {
           "path": "Chart_Plugins",
           "title": {
             "zh": "图表插件",
@@ -839,6 +867,36 @@
               "title": {
                 "zh": "格式化插件",
                 "en": "Formatter Plugin"
+              }
+            }
+          ]
+        },
+        {
+          "path": "Chart_Extensions",
+          "title": {
+            "zh": "VChart拓展包",
+            "en": "VChart Extensions"
+          },
+          "children": [
+            {
+              "path": "about_extensions",
+              "title": {
+                "zh": "关于扩展包",
+                "en": "About vchart-extension"
+              }
+            },
+            {
+              "path": "series_break",
+              "title": {
+                "zh": "系列截断组件",
+                "en": "Series Break"
+              }
+            },
+            {
+              "path": "conversion_funnel",
+              "title": {
+                "zh": "转化率漏斗图",
+                "en": "Conversion Funnel"
               }
             }
           ]

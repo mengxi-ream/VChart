@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-12
+    runs-on: macos-13
     permissions:
       contents: write
       pull-requests: write
@@ -60,11 +60,16 @@ jobs:
         run: node common/scripts/install-run-rush.js build --to @visactor/vchart
 
       # run bugserver after the build of main packages
-      - name: Run Bugserver
-        working-directory: ./packages/vchart
+      # - name: Run Bugserver
+      #   working-directory: ./packages/vchart
+      #   env:
+      #     BUG_SERVER_TOKEN: ${{ secrets.BUG_SERVER_TOKEN }}
+      #   run: node ../../common/scripts/install-run-rushx.js ci
+
+      - name: Build vchart-extension
         env:
-          BUG_SERVER_TOKEN: ${{ secrets.BUG_SERVER_TOKEN }}
-        run: node ../../common/scripts/install-run-rushx.js ci
+          NODE_OPTIONS: '--max_old_space_size=4096'
+        run: node common/scripts/install-run-rush.js build --only @visactor/vchart-extension
 
       - name: Build react-vchart
         env:
@@ -117,9 +122,6 @@ jobs:
         id: changelog
         with:
           version: ${{ steps.package-version.outputs.current_version }}
-
-      - name: Update changelog of harmony
-        run: node common/scripts/set-changelog-of-harmony.js ${{ steps.package-version.outputs.current_version }}  ${{ steps.changelog.outputs.markdown }}
 
       - name: Create Release for Tag
         id: release_tag

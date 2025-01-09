@@ -1,19 +1,19 @@
-import type { DataSet } from '@visactor/vdataset';
-import type { IParserOptions } from '@visactor/vdataset';
+import type { DataSet, IParserOptions } from '@visactor/vdataset';
 import type { Datum, IDataValues, IInitOption, IMarkStateSpec, IPoint, IRegionQuerier, IShowTooltipOption, ISpec, ITooltipHandler, Maybe, MaybeArray, StringOrNumber } from '../typings';
 import type { IMorphConfig } from '../animation/spec';
 import type { IBoundsLike } from '@visactor/vutils';
 import type { EventCallback, EventParams, EventQuery, EventType } from '../event/interface';
 import type { IMark } from '../mark/interface';
 import type { ISeries } from '../series/interface/series';
-import type { ITheme } from '../theme';
+import type { ITheme } from '../theme/interface';
 import type { IComponent } from '../component/interface';
 import type { LayoutCallBack } from '../layout/interface';
-import type { Compiler } from '../compile/compiler';
-import type { IChart, IChartSpecInfo } from '../chart/interface';
-import type { Stage } from '@visactor/vrender-core';
+import type { DimensionIndexOption, IChart, IChartSpecInfo } from '../chart/interface';
+import type { IStage } from '@visactor/vrender-core';
 import type { IContainerSize } from '@visactor/vrender-components';
 import type { IBaseScale } from '@visactor/vscale';
+import type { IUpdateSpecResult } from '../model/interface';
+import type { ICompiler } from '../compile/interface';
 export type DataLinkSeries = {
     seriesId?: StringOrNumber;
     seriesIndex?: number;
@@ -28,8 +28,8 @@ export interface IVChartConstructor {
 }
 export interface IVChart {
     readonly id: number;
-    renderSync: (morphConfig?: IMorphConfig, resetMediaQuery?: boolean) => IVChart;
-    renderAsync: (morphConfig?: IMorphConfig, resetMediaQuery?: boolean) => Promise<IVChart>;
+    renderSync: (morphConfig?: IMorphConfig) => IVChart;
+    renderAsync: (morphConfig?: IMorphConfig) => Promise<IVChart>;
     updateData: (id: StringOrNumber, data: Datum[] | string, options?: IParserOptions) => Promise<IVChart>;
     updateDataInBatches: (list: {
         id: string;
@@ -38,8 +38,9 @@ export interface IVChart {
     }[]) => Promise<IVChart>;
     updateDataSync: (id: StringOrNumber, data: Datum[], options?: IParserOptions) => IVChart;
     updateFullDataSync: (data: IDataValues | IDataValues[], reRender?: boolean) => IVChart;
-    updateSpec: (spec: ISpec, forceMerge?: boolean, morphConfig?: IMorphConfig, resetMediaQuery?: boolean) => Promise<IVChart>;
-    updateSpecSync: (spec: ISpec, forceMerge?: boolean, morphConfig?: IMorphConfig, resetMediaQuery?: boolean) => void;
+    updateFullData: (data: IDataValues | IDataValues[], reRender?: boolean) => Promise<IVChart>;
+    updateSpec: (spec: ISpec, forceMerge?: boolean, morphConfig?: IMorphConfig, userUpdateOptions?: IUpdateSpecResult) => Promise<IVChart>;
+    updateSpecSync: (spec: ISpec, forceMerge?: boolean, morphConfig?: IMorphConfig, userUpdateOptions?: IUpdateSpecResult) => void;
     updateModelSpecSync: (filter: string | {
         type: string;
         index: number;
@@ -80,16 +81,27 @@ export interface IVChart {
     getImageBuffer: () => void;
     setLayout: (layout: LayoutCallBack) => void;
     reLayout: () => void;
-    getCompiler: () => Compiler;
+    getCompiler: () => ICompiler;
     getChart: () => Maybe<IChart>;
-    getStage: () => Stage;
+    getStage: () => IStage;
     getCanvas: () => HTMLCanvasElement | undefined;
     getContainer: () => Maybe<HTMLElement>;
     getComponents: () => IComponent[];
     getDataSet: () => Maybe<DataSet>;
     getScale: (scaleId: string) => IBaseScale | null;
+    setDimensionIndex: (value: StringOrNumber, options?: DimensionIndexOption) => void;
     convertDatumToPosition: (datum: Datum, dataLinkInfo?: DataLinkSeries, isRelativeToCanvas?: boolean, checkInViewData?: boolean) => IPoint | null;
     convertValueToPosition: ((value: StringOrNumber, dataLinkInfo: DataLinkAxis, isRelativeToCanvas?: boolean) => number | null) & ((value: [StringOrNumber, StringOrNumber], dataLinkInfo: DataLinkSeries, isRelativeToCanvas?: boolean) => IPoint | null);
+    updateIndicatorDataById: (id: string, datum?: Datum) => void;
+    updateIndicatorDataByIndex: (index?: number, datum?: Datum) => void;
+    geoZoomByIndex: (regionIndex: number, zoom: number, center?: {
+        x: number;
+        y: number;
+    }) => void;
+    geoZoomById: (regionId: string | number, zoom: number, center?: {
+        x: number;
+        y: number;
+    }) => void;
     stopAnimation: () => void;
     pauseAnimation: () => void;
     resumeAnimation: () => void;

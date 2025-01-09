@@ -1,5 +1,4 @@
-import { constants } from 'fs';
-import { isArray, isEmpty, isValidNumber } from '@visactor/vutils';
+import { isEmpty, isValidNumber } from '@visactor/vutils';
 import type { ISeries } from '../../../../series/interface';
 import type { IContinuousLegendDataMakeOption, IContinuousLegendFilterOption } from './interface';
 import { filterHierarchyDataByRange, isHierarchyItem } from '../../../../util';
@@ -36,7 +35,7 @@ export const continuousLegendDataMake = (data: Array<ISeries>, op: IContinuousLe
 
 // 连续数据过滤
 export const continuousLegendFilter = (data: Array<any>, op: IContinuousLegendFilterOption) => {
-  const { selected, field, data: legendData, isHierarchyData } = op;
+  const { selected, field, data: legendData, isHierarchyData, customFilter } = op;
   const selectedRange = selected();
   const datumField = field();
   const dataRange = legendData();
@@ -48,16 +47,17 @@ export const continuousLegendFilter = (data: Array<any>, op: IContinuousLegendFi
   if (selectedRange === dataRange) {
     return data;
   }
-
   if (datumField && !isEmpty(selectedRange)) {
     const [min, max] = selectedRange;
-    if (isHierarchy(data)) {
-      return filterHierarchyDataByRange(data, +min, +max);
-    } else {
-      return data.filter(datum => {
-        return datum[datumField] >= min && datum[datumField] <= max;
-      });
+
+    if (customFilter) {
+      return customFilter(data, selectedRange, datumField);
+    } else if (isHierarchy(data)) {
+      return filterHierarchyDataByRange(data, +min, +max, datumField);
     }
+    return data.filter(datum => {
+      return datum[datumField] >= min && datum[datumField] <= max;
+    });
   }
 
   return data;

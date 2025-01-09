@@ -1,10 +1,11 @@
-import type { ILabelMark } from '../../mark/label';
 // eslint-disable-next-line no-duplicate-imports
 import { registerLabelMark } from '../../mark/label';
 // eslint-disable-next-line no-duplicate-imports
 import { ComponentTypeEnum } from '../interface/type';
-import { AttributeLevel, LayoutZIndex, STACK_FIELD_TOTAL, STACK_FIELD_TOTAL_TOP } from '../../constant';
-import type { IMark, MarkType } from '../../mark/interface';
+import { STACK_FIELD_TOTAL, STACK_FIELD_TOTAL_TOP } from '../../constant/data';
+import { LayoutZIndex } from '../../constant/layout';
+import { AttributeLevel } from '../../constant/attribute';
+import type { ILabelMark, IMark, MarkType } from '../../mark/interface';
 // eslint-disable-next-line no-duplicate-imports
 import { MarkTypeEnum } from '../../mark/interface';
 import { mergeSpec } from '@visactor/vutils-extension';
@@ -19,7 +20,6 @@ import type { Datum, Maybe } from '../../typings';
 import { Factory } from '../../core/factory';
 import { registerComponentMark } from '../../mark/component';
 import type { IChartSpecInfo } from '../../chart/interface';
-import { HOOK_EVENT } from '@visactor/vgrammar-core';
 
 export class TotalLabel extends BaseLabelComponent {
   static type = ComponentTypeEnum.totalLabel;
@@ -61,6 +61,11 @@ export class TotalLabel extends BaseLabelComponent {
     this._initLabelComponent();
   }
 
+  reInit(spec?: any) {
+    super.reInit(spec);
+    this._initTextMark();
+  }
+
   protected _initTextMark() {
     const series = this._getSeries();
     if (series.getSpec().totalLabel?.visible) {
@@ -97,26 +102,15 @@ export class TotalLabel extends BaseLabelComponent {
       { type: MarkTypeEnum.component, name: `${series.name}-total-label-component` },
       {
         componentType: 'label',
-        noSeparateStyle: true,
+        noSeparateStyle: true
+      },
+      {
         support3d: this._spec.support3d
       }
     );
     if (component) {
       this._marks.addMark(component);
     }
-  }
-
-  afterCompile() {
-    this._marks.forEach((componentMark, index) => {
-      const product = componentMark.getProduct() as ReturnType<IView['label']>;
-      if (product) {
-        product.addEventListener(HOOK_EVENT.AFTER_ELEMENT_ENCODE, () => {
-          if (this._isLayout === false) {
-            this._delegateLabelEvent(product.getGroupGraphicItem());
-          }
-        });
-      }
-    });
   }
 
   updateLayoutAttribute(): void {
@@ -173,12 +167,7 @@ export class TotalLabel extends BaseLabelComponent {
   compileMarks() {
     this.getMarks().forEach(m => {
       const group = this._regions[0].getGroupMark().getProduct() as IGroupMark;
-      m.compile({ group });
-      m.getProduct()?.configure({
-        context: {
-          model: this
-        }
-      });
+      m.compile({ group, context: { model: this } });
     });
   }
 

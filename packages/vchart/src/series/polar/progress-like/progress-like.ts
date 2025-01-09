@@ -1,20 +1,14 @@
 import type { Datum } from '@visactor/vgrammar-core';
 import { degreeToRadian, isNil, isValid, isValidNumber, binaryFuzzySearch } from '@visactor/vutils';
-import {
-  AttributeLevel,
-  POLAR_END_RADIAN,
-  POLAR_START_RADIAN,
-  SEGMENT_FIELD_START,
-  STACK_FIELD_END,
-  STACK_FIELD_START
-} from '../../../constant';
-import type { IMarkStyle } from '../../../mark/interface';
+import { SEGMENT_FIELD_START, STACK_FIELD_END, STACK_FIELD_START } from '../../../constant/data';
+import { POLAR_END_RADIAN, POLAR_START_RADIAN } from '../../../constant/polar';
+import { AttributeLevel } from '../../../constant/attribute';
+import type { IGroupMark, IMarkStyle } from '../../../mark/interface';
 import type { ConvertToMarkStyleSpec, ICommonSpec } from '../../../typings';
 import { valueInScaleRange } from '../../../util/scale';
 import { PolarSeries } from '../polar';
 import type { IContinuousTickData, IProgressLikeSeriesSpec } from './interface';
 import type { IPolarAxis, IPolarAxisSpec } from '../../../component/axis';
-import type { IGroupMark } from '../../../mark/group';
 import { createArc, createRect } from '@visactor/vrender-core';
 import type { SeriesMarkMap } from '../../interface';
 import { progressLikeSeriesMark } from './constant';
@@ -203,7 +197,6 @@ export abstract class ProgressLikeSeries<T extends IProgressLikeSeriesSpec> exte
 
   protected _initArcGroupMarkStyle() {
     const groupMark = this._arcGroupMark;
-    groupMark.setZIndex(this.layoutZIndex);
     groupMark.created();
     this.setMarkStyle(
       groupMark,
@@ -214,40 +207,44 @@ export abstract class ProgressLikeSeries<T extends IProgressLikeSeriesSpec> exte
       'normal',
       AttributeLevel.Series
     );
-    groupMark.setClip(() => {
-      const axis = this._getAngleAxis();
-      if (this._isTickMaskVisible(axis)) {
-        const { tickMask } = this._spec;
-        const { angle, offsetAngle, style = {} } = tickMask;
-        const subTickData = this._getAngleAxisSubTickData(axis);
-        const { x, y } = this.angleAxisHelper.center();
-        const radius = this._computeLayoutRadius();
-        const markStyle = style as any;
-        return subTickData.map(({ value }) => {
-          const pos = this.angleAxisHelper.dataToPosition([value]) + degreeToRadian(offsetAngle);
-          const angleUnit = degreeToRadian(angle) / 2;
-          return createArc({
-            ...markStyle,
-            x,
-            y,
-            startAngle: pos - angleUnit,
-            endAngle: pos + angleUnit,
-            innerRadius: radius * this._innerRadius,
-            outerRadius: radius * this._outerRadius,
-            fill: true
+    this._arcGroupMark.setMarkConfig({
+      interactive: false,
+      zIndex: this.layoutZIndex,
+      clip: true,
+      clipPath: () => {
+        const axis = this._getAngleAxis();
+        if (this._isTickMaskVisible(axis)) {
+          const { tickMask } = this._spec;
+          const { angle, offsetAngle, style = {} } = tickMask;
+          const subTickData = this._getAngleAxisSubTickData(axis);
+          const { x, y } = this.angleAxisHelper.center();
+          const radius = this._computeLayoutRadius();
+          const markStyle = style as any;
+          return subTickData.map(({ value }) => {
+            const pos = this.angleAxisHelper.dataToPosition([value]) + degreeToRadian(offsetAngle);
+            const angleUnit = degreeToRadian(angle) / 2;
+            return createArc({
+              ...markStyle,
+              x,
+              y,
+              startAngle: pos - angleUnit,
+              endAngle: pos + angleUnit,
+              innerRadius: radius * this._innerRadius,
+              outerRadius: radius * this._outerRadius,
+              fill: true
+            });
           });
-        });
+        }
+        const { width, height } = this.getLayoutRect();
+        return [
+          createRect({
+            width,
+            height,
+            fill: true
+          })
+        ];
       }
-      const { width, height } = this.getLayoutRect();
-      return [
-        createRect({
-          width,
-          height,
-          fill: true
-        })
-      ];
     });
-    this._arcGroupMark.setInteractive(false);
   }
 
   protected _getAngleAxis() {

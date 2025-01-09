@@ -1,3 +1,4 @@
+import type { IVChart } from './../../core/interface';
 import type { IFillMarkSpec, IImageMarkSpec } from '../visual';
 import type { LayoutCallBack } from '../../layout/interface';
 import type { IElement, srIOption3DType } from '@visactor/vgrammar-core';
@@ -13,7 +14,7 @@ import type {
 import type { RegionSpec } from '../../region/interface';
 import type { IHoverSpec, ISelectSpec, IInteractionSpec } from '../../interaction/interface';
 import type { IRenderOption } from '../../compile/interface';
-import type { ITooltipSpec } from '../../component/tooltip/interface';
+import type { ISeriesTooltipSpec, ITooltipSpec } from '../../component/tooltip/interface';
 // eslint-disable-next-line no-duplicate-imports
 import type { ILayoutSpec } from '../../layout/interface';
 // eslint-disable-next-line no-duplicate-imports
@@ -38,24 +39,25 @@ import type {
   ITextMarkSpec,
   IVisualSpecScale
 } from '../visual';
-import type { StateValue } from '../../compile/mark';
+import type { StateValue } from '../../compile/mark/interface';
 import type { ISeriesStyle, SeriesType } from '../../series/interface';
 import type { Datum, StringOrNumber } from '../common';
 import type { IInvalidType } from '../data';
 import type { IAnimationSpec, IMorphSeriesSpec } from '../../animation/spec';
-import type { IPlayer } from '../../component/player';
+import type { IPlayer } from '../../component/player/interface';
 import type { IMarkProgressiveConfig, MarkTypeEnum } from '../../mark/interface';
-import type { IDataZoomSpec, IScrollBarSpec } from '../../component/data-zoom';
+import type { IDataZoomSpec } from '../../component/data-zoom/data-zoom/interface';
+import type { IScrollBarSpec } from '../../component/data-zoom/scroll-bar/interface';
 import type { ICrosshairSpec } from '../../component/crosshair/interface';
-import type { ITheme } from '../../theme';
+import type { ITheme } from '../../theme/interface';
 import type { ITitleSpec } from '../../component/title/interface';
-import type { IBrushSpec } from '../../component/brush';
-import type { ITotalLabelSpec } from '../../component/label';
-import type { ILegendSpec } from '../../component/legend';
+import type { IBrushSpec } from '../../component/brush/interface';
+import type { ITotalLabelSpec } from '../../component/label/interface';
+import type { ILegendSpec } from '../../component/legend/interface';
 import type { ILayoutOrientPadding, ILayoutPaddingSpec } from '../layout';
-import type { ICustomPath2D, IRichTextCharacter } from '@visactor/vrender-core';
-import type { ICommonAxisSpec } from '../../component/axis';
-import type { IMediaQuerySpec } from '..';
+import type { IColor, ICustomPath2D, IRichTextCharacter } from '@visactor/vrender-core';
+import type { ICommonAxisSpec } from '../../component/axis/interface';
+import type { IMediaQuerySpec } from './media-query';
 import type { IModelSpec } from '../../model/interface';
 
 export type IChartPadding = ILayoutOrientPadding | number;
@@ -118,6 +120,12 @@ export interface IInitOption extends Omit<IRenderOption, 'pluginList'> {
    * @default false
    */
   disableTriggerEvent?: boolean;
+  /**
+   * 当自动响应容器resize 事件时，触发resize 的间隔时长，单位毫秒
+   * @since 1.12.5
+   * @default 100
+   */
+  resizeDelay?: number;
 }
 
 export enum RenderModeEnum {
@@ -213,6 +221,7 @@ export interface IChartSpec {
   theme?: Omit<ITheme, 'name'> | string;
   /**
    * 图表背景色配置，优先级高于构造函数中的 background 配置
+   * 自1.11.6版本支持渐变色对象的配置
    */
   background?: IBackgroundSpec;
 
@@ -244,7 +253,7 @@ export type IBackgroundStyleSpec = ConvertToMarkStyleSpec<Omit<IFillMarkSpec, 'w
   cornerRadius?: IRectMarkSpec['cornerRadius'];
 };
 
-export type IBackgroundSpec = string | IBackgroundStyleSpec;
+export type IBackgroundSpec = IColor | IBackgroundStyleSpec;
 
 /** data */
 export type IDataType = IDataValues | DataView;
@@ -426,8 +435,8 @@ export interface ISeriesSpec extends IInteractionSpec {
    */
   invalidType?: IInvalidType;
 
-  /** 提示信息 */
-  tooltip?: ITooltipSpec;
+  /** 系列对应的提示信息设置，优先级高于图表的tooltip配置 */
+  tooltip?: ISeriesTooltipSpec;
 
   /**
    * 是否开启系列动画
@@ -449,9 +458,14 @@ export interface ISeriesSpec extends IInteractionSpec {
   morph?: IMorphSeriesSpec;
 
   /**
-   * 扩展mark
+   * 系列的扩展mark，能够获取系列上的数据
    */
   extensionMark?: (IExtensionMarkSpec<Exclude<EnableMarkType, 'group'>> | IExtensionGroupMarkSpec)[];
+
+  /**
+   * 今当通过`series`配置的时候，才会生效
+   */
+  zIndex?: number;
 
   /**
    * series background
@@ -461,7 +475,7 @@ export interface ISeriesSpec extends IInteractionSpec {
   // background?: IBackgroundSpec;
 }
 
-export type IChartExtendsSeriesSpec<T extends ISeriesSpec> = Omit<T, 'data' | 'morph' | 'stackValue'>;
+export type IChartExtendsSeriesSpec<T extends ISeriesSpec> = Omit<T, 'data' | 'morph' | 'stackValue' | 'tooltip'>;
 
 export type AdaptiveSpec<T, K extends keyof any> = {
   [key in Exclude<keyof T, K>]: T[key];
@@ -550,6 +564,10 @@ export type IMarkTheme<T> = {
 };
 
 export interface IPerformanceHook {
+  // constructor
+  // 创建完成。在使用 vstory 的场景下，图表实例不由业务创建，业务想要获取图表时机非常靠后，因此补充一个钩子
+  afterCreateVChart?: (vchart?: IVChart) => void;
+
   // InitRender
   //   ├── InitializeChart
   //   ├── CompileToVGrammar
@@ -566,8 +584,8 @@ export interface IPerformanceHook {
   //      └── VRenderDraw
 
   // 初始化图表配置
-  beforeInitializeChart?: () => void;
-  afterInitializeChart?: () => void;
+  beforeInitializeChart?: (vchart?: IVChart) => void;
+  afterInitializeChart?: (vchart?: IVChart) => void;
 
   // 编译
   beforeCompileToVGrammar?: () => void;
@@ -616,6 +634,9 @@ export interface IPerformanceHook {
   beforeCreateVRenderMark?: () => void;
   afterCreateVRenderMark?: () => void;
 
+  // VGrammar 创建元素完成，vrender 绘图之前
+  beforeDoRender?: (vchart?: IVChart) => void;
+
   // VRender Draw 时间
   beforeVRenderDraw?: () => void;
   afterVRenderDraw?: () => void;
@@ -648,6 +669,11 @@ export interface ICustomMarkSpec<T extends EnableMarkType>
     IAnimationSpec<string, string> {
   type: T;
   /**
+   * mark对应的名称，主要用于事件过滤如： { markName: 'yourName' }
+   * @since 1.12.5
+   */
+  name?: string;
+  /**
    * 关联的数据索引
    * @default 与系列使用同一份数据
    */
@@ -673,6 +699,11 @@ export interface ICustomMarkSpec<T extends EnableMarkType>
    * @since 1.11.0
    */
   animation?: boolean;
+  /**
+   * 指定 parent Id
+   * @since 1.13.0
+   */
+  parent?: string;
 }
 export interface ICustomMarkGroupSpec extends ICustomMarkSpec<MarkTypeEnum.group> {
   children?: ICustomMarkSpec<EnableMarkType>[];

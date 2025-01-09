@@ -5,8 +5,7 @@ import type { SeriesMarkMap } from '../interface';
 import { SeriesTypeEnum } from '../interface/type';
 import type { IMapSeriesSpec } from './interface';
 import type { PanEventParam, ZoomEventParam } from '../../event/interface';
-import type { ILabelMark } from '../../mark/label';
-import type { IMark } from '../../mark/interface';
+import type { ILabelMark, IMark } from '../../mark/interface';
 import { MapSeriesSpecTransformer } from './map-transformer';
 export declare class MapSeries<T extends IMapSeriesSpec = IMapSeriesSpec> extends GeoSeries<T> {
     static readonly type: string;
@@ -30,6 +29,7 @@ export declare class MapSeries<T extends IMapSeriesSpec = IMapSeriesSpec> extend
     private _labelMark;
     setAttrFromSpec(): void;
     initData(): void;
+    compileData(): void;
     initMark(): void;
     initMarkStyle(): void;
     initLabelMarkStyle(labelMark: ILabelMark): void;

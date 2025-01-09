@@ -3,11 +3,10 @@ import { PREFIX } from '../../constant/base';
 import type { IElement } from '@visactor/vgrammar-core';
 import type { DataView } from '@visactor/vdataset';
 import type { Datum, ScaleType, VisualType, IScatterInvalidType } from '../../typings';
-import type { ISymbolMark } from '../../mark/symbol';
-import type { IScatterSeriesSpec } from './interface';
+import type { IScatterSeriesSpec, ScatterAppearPreset } from './interface';
 import { CartesianSeries } from '../cartesian/cartesian';
 import { isNil, isValid, isObject, isFunction, isString, isArray, isNumber, isNumeric } from '@visactor/vutils';
-import { AttributeLevel } from '../../constant';
+import { AttributeLevel } from '../../constant/attribute';
 import type { SeriesMarkMap } from '../interface';
 import { SeriesMarkNameEnum, SeriesTypeEnum } from '../interface/type';
 import { STATE_VALUE_ENUM } from '../../compile/mark/interface';
@@ -21,13 +20,11 @@ import {
 } from '../../constant/scatter';
 import { animationConfig, shouldMarkDoMorph, userAnimationConfig } from '../../animation/utils';
 import type { IStateAnimateSpec } from '../../animation/spec';
-import type { ScatterAppearPreset } from './animation';
 import { registerScatterAnimation } from './animation';
 import { registerSymbolMark } from '../../mark/symbol';
 import { scatterSeriesMark } from './constant';
-import type { ILabelMark } from '../../mark/label';
 import { Factory } from '../../core/factory';
-import type { IMark } from '../../mark/interface';
+import type { ILabelMark, IMark, ISymbolMark } from '../../mark/interface';
 import { ScatterSeriesSpecTransformer } from './scatter-transformer';
 import { getGroupAnimationParams } from '../util/utils';
 import { registerCartesianLinearAxis, registerCartesianBandAxis } from '../../component/axis/cartesian';
@@ -203,22 +200,23 @@ export class ScatterSeries<T extends IScatterSeriesSpec = IScatterSeriesSpec> ex
    * 初始化Mark
    */
   initMark(): void {
-    const progressive = {
-      progressiveStep: this._spec.progressiveStep,
-      progressiveThreshold: this._spec.progressiveThreshold,
-      large: this._spec.large,
-      largeThreshold: this._spec.largeThreshold
-    };
-
-    this._symbolMark = this._createMark(ScatterSeries.mark.point, {
-      morph: shouldMarkDoMorph(this._spec, ScatterSeries.mark.point.name),
-      defaultMorphElementKey: this.getDimensionField()[0],
-      groupKey: this._seriesField,
-      progressive,
-      isSeriesMark: true,
-      customShape: this._spec.point?.customShape,
-      stateSort: this._spec.point?.stateSort
-    }) as ISymbolMark;
+    this._symbolMark = this._createMark(
+      ScatterSeries.mark.point,
+      {
+        groupKey: this._seriesField,
+        isSeriesMark: true,
+        stateSort: this._spec.point?.stateSort
+      },
+      {
+        progressiveStep: this._spec.progressiveStep,
+        progressiveThreshold: this._spec.progressiveThreshold,
+        large: this._spec.large,
+        largeThreshold: this._spec.largeThreshold,
+        morph: shouldMarkDoMorph(this._spec, ScatterSeries.mark.point.name),
+        morphElementKey: this.getDimensionField()[0],
+        setCustomizedShape: this._spec.point?.customShape
+      }
+    ) as ISymbolMark;
   }
 
   /**
@@ -384,28 +382,8 @@ export class ScatterSeries<T extends IScatterSeriesSpec = IScatterSeriesSpec> ex
   }
 
   handlePan(e: any) {
-    this.getMarksWithoutRoot().forEach(mark => {
-      const vGrammarMark = mark.getProduct();
-
-      if (!vGrammarMark || !vGrammarMark.elements || !vGrammarMark.elements.length) {
-        return;
-      }
-      const elements = vGrammarMark.elements;
-
-      elements.forEach((el: IElement, i: number) => {
-        const graphicItem = el.getGraphicItem();
-        const datum = el.getDatum();
-        const newPosition = this.dataToPosition(datum);
-        if (newPosition && graphicItem) {
-          graphicItem.translateTo(newPosition.x, newPosition.y);
-        }
-      });
-    });
-    const vgrammarLabel = this._labelMark?.getComponent()?.getProduct();
-
-    if (vgrammarLabel) {
-      (vgrammarLabel as any).evaluate(null, null);
-    }
+    // TODO 现在处理好像一模一样
+    this.handleZoom(e);
   }
 
   getDefaultShapeType() {

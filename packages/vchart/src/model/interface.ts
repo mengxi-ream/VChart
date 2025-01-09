@@ -3,23 +3,25 @@ import type { DataSet, DataView } from '@visactor/vdataset';
 import type { IEvent, IEventDispatcher } from '../event/interface';
 import type { IMark, IMarkRaw, IMarkStyle, MarkTypeEnum } from '../mark/interface';
 import type { RenderMode } from '../typings/spec/common';
-import type { VChart } from '../vchart-all';
 import type { IData } from '@visactor/vgrammar-core';
 import type { StringOrNumber } from '../typings/common';
 import type { IGroupMarkSpec, ConvertToMarkStyleSpec, ICommonSpec } from '../typings/visual';
 import type { IRect } from '../typings/space';
 import type { IPoint, CoordinateType } from '../typings/coordinate';
-import type { ITheme } from '../theme';
+import type { ITheme } from '../theme/interface';
 import type { StateValueType } from '../typings/spec';
 import type { ICompilable, ICompilableInitOption } from '../compile/interface';
-import type { ICompilableData } from '../compile/data';
+import type { ICompilableData } from '../compile/data/interface';
 import type { IGlobalScale } from '../scale/interface';
 import type { IChart, IChartSpecInfo, IChartSpecTransformerOption } from '../chart/interface';
 import type { IThemeColorScheme } from '../theme/color-scheme/interface';
 import type { ILayoutItem, ILayoutItemSpec } from '../layout/interface';
 import type { ILayoutPoint, ILayoutRect } from '../typings/layout';
 import type { ComponentTypeEnum } from '../component/interface';
-import type { SeriesTypeEnum } from '../series';
+import type { SeriesTypeEnum } from '../series/interface';
+import type { ITooltipSpec } from '../component/tooltip/interface';
+import type { TooltipActiveType } from '../typings';
+import type { IVChart } from '../core/interface';
 
 // TODO:
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
@@ -57,6 +59,13 @@ export interface IUpdateSpecResult {
   // TODO: compile 的判断应不应该出现在这里?
   reCompile?: boolean;
   reTransformSpec?: boolean;
+  reAnimate?: boolean;
+  changeTheme?: boolean;
+  changeBackground?: boolean;
+}
+
+export interface IUpdateDataResult {
+  reAnimate?: boolean;
 }
 
 export interface IModelProduct {
@@ -92,7 +101,6 @@ export interface IModel extends ICompilable {
 
   getMarks: () => IMark[];
   getMarkNameMap: () => Record<string, IMark>;
-  getMarkInfoList: () => IModelMarkInfo[];
 
   getData: () => ICompilableData;
 
@@ -155,7 +163,7 @@ export interface IModelOption extends ICompilableInitOption {
   dataSet: DataSet;
   map: Map<StringOrNumber, IModel | IMark>;
   mode: RenderMode;
-  globalInstance: VChart;
+  globalInstance: IVChart;
   regionIndexes?: Array<number>;
   specKey?: string;
   specPath?: Array<string | number>;
@@ -232,4 +240,25 @@ export interface IBaseModelSpecTransformer {
     chartSpec: any,
     chartSpecInfo?: IChartSpecInfo
   ) => IBaseModelSpecTransformerResult<any, any>;
+}
+
+export interface ITooltipHelper {
+  /** tooltip对应spec */
+  spec: ITooltipSpec | undefined;
+
+  /** 实际生效的tooltip activeType */
+  activeType: TooltipActiveType[];
+
+  /** 可以响应mark tooltip或者dimension tooltip的对象 */
+  activeTriggerSet: {
+    mark?: Set<IMark>;
+    group?: Set<IMark>;
+  };
+  /** 不响应tooltip且不会影响已有tooltip的对象 */
+  ignoreTriggerSet: {
+    mark?: Set<IMark>;
+  };
+
+  /** 更新spec */
+  updateTooltipSpec: () => void;
 }

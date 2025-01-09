@@ -2,17 +2,15 @@ import { BaseComponent } from '../base/base-component';
 import { ComponentTypeEnum } from '../interface/type';
 // eslint-disable-next-line no-duplicate-imports
 import type { IRegion } from '../../region/interface';
-import type { IModelRenderOption, IModelSpecInfo } from '../../model/interface';
-import { LayoutLevel, LayoutZIndex, PREFIX } from '../../constant';
+import type { IModelRenderOption } from '../../model/interface';
+import { LayoutLevel, LayoutZIndex } from '../../constant/layout';
+import { PREFIX } from '../../constant/base';
 import type { EnableMarkType, ICustomMarkGroupSpec, ICustomMarkSpec, ILayoutRect } from '../../typings';
-import type { IGroupMark } from '../../mark/group';
-import type { IMark } from '../../mark/interface';
-import type { LooseFunction, Maybe } from '@visactor/vutils';
+import type { IGroupMark, IMark } from '../../mark/interface';
 // eslint-disable-next-line no-duplicate-imports
-import { Bounds, isArray, isEqual, isNil, isValid, isValidNumber } from '@visactor/vutils';
+import { Bounds, isEqual, isNil, isValid, isValidNumber } from '@visactor/vutils';
 import { Factory } from '../../core/factory';
 import type { IGraphic } from '@visactor/vrender-core';
-import { HOOK_EVENT } from '@visactor/vgrammar-core';
 import { animationConfig, userAnimationConfig } from '../../animation/utils';
 import type { IModelMarkAttributeContext } from '../../compile/mark/interface';
 
@@ -29,33 +27,6 @@ export class CustomMark extends BaseComponent<ICustomMarkSpec<EnableMarkType>> {
   layoutLevel: number = LayoutLevel.CustomMark;
 
   protected declare _spec: ICustomMarkSpec<Exclude<EnableMarkType, 'group'>> | ICustomMarkGroupSpec;
-
-  static getSpecInfo(chartSpec: any): Maybe<IModelSpecInfo[]> {
-    const spec = chartSpec[this.specKey];
-    if (!spec) {
-      return null;
-    }
-
-    if (!isArray(spec)) {
-      return [
-        {
-          spec,
-          specPath: [this.specKey],
-          specInfoPath: ['component', this.specKey, 0],
-          type: ComponentTypeEnum.customMark
-        }
-      ];
-    }
-
-    return (spec as ICustomMarkSpec<EnableMarkType>[]).map((specItem, i) => {
-      return {
-        spec: specItem,
-        specPath: [this.specKey, i],
-        specInfoPath: ['component', this.specKey, i],
-        type: ComponentTypeEnum.customMark
-      };
-    });
-  }
 
   created() {
     super.created();
@@ -96,8 +67,16 @@ export class CustomMark extends BaseComponent<ICustomMarkSpec<EnableMarkType>> {
         }
       });
     }
-
-    this._createExtensionMark(this._spec, null, `${PREFIX}_series_${this.id}_extensionMark`, 0, {
+    let parentMark: IGroupMark | null = null;
+    if (this._spec.parent) {
+      const mark = this.getChart()
+        .getAllMarks()
+        .find(m => m.getUserId() === this._spec.parent) as IGroupMark;
+      if (mark.type === 'group') {
+        parentMark = mark;
+      }
+    }
+    this._createExtensionMark(this._spec, parentMark, `${PREFIX}_series_${this.id}_extensionMark`, 0, {
       depend,
       hasAnimation
     });
@@ -113,7 +92,7 @@ export class CustomMark extends BaseComponent<ICustomMarkSpec<EnableMarkType>> {
     const mark = this._createMark(
       {
         type: spec.type,
-        name: `${namePrefix}_${index}`
+        name: isValid(spec.name) ? `${spec.name}` : `${namePrefix}_${index}`
       },
       {
         // 避免二次dataflow
@@ -125,6 +104,10 @@ export class CustomMark extends BaseComponent<ICustomMarkSpec<EnableMarkType>> {
     ) as IGroupMark;
     if (!mark) {
       return;
+    }
+
+    if (isValid(spec.id)) {
+      mark.setUserId(spec.id);
     }
 
     if (options.hasAnimation && spec.animation) {
@@ -191,23 +174,6 @@ export class CustomMark extends BaseComponent<ICustomMarkSpec<EnableMarkType>> {
     // do nothing;
   }
 
-  afterCompile() {
-    this.getMarks().forEach(mark => {
-      const product = mark.getProduct();
-      if (product) {
-        product.addEventListener(HOOK_EVENT.AFTER_ELEMENT_ENCODE, () => {
-          if (this._isLayout === false) {
-            const component = product.getGroupGraphicItem();
-            // TODO: 待 vgrammar 提供接口后进行优化 @zwx
-            if (component.listenerCount('*') === 0) {
-              component.addEventListener('*', ((event: any, type: string) =>
-                this._delegateEvent(component as unknown as IGraphic, event, type)) as LooseFunction);
-            }
-          }
-        });
-      }
-    });
-  }
   private _getMarkAttributeContext() {
     return {
       vchart: this._option.globalInstance,

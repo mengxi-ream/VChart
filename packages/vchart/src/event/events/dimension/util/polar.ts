@@ -7,8 +7,6 @@ import { isNil, maxInArray, minInArray } from '@visactor/vutils';
 import { distance, vectorAngle } from '../../../../util/math';
 import type { ILayoutPoint } from '../../../../typings/layout';
 import type { PolarAxis } from '../../../../component';
-import { getFirstSeries } from '../../../../util/model';
-
 /** 将角度标准化为 range 范围内的角度 */
 const angleStandardize = (angle: number, range: [number, number]) => {
   const unit = Math.PI * 2;
@@ -26,17 +24,18 @@ export const getPolarDimensionInfo = (chart: IChart | undefined, pos: ILayoutPoi
   if (!chart) {
     return null;
   }
-  const series = getFirstSeries(chart.getRegionsInIndex(), 'polar');
-  if (!series) {
+
+  const angleAxisList = getAxis(chart, (cmp: PolarAxis) => cmp.getOrient() === 'angle', pos);
+  const radiusAxisList = getAxis(chart, (cmp: PolarAxis) => cmp.getOrient() === 'radius', pos);
+
+  if ((!angleAxisList || !angleAxisList.length) && (!radiusAxisList || !radiusAxisList.length)) {
     return null;
   }
 
-  const { x, y } = pos;
-  const angleAxisList = getAxis(chart, (cmp: PolarAxis) => cmp.getOrient() === 'angle', pos);
-  const radiusAxisList = getAxis(chart, (cmp: PolarAxis) => cmp.getOrient() === 'radius', pos);
   const targetAxisInfo: IDimensionInfo[] = [];
 
   const getDimensionField = (series: IPolarSeries) => series.getDimensionField()[0];
+  const { x, y } = pos;
 
   if (angleAxisList) {
     angleAxisList.forEach(axis => {

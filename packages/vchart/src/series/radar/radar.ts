@@ -1,26 +1,24 @@
 /* eslint-disable no-duplicate-imports */
 import { LineLikeSeriesMixin } from '../mixin/line-mixin';
-import type { ILineMark } from '../../mark/line';
-import type { IMark, IMarkProgressiveConfig } from '../../mark/interface';
-import { AttributeLevel, ChartEvent, POLAR_START_RADIAN } from '../../constant';
+import type { IAreaMark, ILineMark, IMark, IMarkProgressiveConfig } from '../../mark/interface';
+import { POLAR_START_RADIAN } from '../../constant/polar';
+import { AttributeLevel } from '../../constant/attribute';
+import { ChartEvent } from '../../constant/event';
 import { DEFAULT_LINEAR_INTERPOLATE } from '../../typings/interpolate';
-import type { Datum, IPoint, IPolarPoint } from '../../typings';
+import type { Datum } from '../../typings';
 import type { SeriesMarkMap } from '../interface';
 import { SeriesMarkNameEnum, SeriesTypeEnum } from '../interface/type';
 import { degreeToRadian, isArray, mixin, isValid } from '@visactor/vutils';
-import type { IRadarSeriesSpec } from './interface';
+import type { IRadarAnimationParams, IRadarSeriesSpec, RadarAppearPreset } from './interface';
 import { animationConfig, userAnimationConfig } from '../../animation/utils';
-import type { IRadarAnimationParams, RadarAppearPreset } from './animation';
 import { registerRadarAnimation } from './animation';
 import { RoseLikeSeries } from '../polar/rose-like';
 import type { IStateAnimateSpec } from '../../animation/spec';
-import type { IAreaMark } from '../../mark/area';
 import { registerAreaMark } from '../../mark/area';
 import { registerLineMark } from '../../mark/line';
 import { registerSymbolMark } from '../../mark/symbol';
 import { radarSeriesMark } from './constant';
 import { Factory } from '../../core/factory';
-import { registerMarkOverlapTransform } from '@visactor/vgrammar-core';
 import { LineLikeSeriesSpecTransformer } from '../mixin/line-mixin-transformer';
 import { registerPolarBandAxis, registerPolarLinearAxis } from '../../component/axis/polar';
 
@@ -78,15 +76,30 @@ export class RadarSeries<T extends IRadarSeriesSpec = IRadarSeriesSpec> extends 
     this.initAreaMarkStyle();
     this.initLineMarkStyle();
     this.initSymbolMarkStyle();
+    [this._lineMark, this._symbolMark, this._areaMark].forEach(mark => {
+      if (mark) {
+        this.setMarkStyle(mark, {
+          center: () => {
+            return this.angleAxisHelper?.center();
+          }
+        });
+      }
+    });
   }
 
   initAreaMark(progressive: IMarkProgressiveConfig, isSeriesMark: boolean) {
-    this._areaMark = this._createMark(RadarSeries.mark.area, {
-      progressive,
-      isSeriesMark,
-      customShape: this._spec.area?.customShape,
-      stateSort: this._spec.area?.stateSort
-    }) as IAreaMark;
+    this._areaMark = this._createMark(
+      RadarSeries.mark.area,
+      {
+        groupKey: this._seriesField,
+        isSeriesMark,
+        stateSort: this._spec.area?.stateSort
+      },
+      {
+        ...progressive,
+        setCustomizedShape: this._spec.area?.customShape
+      }
+    ) as IAreaMark;
   }
 
   initAreaMarkStyle() {
@@ -148,13 +161,11 @@ export class RadarSeries<T extends IRadarSeriesSpec = IRadarSeriesSpec> extends 
 
   protected initTooltip() {
     super.initTooltip();
-    const { dimension, group, mark } = this._tooltipHelper.activeTriggerSet;
+    const { group, mark } = this._tooltipHelper.activeTriggerSet;
     if (this._lineMark) {
-      dimension.add(this._lineMark);
       group.add(this._lineMark);
     }
     if (this._areaMark) {
-      dimension.add(this._areaMark);
       group.add(this._areaMark);
     }
     if (this._symbolMark) {
@@ -170,9 +181,7 @@ export class RadarSeries<T extends IRadarSeriesSpec = IRadarSeriesSpec> extends 
         const rect = this.getLayoutRect();
         return Math.min(rect.width, rect.height);
       },
-      startAngle: isValid(this._spec.startAngle) ? degreeToRadian(this._spec.startAngle) : POLAR_START_RADIAN,
-      pointToCoord: (point: IPoint) => this.angleAxisHelper?.pointToCoord(point),
-      coordToPoint: (coord: IPolarPoint) => this.angleAxisHelper.coordToPoint(coord)
+      startAngle: isValid(this._spec.startAngle) ? degreeToRadian(this._spec.startAngle) : POLAR_START_RADIAN
     };
     const appearPreset = ((this._spec?.animationAppear as IStateAnimateSpec<RadarAppearPreset>)?.preset ??
       'clipIn') as RadarAppearPreset;
@@ -236,7 +245,6 @@ mixin(RadarSeries, LineLikeSeriesMixin);
 
 export const registerRadarSeries = () => {
   Factory.registerSeries(RadarSeries.type, RadarSeries);
-  registerMarkOverlapTransform();
   registerAreaMark();
   registerLineMark();
   registerSymbolMark();

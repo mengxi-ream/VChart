@@ -3,12 +3,12 @@ import type { ILayoutConstructor, LayoutCallBack } from '../layout/interface';
 import type { IDataValues, IMarkStateSpec, IInitOption } from '../typings/spec/common';
 import { RenderModeEnum } from '../typings/spec/common';
 import type { ISeriesConstructor } from '../series/interface';
-import type { DimensionIndexOption, IChart, IChartConstructor, IChartOption, IChartSpecInfo } from '../chart/interface';
+import { type DimensionIndexOption, type IChart, type IChartConstructor, type IChartOption, type IChartSpecInfo } from '../chart/interface';
 import type { IComponentConstructor } from '../component/interface';
 import type { EventCallback, EventParams, EventQuery, EventType } from '../event/interface';
 import type { IParserOptions, Transform } from '@visactor/vdataset';
 import { DataSet, DataView } from '@visactor/vdataset';
-import type { Stage } from '@visactor/vrender-core';
+import type { IStage } from '@visactor/vrender-core';
 import type { GeoSourceType } from '../typings/geo';
 import type { GeoSourceOption } from '../series/map/geo-source';
 import type { IMark, MarkConstructor } from '../mark/interface';
@@ -17,7 +17,7 @@ import type { Datum, IPoint, IRegionQuerier, IShowTooltipOption, ISpec, Maybe, M
 import type { IBoundsLike, ILogger } from '@visactor/vutils';
 import { ThemeManager } from '../theme/theme-manager';
 import type { ITheme } from '../theme';
-import type { IModel, IUpdateSpecResult } from '../model/interface';
+import type { IModel, IUpdateDataResult, IUpdateSpecResult } from '../model/interface';
 import { Compiler } from '../compile/compiler';
 import type { IMorphConfig } from '../animation/spec';
 import type { DataLinkAxis, DataLinkSeries, IGlobalConfig, IVChart, IVChartRenderOption } from './interface';
@@ -38,6 +38,9 @@ export declare class VChart implements IVChart {
     static registerMap(key: string, source: GeoSourceType, option?: GeoSourceOption): void;
     static unregisterMap(key: string): void;
     static getMap(key: string): GeoSourceType;
+    static registerSVG(key: string, source: GeoSourceType, option?: GeoSourceOption): void;
+    static unregisterSVG(key: string): void;
+    static getSVG(key: string): any;
     static hideTooltip(excludeId?: MaybeArray<number>): void;
     static getLogger(): ILogger;
     static readonly InstanceManager: typeof InstanceManager;
@@ -74,6 +77,7 @@ export declare class VChart implements IVChart {
     private _context;
     private _isReleased;
     private _chartPlugin?;
+    private _onResize?;
     constructor(spec: ISpec, options: IInitOption);
     private _setNewSpec;
     private _getSpecFromOriginalSpec;
@@ -89,7 +93,6 @@ export declare class VChart implements IVChart {
         height: number;
     };
     private _doResize;
-    private _onResize;
     private _initDataSet;
     updateCustomConfigAndRerender(updateSpecResult: IUpdateSpecResult | (() => IUpdateSpecResult), sync?: boolean, option?: IVChartRenderOption): IVChart | Promise<IVChart>;
     protected _updateCustomConfigAndRecompile(updateSpecResult: IUpdateSpecResult, option?: IVChartRenderOption): boolean;
@@ -98,22 +101,22 @@ export declare class VChart implements IVChart {
     protected _afterRender(): boolean;
     renderSync(morphConfig?: IMorphConfig): IVChart;
     renderAsync(morphConfig?: IMorphConfig): Promise<IVChart>;
-    protected _renderSync(option?: IVChartRenderOption): IVChart;
+    protected _renderSync: (option?: IVChartRenderOption) => IVChart;
     protected _renderAsync(option?: IVChartRenderOption): Promise<IVChart>;
     private _updateAnimateState;
     release(): void;
-    updateData(id: StringOrNumber, data: DataView | Datum[] | string, options?: IParserOptions): Promise<IVChart>;
+    updateData(id: StringOrNumber, data: DataView | Datum[] | string, parserOptions?: IParserOptions, userUpdateOptions?: IUpdateDataResult): Promise<IVChart>;
     private _updateDataById;
     updateDataInBatches(list: {
         id: string;
         data: Datum[];
         options?: IParserOptions;
     }[]): Promise<IVChart>;
-    updateDataSync(id: StringOrNumber, data: DataView | Datum[] | string, options?: IParserOptions): IVChart;
-    updateFullDataSync(data: IDataValues | IDataValues[], reRender?: boolean): IVChart;
+    updateDataSync(id: StringOrNumber, data: DataView | Datum[] | string, parserOptions?: IParserOptions, userUpdateOptions?: IUpdateDataResult): IVChart;
+    updateFullDataSync(data: IDataValues | IDataValues[], reRender?: boolean, userUpdateOptions?: IUpdateSpecResult): IVChart;
     updateFullData(data: IDataValues | IDataValues[], reRender?: boolean): Promise<IVChart>;
-    updateSpec(spec: ISpec, forceMerge?: boolean, morphConfig?: IMorphConfig): Promise<IVChart>;
-    updateSpecSync(spec: ISpec, forceMerge?: boolean, morphConfig?: IMorphConfig): IVChart;
+    updateSpec(spec: ISpec, forceMerge?: boolean, morphConfig?: IMorphConfig, userUpdateOptions?: IUpdateSpecResult): Promise<IVChart>;
+    updateSpecSync(spec: ISpec, forceMerge?: boolean, morphConfig?: IMorphConfig, userUpdateOptions?: IUpdateSpecResult): IVChart;
     updateSpecAndRecompile(spec: ISpec, forceMerge?: boolean, option?: IVChartRenderOption): boolean;
     private _updateSpec;
     updateModelSpec(filter: string | {
@@ -132,11 +135,12 @@ export declare class VChart implements IVChart {
     updateViewBox(viewBox: IBoundsLike, reRender?: boolean, reLayout?: boolean): IVChart;
     on(eType: EventType, handler: EventCallback<EventParams>): void;
     on(eType: EventType, query: EventQuery, handler: EventCallback<EventParams>): void;
-    off(eType: string, handler?: EventCallback<EventParams>): void;
+    off(eType: EventType, handler?: EventCallback<EventParams>): void;
     updateState(state: Record<string, Omit<IMarkStateSpec<unknown>, 'style'>>, filter?: (series: ISeries, mark: IMark, stateKey: string) => boolean): void;
     setSelected(datum: MaybeArray<any> | null, filter?: (series: ISeries, mark: IMark) => boolean, region?: IRegionQuerier): void;
     setHovered(datum: MaybeArray<Datum> | null, filter?: (series: ISeries, mark: IMark) => boolean, region?: IRegionQuerier): void;
     clearState(state: string): void;
+    clearAllStates(): void;
     clearSelected(): void;
     clearHovered(): void;
     private _updateCurrentTheme;
@@ -147,6 +151,7 @@ export declare class VChart implements IVChart {
     setCurrentTheme(name: string): Promise<IVChart>;
     setCurrentThemeSync(name: string): IVChart;
     protected _setCurrentTheme(name?: string): IUpdateSpecResult;
+    private _setFontFamilyTheme;
     private _getTooltipComponent;
     setTooltipHandler(tooltipHandler: ITooltipHandler): void;
     getTooltipHandlerByUser(): ITooltipHandler | undefined;
@@ -167,7 +172,7 @@ export declare class VChart implements IVChart {
     reLayout(): void;
     getCompiler(): Compiler;
     getChart(): IChart;
-    getStage(): Stage;
+    getStage(): IStage;
     getCanvas(): HTMLCanvasElement | undefined;
     getContainer(): Maybe<HTMLElement>;
     getComponents(): import("../component/interface").IComponent[];
@@ -184,9 +189,23 @@ export declare class VChart implements IVChart {
     unregisterFunction(key: string): void;
     getFunctionList(): string[];
     setRuntimeSpec(spec: any): void;
+    updateIndicatorDataById(id: string, datum?: Datum): void;
+    updateIndicatorDataByIndex(index?: number, datum?: Datum): void;
+    geoZoomByIndex(regionIndex: number, zoom: number, center?: {
+        x: number;
+        y: number;
+    }): void;
+    geoZoomById(regionId: string | number, zoom: number, center?: {
+        x: number;
+        y: number;
+    }): void;
+    _geoZoomByQuery(query: MaybeArray<IRegionQuerier>, zoom: number, center?: {
+        x: number;
+        y: number;
+    }): void;
     private _initChartPlugin;
     private _chartPluginApply;
-    protected _getMode(): (typeof RenderModeEnum)["desktop-browser"] | "desktop-browser" | "mobile-browser" | "node" | "worker" | "miniApp" | "wx" | "tt" | "harmony" | "desktop-miniApp" | "lynx";
+    protected _getMode(): "node" | (typeof RenderModeEnum)["desktop-browser"] | "desktop-browser" | "mobile-browser" | "worker" | "miniApp" | "wx" | "tt" | "harmony" | "desktop-miniApp" | "lynx";
     protected _getChartOption(type: string): IChartOption;
 }
 export declare const registerVChartCore: () => void;

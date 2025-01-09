@@ -3,7 +3,7 @@ import type { IMark } from '../mark/interface';
 import type { RenderMode } from '../typings/spec/common';
 import type { BaseEventParams, IEventDispatcher, EventType } from '../event/interface';
 import type { IModel } from '../model/interface';
-import type { StateValue } from '../compile/mark';
+import type { StateValue } from '../compile/mark/interface';
 import type { StringOrNumber } from '../typings/common';
 export interface IInteraction {
     registerMark: (state: StateValue, mark: IMark) => void;
@@ -16,10 +16,12 @@ export interface IInteraction {
     exchangeEventElement: (stateValue: StateValue, elements: IElement) => void;
     clearEventElement: (stateValue: StateValue, clearReverse: boolean) => void;
     reverseEventElement: (stateValue: StateValue) => void;
+    clearAllEventElement: () => void;
     setDisableActiveEffect: (disable: boolean) => void;
     addVgrammarInteraction: (state: StateValue, i: IVGrammarInteraction) => void;
     startInteraction: (state: StateValue, element: IElement) => void;
     resetInteraction: (state: StateValue, element: IElement) => void;
+    resetAllInteraction: () => void;
 }
 export interface ITrigger {
     init: () => void;
@@ -50,10 +52,6 @@ export interface ISelectSpec extends IBaseInteractionSpec {
     mode?: 'single' | 'multiple';
     trigger?: Trigger;
     triggerOff?: Trigger | number;
-}
-export interface ITriggerSpec {
-    hover?: IHoverSpec | boolean;
-    select?: ISelectSpec | boolean;
 }
 export type IElementActiveSpec = IBaseInteractionSpec & Pick<ElementActiveSpec, 'type' | 'trigger' | 'triggerOff' | 'state'>;
 export type IElementSelectSpec = IBaseInteractionSpec & Pick<ElementSelectSpec, 'type' | 'trigger' | 'triggerOff' | 'state' | 'isMultiple' | 'reverseState'>;

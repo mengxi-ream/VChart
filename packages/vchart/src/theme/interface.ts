@@ -12,9 +12,10 @@ import type {
 } from '../typings';
 import type { MarkTypeEnum } from '../mark/interface';
 import type { IColorKey, IThemeColorScheme } from './color-scheme/interface';
-import type { IGradientColor } from '@visactor/vrender-core';
+import type { IColor } from '@visactor/vrender-core';
 import type { IComponentTheme } from '../component/interface';
-import type { ITokenKey, TokenMap } from './token';
+import type { ITokenKey, TokenMap } from './token/interface';
+import type { ChartType } from '../chart/interface';
 
 export interface ITheme {
   /**
@@ -34,7 +35,7 @@ export interface ITheme {
    * 第 2 种配置：图表层级的样式属性
    */
   /** 图表背景色 */
-  background?: string | IGradientColor | IColorKey;
+  background?: IColor | IColorKey;
   /** 图表内边距 */
   padding?: ILayoutPaddingSpec;
   /** 图表字体配置 */
@@ -74,6 +75,10 @@ export interface ITheme {
    */
   /** 组件样式属性 */
   component?: IComponentTheme;
+  /**
+   * 第 7 种配置：根据图表类型配置不同主题样式
+   */
+  chart?: Record<ChartType, Omit<ITheme, 'name' | 'type' | 'description'>>;
 }
 
 export interface IGlobalMarkThemeByType {

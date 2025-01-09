@@ -3,7 +3,7 @@ category: examples
 group: layout
 title: 行列布局
 order: 37-1
-cover: http://lf9-dp-fe-cms-tos.byteorg.com/obj/bit-cloud/vchart/preview/layout/grid-layout.png
+cover: https://lf9-dp-fe-cms-tos.byteorg.com/obj/bit-cloud/vchart/preview/layout/grid-layout.png
 option: commonChart#layout
 ---
 
@@ -75,27 +75,28 @@ const spec = {
       },
       seriesField: 'type',
       outerRadius: 0.45,
-      innerRadius: 0.4,
-      indicator: {
-        visible: true,
-        title: {
-          visible: true,
-          autoFit: true,
-          style: {
-            text: 'max percent'
-          }
-        },
-        content: {
-          visible: true,
-          autoFit: true,
-          style: {
-            text: '70%'
-          }
-        }
-      }
+      innerRadius: 0.4
     }
   ],
   indicator: [
+    {
+      regionId: 'circularProgress',
+      visible: true,
+      title: {
+        visible: true,
+        autoFit: true,
+        style: {
+          text: 'percent'
+        }
+      },
+      content: {
+        visible: true,
+        autoFit: true,
+        style: {
+          text: '70%'
+        }
+      }
+    },
     {
       regionId: 'indicator',
       visible: true,

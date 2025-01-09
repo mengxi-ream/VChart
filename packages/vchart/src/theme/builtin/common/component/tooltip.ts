@@ -1,5 +1,17 @@
-import type { ITooltipTheme } from '../../../../component/tooltip/interface';
+import type { ITooltipTextTheme, ITooltipTheme } from '../../../../component/tooltip/interface';
 import type { IColorKey } from '../../../color-scheme';
+
+const getTitleLabelTheme = (): ITooltipTextTheme<string | IColorKey> => {
+  return {
+    fontSize: { type: 'token', key: 'l4FontSize' },
+    lineHeight: { type: 'token', key: 'l4LineHeight' },
+
+    fontColor: { type: 'palette', key: 'primaryFontColor' },
+    fontWeight: 'bold',
+    textBaseline: 'middle',
+    spacing: 0
+  };
+};
 
 export const tooltip: ITooltipTheme<string | IColorKey> = {
   offset: {
@@ -28,16 +40,7 @@ export const tooltip: ITooltipTheme<string | IColorKey> = {
     }
   },
   spaceRow: 6,
-  titleLabel: {
-    fontSize: { type: 'token', key: 'l4FontSize' },
-    lineHeight: { type: 'token', key: 'l4LineHeight' },
-
-    fontColor: { type: 'palette', key: 'primaryFontColor' },
-    fontWeight: 'bold',
-    textAlign: 'left',
-    textBaseline: 'middle',
-    spacing: 0
-  },
+  titleLabel: getTitleLabelTheme(),
   shape: {
     size: 8,
     spacing: 6
@@ -47,17 +50,8 @@ export const tooltip: ITooltipTheme<string | IColorKey> = {
     lineHeight: { type: 'token', key: 'l4LineHeight' },
 
     fontColor: { type: 'palette', key: 'secondaryFontColor' },
-    textAlign: 'left',
     textBaseline: 'middle',
     spacing: 26
   },
-  valueLabel: {
-    fontSize: { type: 'token', key: 'l4FontSize' },
-    lineHeight: { type: 'token', key: 'l4LineHeight' },
-
-    fontColor: { type: 'palette', key: 'primaryFontColor' },
-    fontWeight: 'bold',
-    textBaseline: 'middle',
-    spacing: 0
-  }
+  valueLabel: getTitleLabelTheme()
 };

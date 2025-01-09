@@ -1,18 +1,23 @@
 import type { Maybe } from '@visactor/vutils';
 // eslint-disable-next-line no-duplicate-imports
-import { isArray, isNil, isValid } from '@visactor/vutils';
+import { isValid } from '@visactor/vutils';
 import type { IComponentOption } from '../interface';
 // eslint-disable-next-line no-duplicate-imports
 import { ComponentTypeEnum } from '../interface/type';
-import type { AxisCurrentValueMap, ICartesianCrosshairSpec, ICrosshairInfoX, ICrosshairInfoY } from './interface';
+import type {
+  AxisCurrentValueMap,
+  ICartesianCrosshairSpec,
+  ICrosshairCategoryFieldSpec,
+  ICrosshairInfoX,
+  ICrosshairInfoY
+} from './interface';
 import type { ICartesianSeries } from '../../series/interface';
-// eslint-disable-next-line no-duplicate-imports
 import { isDiscrete } from '@visactor/vscale';
 import { LineCrosshair, RectCrosshair, Tag } from '@visactor/vrender-components';
 import type { IAxisInfo, IHair } from './base';
 // eslint-disable-next-line no-duplicate-imports
 import { BaseCrossHair } from './base';
-import type { IGraphic, IGroup, INode } from '@visactor/vrender-core';
+import type { IGraphic, INode } from '@visactor/vrender-core';
 import { limitTagInBounds } from './utils';
 import type { IAxis } from '../axis/interface';
 import type { IOrientType, StringOrNumber, TooltipActiveType, TooltipData } from '../../typings';
@@ -23,6 +28,7 @@ import type { IModelSpecInfo } from '../../model/interface';
 import { layoutByValue, layoutHorizontalCrosshair, layoutVerticalCrosshair } from './utils/cartesian';
 import { getFirstSeries } from '../../util';
 import type { IDimensionData, IDimensionInfo } from '../../event/events/dimension/interface';
+import { getSpecInfo } from '../util';
 
 // 1. crosshair保存上次记录的x和y轴dimension
 // 2. 每次交互触发时，首先转化成dimension保存，然后依据dimension计算x和y绘制
@@ -42,11 +48,11 @@ export class CartesianCrossHair<T extends ICartesianCrosshairSpec = ICartesianCr
   private _cacheXCrossHairInfo: ICrosshairInfoX | undefined;
   private _cacheYCrossHairInfo: ICrosshairInfoY | undefined;
 
-  private _xCrosshair: IGroup;
+  private _xCrosshair: LineCrosshair | RectCrosshair;
   private _xTopLabel: Tag;
   private _xBottomLabel: Tag;
 
-  private _yCrosshair: IGroup;
+  private _yCrosshair: LineCrosshair | RectCrosshair;
   private _yLeftLabel: Tag;
   private _yRightLabel: Tag;
 
@@ -54,35 +60,9 @@ export class CartesianCrossHair<T extends ICartesianCrosshairSpec = ICartesianCr
   private _currValueY: AxisCurrentValueMap;
 
   static getSpecInfo(chartSpec: any): Maybe<IModelSpecInfo[]> {
-    const crosshairSpec = chartSpec[this.specKey];
-    if (isNil(crosshairSpec)) {
-      return undefined;
-    }
-    if (!isArray(crosshairSpec)) {
-      if (crosshairSpec.xField || crosshairSpec.yField) {
-        return [
-          {
-            spec: crosshairSpec,
-            specPath: [this.specKey],
-            specInfoPath: ['component', this.specKey, 0],
-            type: ComponentTypeEnum.cartesianCrosshair
-          }
-        ];
-      }
-      return undefined;
-    }
-    const specInfos: IModelSpecInfo[] = [];
-    crosshairSpec.forEach((s: ICartesianCrosshairSpec, i: number) => {
-      if (s.xField || s.yField) {
-        specInfos.push({
-          spec: s,
-          specPath: [this.specKey, i],
-          specInfoPath: ['component', this.specKey, i],
-          type: ComponentTypeEnum.cartesianCrosshair
-        });
-      }
+    return getSpecInfo<ICartesianCrosshairSpec>(chartSpec, this.specKey, this.type, (s: ICartesianCrosshairSpec) => {
+      return (s.xField && s.xField.visible !== false) || (s.yField && s.yField.visible !== false);
     });
-    return specInfos;
   }
 
   constructor(spec: T, options: IComponentOption) {
@@ -217,24 +197,29 @@ export class CartesianCrossHair<T extends ICartesianCrosshairSpec = ICartesianCr
     if (tooltipData && tooltipData.length) {
       if (activeType === 'dimension') {
         const dimensionInfo = (tooltipData as IDimensionInfo[])[0];
-        const dimensionData = dimensionInfo.data[0];
-        const pos = dimensionData.series.dataToPosition(dimensionData.datum[0]);
+        // 图例筛选时, 找到第一个没有被筛选的系列
+        const datumIndex = dimensionInfo.data.findIndex(dimData => dimData.datum.length > 0);
+        let pos;
+        if (datumIndex > -1) {
+          const dimensionData = dimensionInfo.data[datumIndex];
+          pos = dimensionData.series.dataToPosition(dimensionData.datum[0]);
+        }
 
         const isY = isValid(dimensionInfo.dimType)
           ? dimensionInfo.dimType === 'y'
           : isYAxis(dimensionInfo?.axis?.getOrient() as IOrientType);
 
         if (isY) {
-          y = pos.y;
+          y = pos?.y;
         } else {
-          x = pos.x;
+          x = pos?.x;
         }
       } else if (activeType === 'mark') {
         const dimensionData = (tooltipData as IDimensionData[])[0];
         const pos = dimensionData.series.dataToPosition(dimensionData.datum[0]);
 
-        x = pos.x;
-        y = pos.y;
+        x = pos?.x;
+        y = pos?.y;
       }
     }
 
@@ -417,11 +402,26 @@ export class CartesianCrossHair<T extends ICartesianCrosshairSpec = ICartesianCr
 
   protected _parseFieldInfo() {
     const { xField, yField } = this._spec as ICartesianCrosshairSpec;
-    if (xField && xField.visible) {
-      this._xHair = this._parseField(xField, 'xField');
-    }
-    if (yField && yField.visible) {
-      this._yHair = this._parseField(yField, 'yField');
+    this._parseAndSetCrosshair(xField, 'x');
+    this._parseAndSetCrosshair(yField, 'y');
+  }
+
+  private _parseAndSetCrosshair(field: ICrosshairCategoryFieldSpec, axis: 'x' | 'y') {
+    const hairProp = `_${axis}Hair` as '_xHair' | '_yHair';
+    const crosshairProp = `_${axis}Crosshair` as '_xCrosshair' | '_yCrosshair';
+    if (field && field.visible) {
+      this[hairProp] = this._parseField(field, `${axis}Field` as 'xField' | 'yField');
+
+      if (this[crosshairProp]) {
+        const { style, type } = this[hairProp];
+        const styleKey = type === 'rect' ? 'rectStyle' : 'lineStyle';
+
+        this[crosshairProp].setAttributes({
+          [styleKey]: style
+        });
+      }
+    } else if (this[crosshairProp] && this[crosshairProp].parent) {
+      this[crosshairProp].parent.removeChild(this[crosshairProp]);
     }
   }
 
@@ -458,9 +458,9 @@ export class CartesianCrossHair<T extends ICartesianCrosshairSpec = ICartesianCr
       // 添加至场景树
       container?.add(crosshair as unknown as INode);
       if (dim === 'x') {
-        this._xCrosshair = crosshair as unknown as IGroup;
+        this._xCrosshair = crosshair;
       } else {
-        this._yCrosshair = crosshair as unknown as IGroup;
+        this._yCrosshair = crosshair;
       }
     }
   }

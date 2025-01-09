@@ -4,7 +4,7 @@ group: word chart
 title: 形状词云图自定义颜色
 keywords: wordCloud,text,distribution
 order: 14-8
-cover: http://lf9-dp-fe-cms-tos.byteorg.com/obj/bit-cloud/vchart/preview/word-cloud-chart/word-cloud-shape-custom-color.png
+cover: https://lf9-dp-fe-cms-tos.byteorg.com/obj/bit-cloud/vchart/preview/word-cloud-chart/word-cloud-shape-custom-color.png
 option: wordCloudChart
 ---
 
@@ -25,7 +25,6 @@ option: wordCloudChart
 ```javascript livedemo
 const spec = {
   type: 'wordCloud',
-  // 待申请新外网可访问的存储空间后更换
   maskShape: `https://lf9-dp-fe-cms-tos.byteorg.com/obj/bit-cloud/shape_logo.png`,
   colorList: ['#325AB4'],
   wordCloudShapeConfig: {

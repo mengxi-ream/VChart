@@ -16,7 +16,7 @@ import type {
   IChartSpecTransformerOption,
   ILayoutParams
 } from './common';
-import type { IBoundsLike, IPadding } from '@visactor/vutils';
+import type { IBoundsLike, IPadding, Maybe } from '@visactor/vutils';
 import type { ICompilable } from '../../compile/interface';
 import type {
   IRegionQuerier,
@@ -87,7 +87,7 @@ export interface IChart extends ICompilable {
   // update scale domain which in GlobalScale
   updateGlobalScaleDomain: () => void;
   //生命周期
-  created: () => void;
+  created: (transformer: Maybe<IChartSpecTransformer>) => void;
   init: () => void;
   onLayoutStart: (ctx: IChartLayoutOption) => void;
   onLayoutEnd: (ctx: IChartLayoutOption) => void;
@@ -135,6 +135,7 @@ export interface IChart extends ICompilable {
   // mark
   getMarkById: (id: number) => IMark | undefined;
   getAllMarks: () => IMark[];
+  getMarkByUserName: (name: string) => IMark[];
 
   // spec
   updateSpec: (spec: any) => IUpdateSpecResult;
@@ -179,6 +180,12 @@ export interface IChart extends ICompilable {
    * @since 1.11.0
    */
   clearState: (state: string) => void;
+  /**
+   * 清除所有图元的所有状态
+   *
+   * @since 1.12.4
+   */
+  clearAllStates: () => void;
   /**
    * 清除所有图元的选中状态
    *

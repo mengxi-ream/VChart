@@ -3,22 +3,70 @@ import type {
   TooltipRowAttrs,
   TooltipRowStyleAttrs,
   TooltipSymbolAttrs,
-  TooltipTextAttrs
+  TooltipTextAttrs,
+  TooltipRichTextAttrs
 } from '@visactor/vrender-components';
-import type { IPadding, ITooltipActual } from '../../../../typings';
+import type { IPadding, ITooltipActual, MaybeArray } from '../../../../typings';
 import type { ITooltipAttributes, ITooltipTextStyle } from '../interface';
 import { isValid, maxInArray, normalizePadding } from '@visactor/vutils';
 import { mergeSpec } from '@visactor/vutils-extension';
 import { normalizeLayoutPaddingSpec } from '../../../../util/space';
-import { measureTooltipText } from './common';
 import type { ITheme } from '../../../../theme';
 import type { ITooltipSpec, ITooltipTextTheme, ITooltipTheme } from '../../../../component/tooltip';
 import { token } from '../../../../theme/token';
+// eslint-disable-next-line no-duplicate-imports
+import { getRichTextBounds } from '@visactor/vrender-core';
+// eslint-disable-next-line no-duplicate-imports
+import type { IRichTextCharacter, IRichTextParagraphCharacter } from '@visactor/vrender-core';
 
 const DEFAULT_TEXT_ATTRIBUTES: Partial<ITooltipTextStyle> = {
   fontFamily: token.fontFamily,
   spacing: 10,
   wordBreak: 'break-word'
+};
+
+interface ITooltipTextInfo {
+  width: number;
+  height: number;
+  text: MaybeArray<number> | MaybeArray<string> | TooltipRichTextAttrs;
+}
+
+/** 测量 tooltip 标签文本 */
+export const measureTooltipText = (text: string | TooltipRichTextAttrs, style: ITooltipTextStyle): ITooltipTextInfo => {
+  let textLines: string[] | TooltipRichTextAttrs;
+  let textConfig: IRichTextCharacter[];
+  if (!((text as TooltipRichTextAttrs)?.type === 'rich' || (text as TooltipRichTextAttrs)?.type === 'html')) {
+    text = (text ?? '').toString();
+    if (style.multiLine) {
+      textLines = text.split('\n');
+      textLines = textLines.map((line, i) => (i < (textLines as string[]).length - 1 ? line + '\n' : line));
+    } else {
+      textLines = [text];
+    }
+    textConfig = textLines.map(
+      line =>
+        ({
+          ...style,
+          text: line
+        } as unknown as IRichTextParagraphCharacter)
+    );
+  } else {
+    textConfig = (text as TooltipRichTextAttrs).text as IRichTextCharacter[];
+    textLines = text as TooltipRichTextAttrs;
+  }
+
+  const bound = getRichTextBounds({
+    wordBreak: (style as any).wordBreak ?? 'break-word',
+    maxWidth: style.maxWidth ? style.maxWidth : undefined,
+    width: 0,
+    height: 0,
+    textConfig: textConfig
+  });
+  return {
+    width: bound.width(),
+    height: bound.height(),
+    text: textLines
+  };
 };
 
 export function getTextAttributes(
@@ -76,12 +124,24 @@ export const getTooltipAttributes = (
   globalTheme: ITheme
 ): ITooltipAttributes => {
   const { style = {}, enterable, transitionDuration } = spec;
-  const { panel = {}, titleLabel, shape, keyLabel, valueLabel, spaceRow: commonSpaceRow, maxContentHeight } = style;
+  const { panel = {}, titleLabel, shape, keyLabel, valueLabel, spaceRow: commonSpaceRow, align } = style;
   const padding = normalizePadding(panel.padding);
   const paddingSpec = normalizeLayoutPaddingSpec(panel.padding) as IPadding;
 
-  const titleStyle = getTextAttributes(titleLabel, globalTheme);
-  const keyStyle = getTextAttributes(keyLabel, globalTheme);
+  const titleStyle = getTextAttributes(
+    {
+      textAlign: align === 'right' ? 'right' : 'left',
+      ...titleLabel
+    },
+    globalTheme
+  );
+  const keyStyle = getTextAttributes(
+    {
+      textAlign: align === 'right' ? 'right' : 'left',
+      ...keyLabel
+    },
+    globalTheme
+  );
   const valueStyle = getTextAttributes(valueLabel, globalTheme);
   const shapeStyle: TooltipRowStyleAttrs['shape'] = {
     fill: true,
@@ -110,26 +170,20 @@ export const getTooltipAttributes = (
     keyWidth: 0,
     valueWidth: 0,
 
-    maxContentHeight,
-
     enterable,
-    transitionDuration
+    transitionDuration,
+    align
   };
 
   const { title = {}, content = [] } = actualTooltip;
 
   let panelWidth = paddingSpec.left + paddingSpec.right;
   let panelHeight = paddingSpec.top + paddingSpec.bottom;
-  /** dom tooltip 的高度。由于 canvas tooltip 不支持滚动条，dom tooltip 单独计算高度 */
-  let panelDomHeight = paddingSpec.top + paddingSpec.bottom;
 
   // calculate content
   let contentMaxWidth = 0;
-  // filter content
-  const filteredContent = content.filter(item => {
-    return (item.key || item.value) && item.visible !== false;
-  });
-  const hasContent = !!filteredContent.length;
+
+  const hasContent = !!content.length;
   let maxKeyWidth = 0;
   let maxAdaptiveKeyWidth = 0;
   let maxValueWidth = 0;
@@ -142,7 +196,7 @@ export const getTooltipAttributes = (
     const shapeWidths: number[] = [];
 
     let contentHeight = 0;
-    attributes.content = filteredContent.map((item, i) => {
+    attributes.content = content.map((item, i) => {
       let itemHeight = 0;
       const {
         hasShape: actualHasShape,
@@ -157,9 +211,7 @@ export const getTooltipAttributes = (
         spaceRow: actualSpaceRow,
         keyStyle: actualKeyStyle,
         valueStyle: actualValueStyle,
-        shapeHollow: actualShapeHollow,
-        // 弃用的属性，做下兼容
-        shapeColor: actualShapeColor
+        shapeHollow: actualShapeHollow
       } = item;
       const itemAttrs: TooltipRowAttrs = { height: 0, spaceRow: actualSpaceRow ?? commonSpaceRow };
       if (isValid(actualKey)) {
@@ -203,13 +255,12 @@ export const getTooltipAttributes = (
           visible: true,
           symbolType: actualShapeType
         };
-        const adaptiveShapeFill = actualShapeFill ?? actualShapeColor;
         if (actualShapeHollow) {
-          shape.stroke = adaptiveShapeFill;
+          shape.stroke = actualShapeFill;
         } else {
-          shape.fill = adaptiveShapeFill;
+          shape.fill = actualShapeFill;
         }
-        shape.stroke = actualShapeStroke ?? adaptiveShapeFill;
+        shape.stroke = actualShapeStroke ?? actualShapeFill;
         shape.lineWidth = actualShapeLineWidth;
         itemAttrs.shape = shape;
 
@@ -222,14 +273,13 @@ export const getTooltipAttributes = (
 
       itemAttrs.height = itemHeight;
       contentHeight += itemHeight;
-      if (i < filteredContent.length - 1) {
+      if (i < content.length - 1) {
         contentHeight += itemAttrs.spaceRow;
       }
 
       return itemAttrs;
     });
     panelHeight += contentHeight;
-    panelDomHeight += Math.min(contentHeight, maxContentHeight ?? Infinity);
 
     maxKeyWidth = keyWidths.length ? maxInArray(keyWidths) : 0; // name 需要对齐
     maxAdaptiveKeyWidth = adaptiveKeyWidths.length ? maxInArray(adaptiveKeyWidths) : 0;
@@ -282,7 +332,6 @@ export const getTooltipAttributes = (
     titleHeightWithSpace = titleMaxHeight + (hasContent ? attributes.title.spaceRow : 0);
   }
   panelHeight += titleHeightWithSpace;
-  panelDomHeight += titleHeightWithSpace;
   attributes.title.width = titleMaxWidth;
   attributes.title.height = titleMaxHeight;
 
@@ -317,6 +366,5 @@ export const getTooltipAttributes = (
 
   attributes.panel.width = panelWidth;
   attributes.panel.height = panelHeight;
-  attributes.panelDomHeight = panelDomHeight;
   return attributes;
 };

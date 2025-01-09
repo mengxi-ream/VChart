@@ -1,6 +1,6 @@
 import type { ILayoutItemSpec } from '../../../layout/interface';
 import type { IColorKey } from '../../../theme/color-scheme/interface';
-import type { ITokenKey } from '../../../theme/token';
+import type { ITokenKey } from '../../../theme/token/interface';
 import type { StringOrNumber } from '../../../typings';
 import type { TextAlign, TextBaseLine } from '../../../typings/visual';
 export interface ITitleTextTheme {
@@ -12,7 +12,7 @@ export interface ITitleTextTheme {
     fontWeight?: StringOrNumber;
     textAlign?: TextAlign;
     textBaseline?: TextBaseLine;
-    lineHeight?: number;
+    lineHeight?: number | ITokenKey;
 }
 export interface ITitleTheme extends ILayoutItemSpec {
     textStyle?: ITitleTextTheme;

@@ -4,7 +4,7 @@ group: word chart
 title: 形状词云图
 keywords: wordCloud,text,distribution
 order: 14-7
-cover: http://lf9-dp-fe-cms-tos.byteorg.com/obj/bit-cloud/vchart/preview/word-cloud-chart/word-cloud-shape-basis.png
+cover: https://lf9-dp-fe-cms-tos.byteorg.com/obj/bit-cloud/vchart/preview/word-cloud-chart/word-cloud-shape-basis.png
 option: wordCloudChart
 ---
 
@@ -23,7 +23,6 @@ option: wordCloudChart
 ```javascript livedemo
 const spec = {
   type: 'wordCloud',
-  // 待申请新外网可访问的存储空间后更换
   maskShape: 'https://lf9-dp-fe-cms-tos.byteorg.com/obj/bit-cloud/log.jpeg',
   nameField: 'challenge_name',
   valueField: 'sum_count',

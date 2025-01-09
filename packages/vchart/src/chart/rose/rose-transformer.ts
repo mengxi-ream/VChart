@@ -1,6 +1,6 @@
 import { array, isNil } from '@visactor/vutils';
 import type { IPolarAxisSpec, IPolarBandAxisSpec } from '../../component';
-import { POLAR_DEFAULT_RADIUS } from '../../constant';
+import { POLAR_DEFAULT_RADIUS } from '../../constant/polar';
 import { RoseLikeChartSpecTransformer } from '../polar';
 import type { IRoseChartSpec } from './interface';
 import { mergeSpec } from '@visactor/vutils-extension';
@@ -9,16 +9,14 @@ export class RoseChartSpecTransformer<
   T extends IRoseChartSpec = IRoseChartSpec
 > extends RoseLikeChartSpecTransformer<T> {
   protected _getDefaultSeriesSpec(spec: T): any {
-    return {
-      ...super._getDefaultSeriesSpec(spec),
-      radius: spec.radius ?? POLAR_DEFAULT_RADIUS,
-      outerRadius: spec.outerRadius ?? POLAR_DEFAULT_RADIUS,
-      innerRadius: spec.innerRadius ?? 0,
-      seriesField: spec.seriesField,
-      stack: spec.stack,
-      percent: spec.percent
-      // startAngle: degreeToRadian(spec.startAngle || 0),
-    };
+    const series = super._getDefaultSeriesSpec(spec);
+    series.radius = spec.radius ?? POLAR_DEFAULT_RADIUS;
+    series.outerRadius = spec.outerRadius ?? POLAR_DEFAULT_RADIUS;
+    series.innerRadius = spec.innerRadius ?? 0;
+
+    series.stack = spec.stack;
+    series.percent = spec.percent;
+    return series;
   }
 
   transformSpec(spec: T) {

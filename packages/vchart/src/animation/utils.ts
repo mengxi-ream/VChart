@@ -1,15 +1,10 @@
 import type { IAnimationConfig } from '@visactor/vgrammar-core';
 // eslint-disable-next-line no-duplicate-imports
-import type {
-  IElement,
-  IAnimationTypeConfig,
-  IStateAnimationConfig,
-  IAnimationTimeline
-} from '@visactor/vgrammar-core';
+import type { IElement, IAnimationTypeConfig, IAnimationTimeline } from '@visactor/vgrammar-core';
 import type { MarkAnimationSpec, IAnimationState } from './interface';
 import type { IStateAnimateSpec, IAnimationSpec } from './spec';
 import { isFunction, isValidNumber } from '../util/type';
-import { DEFAULT_DATA_INDEX } from '../constant';
+import { DEFAULT_DATA_INDEX } from '../constant/data';
 import { DEFAULT_ANIMATION_CONFIG } from './config';
 import { cloneDeep, isArray, isObject, isValid } from '@visactor/vutils';
 import type { SeriesMarkNameEnum } from '../series/interface/type';
@@ -18,7 +13,7 @@ import type { ISeries } from '../series';
 import type { ISeriesSpec } from '../typings';
 import type { IModelMarkAttributeContext } from '../compile/mark';
 
-export const AnimationStates = ['appear', 'enter', 'update', 'exit', 'disappear', 'normal'];
+export const AnimationStates = [...Object.keys(DEFAULT_ANIMATION_CONFIG), 'normal'];
 
 export function animationConfig<Preset extends string>(
   defaultConfig: MarkAnimationSpec = {},
@@ -41,6 +36,11 @@ export function animationConfig<Preset extends string>(
 
     if (state === 'normal') {
       userStateConfig && (config.normal = userStateConfig as IAnimationTypeConfig);
+      continue;
+    } else if (state === 'state') {
+      if (userStateConfig !== false) {
+        config.state = (userStateConfig ?? DEFAULT_ANIMATION_CONFIG.state) as any;
+      }
       continue;
     }
 
@@ -111,9 +111,6 @@ export function animationConfig<Preset extends string>(
 
     config[state] = stateConfig;
   }
-
-  // 将 update copy 到 state 保证 useState 效果与 update 对齐
-  config.state = config.update as IStateAnimationConfig;
   return config;
 }
 
@@ -135,12 +132,14 @@ export function userAnimationConfig<M extends string, Preset extends string>(
   if (isValid(spec.animationEnter)) {
     userConfig.enter = spec.animationEnter[markName] ?? spec.animationEnter;
   }
-
   if (isValid(spec.animationExit)) {
     userConfig.exit = spec.animationExit[markName] ?? spec.animationExit;
   }
   if (isValid(spec.animationUpdate)) {
     userConfig.update = spec.animationUpdate[markName] ?? spec.animationUpdate;
+  }
+  if (isValid(spec.animationState)) {
+    userConfig.state = spec.animationState[markName] ?? spec.animationState;
   }
   if (spec.animationNormal && spec.animationNormal[markName]) {
     userConfig.normal = spec.animationNormal[markName];
@@ -235,32 +234,39 @@ export function uniformAnimationConfig<Preset extends string>(
   if (!config) {
     return config;
   }
-  config = cloneDeep(config);
-  traverseSpec(config, (node: any) => {
-    // 将函数转换为 vchart 代理的函数
-    // 这里可能会传自定义动画的构造函数，不能被代理
-    if (isFunction(node) && node.prototype?.constructor !== node) {
-      const name = (...args: any) => {
-        return node(...args, ctx);
-      };
-      return name;
-    }
-    return node;
-  });
+  const excludeKeys = ['custom', 'customParameters'];
+  config = cloneDeep(config, null, excludeKeys);
+  traverseSpec(
+    config,
+    (node: any) => {
+      // 将函数转换为 vchart 代理的函数
+      // 这里可能会传自定义动画的构造函数，不能被代理
+      if (isFunction(node) && node.prototype?.constructor !== node) {
+        const name = (...args: any) => {
+          return node(...args, ctx);
+        };
+        return name;
+      }
+      return node;
+    },
+    excludeKeys
+  );
 
   return config;
 }
 
-function traverseSpec(spec: any, transform: (node: any, key: string | number) => any) {
+function traverseSpec(spec: any, transform: (node: any, key: string | number) => any, excludeKeys: string[] = []) {
   if (isArray(spec)) {
     spec.forEach((i: any, index: number) => {
       spec[index] = transform(spec[index], index);
-      traverseSpec(spec[index], transform);
+      traverseSpec(spec[index], transform, excludeKeys);
     });
   } else if (isObject(spec)) {
     for (const key in spec) {
-      spec[key] = transform(spec[key], key);
-      traverseSpec(spec[key], transform);
+      if (!excludeKeys.includes(key)) {
+        spec[key] = transform(spec[key], key);
+        traverseSpec(spec[key], transform, excludeKeys);
+      }
     }
   }
 }
@@ -281,7 +287,7 @@ export function isAnimationEnabledForSeries(series: ISeries) {
   // set mark stroke color follow series color
   // only set normal state in the level lower than level Series
   series.getMarks()?.forEach(m => {
-    const config = m.getProgressiveConfig();
+    const config = m.getMarkConfig();
     if (config) {
       if (config.large && config.largeThreshold) {
         animationThreshold = Math.min(animationThreshold, config.largeThreshold);

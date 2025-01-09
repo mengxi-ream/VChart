@@ -7,14 +7,19 @@ import type {
   IMarkerSpec,
   IDataPosCallback,
   IMarkerCrossSeriesSpec,
-  OffsetPoint
+  OffsetPoint,
+  IMarkerSupportSeries
 } from '../../interface';
 import type { IMarkAreaTheme } from './theme';
+import type { Datum } from '../../../../typings/common';
 
 export type IMarkArea = IComponent;
 
 export type IRegressType = 'regression';
 
+/**
+ * 面积标注、区块标注、辅助区块相关配置
+ */
 export type IMarkAreaSpec = IMarkerSpec &
   /**
    * 标注目标：笛卡尔坐标系坐标空间
@@ -127,8 +132,9 @@ export interface IMarkAreaAngleRadiusSpec extends IMarkerCrossSeriesSpec {
 export type IMarkAreaCoordinateSpec = {
   /**
    * 指定数据点的参考线。基于指定数据点进行参考线的绘制，可以对数据点进行数据处理
+   * `coordinates` 自 1.12.0 版本开始支持回调函数
    */
-  coordinates: IDataPointSpec[];
+  coordinates: IDataPointSpec[] | ((seriesData: Datum[], relativeSeries: IMarkerSupportSeries) => IDataPointSpec[]);
 
   /**
    * 对每个数据点转化后的画布坐标点进行偏移，该偏移值可以是像素值，也可以是 string 类型，如 '20%' 代表百分比

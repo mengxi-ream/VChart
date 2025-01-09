@@ -1,44 +1,17 @@
 import type { DataView } from '@visactor/vdataset';
-import type { IAggrType, IMarkerSupportSeries } from '../../component/marker/interface';
+import type { IAggrType, IDataPointSpec, IDataPos, IMarkerSupportSeries } from '../../component/marker/interface';
 import type { Datum, StringOrNumber } from '../../typings';
-
-import { isArray, isFunction, isPlainObject, isValid } from '@visactor/vutils';
+import { array, isArray, isFunction, isPlainObject, isString, isValid } from '@visactor/vutils';
 import { variance, average, min, max, sum, standardDeviation, median } from '../../util/math';
-
-export type IOption = {
-  field: string;
-};
-
-export type IOptionAggrField = {
-  field: string;
-  aggrType: IAggrType;
-};
-
-export type IOptionPos = IOptionAggrField | string | number | StringOrNumber[];
-
-export type IOptionSeries = {
-  getRelativeSeries: () => IMarkerSupportSeries;
-  getStartRelativeSeries: () => IMarkerSupportSeries;
-  getEndRelativeSeries: () => IMarkerSupportSeries;
-};
-
-export type IOptionCallback = (
-  relativeSeriesData: any,
-  startRelativeSeriesData: any,
-  endRelativeSeriesData: any,
-  relativeSeries: IMarkerSupportSeries,
-  startRelative: IMarkerSupportSeries,
-  endRelative: IMarkerSupportSeries
-) => IOptionPos;
-
-export type IOptionAggr = {
-  x?: IOptionPos | IOptionCallback;
-  y?: IOptionPos | IOptionCallback;
-  angle?: IOptionPos | IOptionCallback;
-  radius?: IOptionPos | IOptionCallback;
-  areaName?: string | IOptionCallback;
-  getRefRelativeSeries?: () => IMarkerSupportSeries;
-} & IOptionSeries;
+import { isAggrSpec } from '../../component/marker/utils';
+import type {
+  IOption,
+  IOptionAggr,
+  IOptionAggrField,
+  IOptionCallback,
+  IOptionPos,
+  IOptionWithCoordinates
+} from './interface';
 
 export const markerMin = (_data: Array<DataView>, opt: IOption) => {
   const data = _data[0].latestData as Datum[];
@@ -80,7 +53,103 @@ export function markerMedian(_data: Array<DataView>, opt: IOption) {
   return median(data, opt.field);
 }
 
-export function markerAggregation(_data: Array<DataView>, options: IOptionAggr[]) {
+export function markerAggregation(_data: Array<DataView>, options: IOptionWithCoordinates | IOptionAggr[]) {
+  let markerSource: IOptionAggr[];
+  if ((options as IOptionWithCoordinates).coordinates) {
+    const {
+      coordinates: coordinatesInOptions,
+      coordinateType,
+      getSeriesByIdOrIndex,
+      ...rest
+    } = options as IOptionWithCoordinates;
+    let coordinates;
+    if (isFunction(coordinatesInOptions)) {
+      const relativeSeries = (options as IOptionWithCoordinates).getRelativeSeries();
+      coordinates = coordinatesInOptions(relativeSeries.getData().getLatestData(), relativeSeries);
+    } else {
+      coordinates = coordinatesInOptions;
+    }
+    coordinates = array(coordinates);
+    let option: IOptionAggr;
+
+    markerSource = coordinates.map((coordinate: IDataPointSpec) => {
+      const refRelativeSeries = getSeriesByIdOrIndex(coordinate.refRelativeSeriesId, coordinate.refRelativeSeriesIndex);
+
+      if (coordinateType === 'cartesian') {
+        const { xField, yField } = refRelativeSeries.getSpec();
+        const { xFieldDim, xFieldIndex, yFieldDim, yFieldIndex } = coordinate;
+        let bindXField = xField;
+        if (isValid(xFieldIndex)) {
+          bindXField = array(xField)[xFieldIndex];
+        }
+        if (xFieldDim && array(xField).includes(xFieldDim)) {
+          bindXField = xFieldDim;
+        }
+
+        let bindYField = yField;
+        if (isValid(yFieldIndex)) {
+          bindYField = array(yField)[yFieldIndex];
+        }
+        if (yFieldDim && array(yField).includes(yFieldDim)) {
+          bindYField = yFieldDim;
+        }
+
+        option = {
+          x: undefined,
+          y: undefined,
+          ...rest
+        };
+
+        if (isString(coordinate[bindXField]) && isAggrSpec(coordinate[bindXField] as IDataPos)) {
+          option.x = { field: bindXField, aggrType: coordinate[bindXField] as IAggrType };
+        } else {
+          option.x = array(bindXField).map(field => coordinate[field]) as StringOrNumber[];
+        }
+
+        if (isString(coordinate[bindYField]) && isAggrSpec(coordinate[bindYField] as IDataPos)) {
+          option.y = { field: bindYField, aggrType: coordinate[bindYField] as IAggrType };
+        } else {
+          option.y = array(bindYField).map(field => coordinate[field]) as StringOrNumber[];
+        }
+      } else if (coordinateType === 'polar') {
+        const { valueField: radiusField, categoryField: angleField } = refRelativeSeries.getSpec();
+        const { angleFieldDim, angleFieldIndex } = coordinate;
+        let bindAngleField = angleField;
+        if (isValid(angleFieldIndex)) {
+          bindAngleField = array(angleField)[angleFieldIndex];
+        }
+        if (angleFieldDim && array(angleField).includes(angleFieldDim)) {
+          bindAngleField = angleFieldDim;
+        }
+
+        const bindRadiusField = radiusField;
+
+        option = {
+          angle: undefined,
+          radius: undefined,
+          ...rest
+        };
+
+        if (isString(coordinate[bindAngleField]) && isAggrSpec(coordinate[bindAngleField] as IDataPos)) {
+          option.angle = { field: bindAngleField, aggrType: coordinate[bindAngleField] as IAggrType };
+        } else {
+          option.angle = array(bindAngleField).map(field => coordinate[field]) as StringOrNumber[];
+        }
+
+        if (isString(coordinate[bindRadiusField]) && isAggrSpec(coordinate[bindRadiusField] as IDataPos)) {
+          option.radius = { field: bindRadiusField, aggrType: coordinate[bindRadiusField] as IAggrType };
+        } else {
+          option.radius = array(bindRadiusField).map(field => coordinate[field]) as StringOrNumber[];
+        }
+      }
+
+      option.getRefRelativeSeries = () => refRelativeSeries;
+      return option;
+    });
+  } else {
+    markerSource = options as IOptionAggr[];
+  }
+
   const results: {
     x: StringOrNumber[] | StringOrNumber | IOptionCallback | null;
     y: StringOrNumber[] | StringOrNumber | IOptionCallback | null;
@@ -88,7 +157,7 @@ export function markerAggregation(_data: Array<DataView>, options: IOptionAggr[]
     radius: StringOrNumber[] | StringOrNumber | IOptionCallback | null;
     areaName: string | IOptionCallback | null;
   }[] = [];
-  options.forEach(option => {
+  markerSource.forEach(option => {
     const result: {
       x: StringOrNumber[] | StringOrNumber | null;
       y: StringOrNumber[] | StringOrNumber | null;
