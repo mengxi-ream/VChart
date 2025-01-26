@@ -1,5 +1,7 @@
-import type { IBarChartSpec } from '../../../src';
+import type { IBarChartSpec, ILineChartSpec } from '../../../src';
 import { default as VChart } from '../../../src';
+import { totalLabel } from '../../../src/theme/builtin/common/component/total-label';
+import { series } from '../../../src/theme/builtin/common/series';
 import { createDiv, removeDom } from '../../util/dom';
 
 describe('vchart updateSpec test', () => {
@@ -995,8 +997,1417 @@ describe('vchart updateSpec of same spec', () => {
     const updateRes = (vchart as any)._updateSpec(spec, false);
 
     expect(updateRes).toEqual({
+      changeBackground: false,
       change: false,
       reCompile: false,
+      reMake: false,
+      reRender: true,
+      reSize: false,
+      reTransformSpec: false,
+      changeTheme: false
+    });
+  });
+
+  it('should not remake when label is in series', () => {
+    const spec = {
+      type: 'bar',
+      data: [
+        {
+          id: 'barData',
+          values: [
+            {
+              name: 'Apple',
+              value: 214480
+            },
+            {
+              name: 'Google',
+              value: 155506
+            }
+          ]
+        }
+      ],
+      direction: 'horizontal',
+      series: [
+        {
+          type: 'bar',
+          xField: 'value',
+          yField: 'name',
+          label: {
+            visible: true
+          }
+        }
+      ],
+      axes: [
+        {
+          orient: 'bottom',
+          visible: false
+        }
+      ]
+    };
+    vchart = new VChart(spec, {
+      dom
+    });
+    vchart.renderSync();
+    const updateRes = (vchart as any)._updateSpec(spec, false);
+
+    expect(updateRes).toEqual({
+      changeBackground: false,
+      change: false,
+      changeTheme: false,
+      reCompile: false,
+      reMake: false,
+      reRender: true,
+      reSize: false,
+      reTransformSpec: false
+    });
+  });
+
+  it('should not remake when label is in chart', () => {
+    const spec = {
+      data: [
+        {
+          id: 'barData',
+          values: [
+            {
+              name: 'Apple',
+              value: 214480
+            },
+            {
+              name: 'Google',
+              value: 155506
+            }
+          ]
+        }
+      ],
+      direction: 'horizontal',
+      type: 'bar',
+      xField: 'value',
+      yField: 'name',
+      label: {
+        visible: true
+      },
+      axes: [
+        {
+          orient: 'bottom',
+          visible: false
+        }
+      ]
+    };
+    vchart = new VChart(spec, {
+      dom
+    });
+    vchart.renderSync();
+    const updateRes = (vchart as any)._updateSpec(spec, false);
+
+    expect(updateRes).toEqual({
+      changeBackground: false,
+      change: false,
+      changeTheme: false,
+      reCompile: false,
+      reMake: false,
+      reRender: true,
+      reSize: false,
+      reTransformSpec: false
+    });
+  });
+
+  it('should not throw error when data is empty in series', () => {
+    const spec: any = {
+      type: 'common',
+      seriesField: 'color',
+      data: [
+        {
+          id: 'id0',
+          values: [
+            { x: '周一', type: '早餐', y: 15 },
+            { x: '周一', type: '午餐', y: 25 },
+            { x: '周二', type: '早餐', y: 12 },
+            { x: '周二', type: '午餐', y: 30 },
+            { x: '周三', type: '早餐', y: 15 },
+            { x: '周三', type: '午餐', y: 24 },
+            { x: '周四', type: '早餐', y: 10 },
+            { x: '周四', type: '午餐', y: 25 },
+            { x: '周五', type: '早餐', y: 13 },
+            { x: '周五', type: '午餐', y: 20 },
+            { x: '周六', type: '早餐', y: 10 },
+            { x: '周六', type: '午餐', y: 22 },
+            { x: '周日', type: '早餐', y: 12 },
+            { x: '周日', type: '午餐', y: 19 }
+          ]
+        },
+        {
+          id: 'id1',
+          values: [
+            { x: '周一', type: '饮料', y: 22 },
+            { x: '周二', type: '饮料', y: 43 },
+            { x: '周三', type: '饮料', y: 33 },
+            { x: '周四', type: '饮料', y: 22 },
+            { x: '周五', type: '饮料', y: 10 },
+            { x: '周六', type: '饮料', y: 30 },
+            { x: '周日', type: '饮料', y: 50 }
+          ]
+        }
+      ],
+      series: [
+        {
+          type: 'bar',
+          id: 'bar',
+          data: {
+            id: 'id0'
+          },
+          label: { visible: true },
+          seriesField: 'type',
+
+          xField: ['x', 'type'],
+          yField: 'y'
+        },
+        {
+          type: 'line',
+          id: 'line',
+          data: {
+            id: 'id1'
+          },
+          label: { visible: true },
+          seriesField: 'type',
+          xField: 'x',
+          yField: 'y',
+          stack: false
+        }
+      ],
+      axes: [
+        { orient: 'left', seriesIndex: [0] },
+        { orient: 'right', seriesId: ['line'], grid: { visible: false } },
+        { orient: 'bottom', label: { visible: true }, type: 'band' }
+      ],
+      legends: {
+        visible: true,
+        orient: 'bottom'
+      }
+    };
+
+    vchart = new VChart(spec, {
+      dom
+    });
+    vchart.renderSync();
+    const updateRes = (vchart as any)._updateSpec(spec, false);
+
+    expect(updateRes).toEqual({
+      changeBackground: false,
+      change: false,
+      changeTheme: false,
+      reCompile: false,
+      reMake: false,
+      reRender: true,
+      reSize: false,
+      reTransformSpec: false
+    });
+  });
+});
+
+describe('vchart updateSpec of different about label', () => {
+  let container: HTMLElement;
+  let dom: HTMLElement;
+  let vchart: VChart;
+  beforeAll(() => {
+    container = createDiv();
+    dom = createDiv(container);
+    dom.id = 'container';
+    container.style.position = 'fixed';
+    container.style.width = '500px';
+    container.style.height = '500px';
+    container.style.top = '0px';
+    container.style.left = '0px';
+  });
+
+  afterAll(() => {
+    removeDom(container);
+    vchart.release();
+  });
+
+  it('should reCompile when label config is in series update', () => {
+    const spec = {
+      type: 'bar',
+      data: [
+        {
+          id: 'barData',
+          values: [
+            {
+              name: 'Apple',
+              value: 214480
+            },
+            {
+              name: 'Google',
+              value: 155506
+            }
+          ]
+        }
+      ],
+      direction: 'horizontal',
+      series: [
+        {
+          type: 'bar',
+          xField: 'value',
+          yField: 'name',
+          label: {
+            visible: true
+          }
+        }
+      ],
+      axes: [
+        {
+          orient: 'bottom',
+          visible: false
+        }
+      ]
+    };
+    vchart = new VChart(spec, {
+      dom
+    });
+    vchart.renderSync();
+    const updateRes = (vchart as any)._updateSpec(
+      {
+        ...spec,
+        series: [
+          {
+            type: 'bar',
+            xField: 'value',
+            yField: 'name',
+            label: {
+              visible: true,
+              position: 'center'
+            }
+          }
+        ]
+      },
+      false
+    );
+
+    expect(updateRes).toEqual({
+      changeBackground: false,
+      change: false,
+      changeTheme: false,
+      reCompile: true,
+      reMake: false,
+      reRender: true,
+      reSize: false,
+      reTransformSpec: false
+    });
+  });
+
+  it('should reCompile when visible of label is in chart update', () => {
+    const spec = {
+      data: [
+        {
+          id: 'barData',
+          values: [
+            {
+              name: 'Apple',
+              value: 214480
+            },
+            {
+              name: 'Google',
+              value: 155506
+            }
+          ]
+        }
+      ],
+      direction: 'horizontal',
+      type: 'bar',
+      xField: 'value',
+      yField: 'name',
+      label: {
+        visible: true
+      },
+      axes: [
+        {
+          orient: 'bottom',
+          visible: false
+        }
+      ]
+    };
+    vchart = new VChart(spec, {
+      dom
+    });
+    vchart.renderSync();
+    const updateRes = (vchart as any)._updateSpec(
+      {
+        ...spec,
+        label: {
+          visible: true,
+          position: 'top'
+        }
+      },
+      false
+    );
+
+    expect(updateRes).toEqual({
+      change: false,
+      changeBackground: false,
+      changeTheme: false,
+      reCompile: true,
+      reMake: false,
+      reRender: true,
+      reSize: false,
+      reTransformSpec: false
+    });
+  });
+
+  it('should remake when visible of axis grid change', () => {
+    const spec = {
+      type: 'area',
+      data: [
+        {
+          id: 'area',
+          values: [
+            { x: '1990', y: 110, from: 'video ad' },
+            { x: '1995', y: 160, from: 'video ad' },
+            { x: '2000', y: 230, from: 'video ad' },
+            { x: '2005', y: 300, from: 'video ad' },
+            { x: '2010', y: 448, from: 'video ad' },
+            { x: '2015', y: 500, from: 'video ad' },
+            { x: '1990', y: 120, from: 'email marketing' },
+            { x: '1995', y: 150, from: 'email marketing' },
+            { x: '2000', y: 200, from: 'email marketing' },
+            { x: '2005', y: 210, from: 'email marketing' },
+            { x: '2010', y: 300, from: 'email marketing' },
+            { x: '2015', y: 320, from: 'email marketing' }
+          ]
+        }
+      ],
+      label: {
+        visible: true
+      },
+      xField: 'x',
+      yField: 'y',
+      seriesField: 'from',
+      axes: [
+        {
+          orient: 'bottom',
+          type: 'band' as const
+        },
+        {
+          orient: 'left',
+          type: 'linear' as const,
+          grid: {
+            visible: true
+          }
+        }
+      ]
+    };
+    vchart = new VChart(spec, {
+      dom
+    });
+    vchart.renderSync();
+    const updateRes = (vchart as any)._updateSpec(
+      {
+        ...spec,
+        axes: [
+          {
+            orient: 'bottom',
+            type: 'band' as const
+          },
+          {
+            orient: 'left',
+            type: 'linear' as const,
+            grid: {
+              visible: false
+            }
+          }
+        ]
+      },
+      false
+    );
+
+    expect(updateRes).toEqual({
+      changeBackground: false,
+      change: false,
+      changeTheme: false,
+      reCompile: false,
+      reMake: true,
+      reRender: true,
+      reSize: false,
+      reTransformSpec: false
+    });
+  });
+
+  it('should reRender when `alternateColor` of axis grid change', () => {
+    const spec = {
+      type: 'area',
+      data: [
+        {
+          id: 'area',
+          values: [
+            { x: '1990', y: 110, from: 'video ad' },
+            { x: '1995', y: 160, from: 'video ad' },
+            { x: '2000', y: 230, from: 'video ad' },
+            { x: '2005', y: 300, from: 'video ad' },
+            { x: '2010', y: 448, from: 'video ad' },
+            { x: '2015', y: 500, from: 'video ad' },
+            { x: '1990', y: 120, from: 'email marketing' },
+            { x: '1995', y: 150, from: 'email marketing' },
+            { x: '2000', y: 200, from: 'email marketing' },
+            { x: '2005', y: 210, from: 'email marketing' },
+            { x: '2010', y: 300, from: 'email marketing' },
+            { x: '2015', y: 320, from: 'email marketing' }
+          ]
+        }
+      ],
+      label: {
+        visible: true
+      },
+      xField: 'x',
+      yField: 'y',
+      seriesField: 'from',
+      axes: [
+        {
+          orient: 'bottom',
+          type: 'band' as const
+        },
+        {
+          orient: 'left',
+          type: 'linear' as const,
+          grid: {
+            visible: true
+          }
+        }
+      ]
+    };
+    vchart = new VChart(spec, {
+      dom
+    });
+    vchart.renderSync();
+    const updateRes = (vchart as any)._updateSpec(
+      {
+        ...spec,
+        axes: [
+          {
+            orient: 'bottom',
+            type: 'band' as const
+          },
+          {
+            orient: 'left',
+            type: 'linear' as const,
+            grid: {
+              visible: true,
+              alternateColor: ['pink', 'green']
+            }
+          }
+        ]
+      },
+      false
+    );
+
+    expect(updateRes).toEqual({
+      changeBackground: false,
+      change: false,
+      changeTheme: false,
+      reCompile: false,
+      reMake: false,
+      reRender: true,
+      reSize: false,
+      reTransformSpec: false
+    });
+  });
+
+  it('should reMake when `visible` of label change from `false` to `true`', () => {
+    const spec = {
+      type: 'area',
+      data: {
+        values: [
+          {
+            time: '2:00',
+            value: 8
+          },
+          {
+            time: '4:00',
+            value: 9
+          },
+          {
+            time: '6:00',
+            value: 11
+          },
+          {
+            time: '8:00',
+            value: 14
+          },
+          {
+            time: '10:00',
+            value: 16
+          },
+          {
+            time: '12:00',
+            value: 17
+          },
+          {
+            time: '14:00',
+            value: 17
+          },
+          {
+            time: '16:00',
+            value: 16
+          },
+          {
+            time: '18:00',
+            value: 15
+          }
+        ]
+      },
+      xField: 'time',
+      yField: 'value',
+      label: {
+        visible: false
+      }
+    };
+    vchart = new VChart(spec, {
+      dom
+    });
+    vchart.renderSync();
+    const updateRes = (vchart as any)._updateSpec(
+      {
+        ...spec,
+        label: {
+          visible: true
+        }
+      },
+      false
+    );
+
+    expect(updateRes).toEqual({
+      changeBackground: false,
+      change: false,
+      changeTheme: false,
+      reCompile: false,
+      reMake: true,
+      reRender: true,
+      reSize: false,
+      reTransformSpec: false
+    });
+  });
+
+  it('should reMake when `visible` of label change from `false` to `true`', () => {
+    const spec = {
+      type: 'area',
+      data: {
+        values: [
+          {
+            time: '2:00',
+            value: 8
+          },
+          {
+            time: '4:00',
+            value: 9
+          },
+          {
+            time: '6:00',
+            value: 11
+          },
+          {
+            time: '8:00',
+            value: 14
+          },
+          {
+            time: '10:00',
+            value: 16
+          },
+          {
+            time: '12:00',
+            value: 17
+          },
+          {
+            time: '14:00',
+            value: 17
+          },
+          {
+            time: '16:00',
+            value: 16
+          },
+          {
+            time: '18:00',
+            value: 15
+          }
+        ]
+      },
+      xField: 'time',
+      yField: 'value',
+      label: {
+        visible: true
+      }
+    };
+    vchart = new VChart(spec, {
+      dom
+    });
+    vchart.renderSync();
+    const updateRes = (vchart as any)._updateSpec(
+      {
+        ...spec,
+        label: {
+          visible: false
+        }
+      },
+      false
+    );
+
+    expect(updateRes).toEqual({
+      changeBackground: false,
+      change: false,
+      changeTheme: false,
+      reCompile: false,
+      reMake: true,
+      reRender: true,
+      reSize: false,
+      reTransformSpec: false
+    });
+  });
+});
+
+describe('vchart updateSpec should not throw error', () => {
+  let container: HTMLElement;
+  let dom: HTMLElement;
+  let vchart: VChart;
+  beforeAll(() => {
+    container = createDiv();
+    dom = createDiv(container);
+    dom.id = 'container';
+    container.style.position = 'fixed';
+    container.style.width = '500px';
+    container.style.height = '500px';
+    container.style.top = '0px';
+    container.style.left = '0px';
+  });
+
+  afterAll(() => {
+    removeDom(container);
+    vchart.release();
+  });
+
+  it('should remake when length of `axes` change', () => {
+    const spec: IBarChartSpec = {
+      type: 'bar',
+      data: [
+        {
+          id: 'barData',
+          values: [
+            {
+              name: 'Apple',
+              value: 214480
+            },
+            {
+              name: 'Google',
+              value: 155506
+            }
+          ]
+        }
+      ],
+      direction: 'horizontal',
+      series: [
+        {
+          type: 'bar',
+          xField: 'value',
+          yField: 'name',
+          label: {
+            visible: true
+          }
+        }
+      ],
+      axes: [
+        {
+          orient: 'bottom',
+          visible: true
+        }
+      ],
+      markLine: [
+        {
+          y: 50,
+          startSymbol: {
+            visible: true,
+            style: {
+              symbolType: 'circle',
+              size: 8
+            }
+          },
+          label: {
+            formatMethod: (...p: any[]) => {
+              return p[0][0].y;
+            },
+            position: 'insideEndBottom',
+            refY: -5,
+            labelBackground: {
+              visible: false
+            }
+          }
+        }
+      ]
+    };
+    vchart = new VChart(spec, {
+      dom
+    });
+    vchart.renderSync();
+    const updateRes = (vchart as any)._updateSpec(
+      {
+        ...spec,
+        markLine: null
+      },
+      false
+    );
+
+    expect(updateRes).toEqual({
+      change: false,
+      changeBackground: false,
+      changeTheme: false,
+      reCompile: false,
+      reMake: true,
+      reRender: undefined,
+      reSize: false,
+      reTransformSpec: false
+    });
+  });
+});
+
+describe('vchart updateSpec of totalLabel', () => {
+  let container: HTMLElement;
+  let dom: HTMLElement;
+  let vchart: VChart;
+  beforeAll(() => {
+    container = createDiv();
+    dom = createDiv(container);
+    dom.id = 'container';
+    container.style.position = 'fixed';
+    container.style.width = '500px';
+    container.style.height = '500px';
+    container.style.top = '0px';
+    container.style.left = '0px';
+  });
+
+  afterAll(() => {
+    removeDom(container);
+    vchart.release();
+  });
+
+  it('should reCompile', () => {
+    const spec: ILineChartSpec = {
+      type: 'line',
+      data: {
+        values: [
+          { type: 'Nail polish', country: 'Africa', value: 4229 },
+          { type: 'Nail polish', country: 'EU', value: 4376 },
+          { type: 'Nail polish', country: 'China', value: 3054 },
+          { type: 'Nail polish', country: 'USA', value: 12814 },
+          { type: 'Eyebrow pencil', country: 'Africa', value: 3932 },
+          { type: 'Eyebrow pencil', country: 'EU', value: 3987 },
+          { type: 'Eyebrow pencil', country: 'China', value: 5067 },
+          { type: 'Eyebrow pencil', country: 'USA', value: 13012 },
+          { type: 'Rouge', country: 'Africa', value: 5221 },
+          { type: 'Rouge', country: 'EU', value: 3574 },
+          { type: 'Rouge', country: 'China', value: 7004 },
+          { type: 'Rouge', country: 'USA', value: 11624 },
+          { type: 'Lipstick', country: 'Africa', value: 9256 },
+          { type: 'Lipstick', country: 'EU', value: 4376 },
+          { type: 'Lipstick', country: 'China', value: 9054 },
+          { type: 'Lipstick', country: 'USA', value: 8814 },
+          { type: 'Eyeshadows', country: 'Africa', value: 3308 },
+          { type: 'Eyeshadows', country: 'EU', value: 4572 },
+          { type: 'Eyeshadows', country: 'China', value: 12043 },
+          { type: 'Eyeshadows', country: 'USA', value: 12998 },
+          { type: 'Eyeliner', country: 'Africa', value: 5432 },
+          { type: 'Eyeliner', country: 'EU', value: 3417 },
+          { type: 'Eyeliner', country: 'China', value: 15067 },
+          { type: 'Eyeliner', country: 'USA', value: 12321 },
+          { type: 'Foundation', country: 'Africa', value: 13701 },
+          { type: 'Foundation', country: 'EU', value: 5231 },
+          { type: 'Foundation', country: 'China', value: 10119 },
+          { type: 'Foundation', country: 'USA', value: 10342 },
+          { type: 'Lip gloss', country: 'Africa', value: 4008 },
+          { type: 'Lip gloss', country: 'EU', value: 4572 },
+          { type: 'Lip gloss', country: 'China', value: 12043 },
+          { type: 'Lip gloss', country: 'USA', value: 22998 },
+          { type: 'Mascara', country: 'Africa', value: 18712 },
+          { type: 'Mascara', country: 'EU', value: 6134 },
+          { type: 'Mascara', country: 'China', value: 10419 },
+          { type: 'Mascara', country: 'USA', value: 11261 }
+        ]
+      },
+      title: {
+        visible: true,
+        text: '100% stacked line chart of cosmetic products sales'
+      },
+      stack: true,
+      xField: 'type',
+      yField: 'value',
+      seriesField: 'country',
+      legends: [{ visible: true, position: 'middle', orient: 'bottom' }],
+      axes: [
+        {
+          orient: 'left',
+          label: {
+            formatMethod: (val: string | string[]) => {
+              return `${(+val * 100).toFixed(2)}%`;
+            }
+          }
+        }
+      ],
+      totalLabel: {
+        visible: true
+      },
+      point: {
+        visible: false
+      },
+      label: {
+        visible: true
+      }
+    };
+    vchart = new VChart(spec, {
+      dom
+    });
+    vchart.renderSync();
+    const updateRes = (vchart as any)._updateSpec(
+      {
+        ...spec,
+        totalLabel: {
+          ...spec.totalLabel,
+          style: {
+            fill: 'red'
+          }
+        }
+      },
+      false
+    );
+
+    expect(updateRes).toEqual({
+      changeBackground: false,
+      change: true,
+      changeTheme: false,
+      reCompile: true,
+      reMake: false,
+      reRender: true,
+      reSize: false,
+      reTransformSpec: false
+    });
+  });
+});
+
+describe('vchart updateSpec of width, height', () => {
+  let container: HTMLElement;
+  let dom: HTMLElement;
+  let vchart: VChart;
+  beforeAll(() => {
+    container = createDiv();
+    dom = createDiv(container);
+    dom.id = 'container';
+    container.style.position = 'fixed';
+    container.style.width = '500px';
+    container.style.height = '500px';
+    container.style.top = '0px';
+    container.style.left = '0px';
+  });
+
+  afterAll(() => {
+    removeDom(container);
+    vchart.release();
+  });
+
+  it('should reCompile', () => {
+    const spec: ILineChartSpec = {
+      type: 'line',
+      data: {
+        values: [
+          { type: 'Nail polish', country: 'Africa', value: 4229 },
+          { type: 'Nail polish', country: 'EU', value: 4376 },
+          { type: 'Nail polish', country: 'China', value: 3054 },
+          { type: 'Nail polish', country: 'USA', value: 12814 },
+          { type: 'Eyebrow pencil', country: 'Africa', value: 3932 },
+          { type: 'Eyebrow pencil', country: 'EU', value: 3987 },
+          { type: 'Eyebrow pencil', country: 'China', value: 5067 },
+          { type: 'Eyebrow pencil', country: 'USA', value: 13012 },
+          { type: 'Rouge', country: 'Africa', value: 5221 },
+          { type: 'Rouge', country: 'EU', value: 3574 },
+          { type: 'Rouge', country: 'China', value: 7004 },
+          { type: 'Rouge', country: 'USA', value: 11624 },
+          { type: 'Lipstick', country: 'Africa', value: 9256 },
+          { type: 'Lipstick', country: 'EU', value: 4376 },
+          { type: 'Lipstick', country: 'China', value: 9054 },
+          { type: 'Lipstick', country: 'USA', value: 8814 },
+          { type: 'Eyeshadows', country: 'Africa', value: 3308 },
+          { type: 'Eyeshadows', country: 'EU', value: 4572 },
+          { type: 'Eyeshadows', country: 'China', value: 12043 },
+          { type: 'Eyeshadows', country: 'USA', value: 12998 },
+          { type: 'Eyeliner', country: 'Africa', value: 5432 },
+          { type: 'Eyeliner', country: 'EU', value: 3417 },
+          { type: 'Eyeliner', country: 'China', value: 15067 },
+          { type: 'Eyeliner', country: 'USA', value: 12321 },
+          { type: 'Foundation', country: 'Africa', value: 13701 },
+          { type: 'Foundation', country: 'EU', value: 5231 },
+          { type: 'Foundation', country: 'China', value: 10119 },
+          { type: 'Foundation', country: 'USA', value: 10342 },
+          { type: 'Lip gloss', country: 'Africa', value: 4008 },
+          { type: 'Lip gloss', country: 'EU', value: 4572 },
+          { type: 'Lip gloss', country: 'China', value: 12043 },
+          { type: 'Lip gloss', country: 'USA', value: 22998 },
+          { type: 'Mascara', country: 'Africa', value: 18712 },
+          { type: 'Mascara', country: 'EU', value: 6134 },
+          { type: 'Mascara', country: 'China', value: 10419 },
+          { type: 'Mascara', country: 'USA', value: 11261 }
+        ]
+      },
+      title: {
+        visible: true,
+        text: '100% stacked line chart of cosmetic products sales'
+      },
+      stack: true,
+      xField: 'type',
+      yField: 'value',
+      seriesField: 'country',
+      legends: [{ visible: true, position: 'middle', orient: 'bottom' }],
+      axes: [
+        {
+          orient: 'left',
+          label: {
+            formatMethod: (val: string | string[]) => {
+              return `${(+val * 100).toFixed(2)}%`;
+            }
+          }
+        }
+      ],
+      totalLabel: {
+        visible: true
+      },
+      point: {
+        visible: false
+      },
+      label: {
+        visible: true
+      }
+    };
+    vchart = new VChart(spec, {
+      dom
+    });
+    vchart.renderSync();
+    const updateRes = (vchart as any)._updateSpec(
+      {
+        ...spec,
+        width: 600,
+        height: 600
+      },
+      false
+    );
+
+    expect(updateRes).toEqual({
+      changeBackground: false,
+      change: true,
+      changeTheme: false,
+      reCompile: false,
+      reMake: false,
+      reRender: true,
+      reSize: true,
+      reTransformSpec: false
+    });
+  });
+});
+
+describe('vchart updateSpec of different axes', () => {
+  let container: HTMLElement;
+  let dom: HTMLElement;
+  let vchart: VChart;
+  beforeAll(() => {
+    container = createDiv();
+    dom = createDiv(container);
+    dom.id = 'container';
+    container.style.position = 'fixed';
+    container.style.width = '500px';
+    container.style.height = '500px';
+    container.style.top = '0px';
+    container.style.left = '0px';
+  });
+
+  afterAll(() => {
+    removeDom(container);
+    vchart.release();
+  });
+
+  it('should remake when label is in series update', () => {
+    const spec: ILineChartSpec = {
+      type: 'line',
+      data: {
+        values: [
+          {
+            time: '2:00',
+            value: 38
+          },
+          {
+            time: '4:00',
+            value: 56
+          },
+          {
+            time: '6:00',
+            value: 10
+          },
+          {
+            time: '8:00',
+            value: 70
+          },
+          {
+            time: '10:00',
+            value: 36
+          },
+          {
+            time: '12:00',
+            value: 94
+          },
+          {
+            time: '14:00',
+            value: 24
+          },
+          {
+            time: '16:00',
+            value: 44
+          },
+          {
+            time: '18:00',
+            value: 36
+          },
+          {
+            time: '20:00',
+            value: 68
+          },
+          {
+            time: '22:00',
+            value: 22
+          }
+        ]
+      },
+      xField: 'time',
+      yField: 'value',
+      line: {
+        style: {
+          curveType: 'monotone'
+        }
+      },
+      axes: [{ orient: 'bottom', label: { style: { fill: 'red' } } }]
+    };
+
+    vchart = new VChart(spec, {
+      dom
+    });
+    vchart.renderSync();
+    const updateRes = (vchart as any)._updateSpec(
+      {
+        ...spec,
+        axes: [
+          {
+            ...(spec.axes as any)[0],
+            visible: false
+          }
+        ]
+      } as any,
+      false
+    );
+
+    expect(updateRes).toEqual({
+      change: false,
+      changeBackground: false,
+      changeTheme: false,
+      reCompile: true,
+      reMake: true,
+      reRender: true,
+      reSize: false,
+      reTransformSpec: false
+    });
+  });
+});
+
+describe('vchart updateSpec of different title', () => {
+  let container: HTMLElement;
+  let dom: HTMLElement;
+  let vchart: VChart;
+  beforeAll(() => {
+    container = createDiv();
+    dom = createDiv(container);
+    dom.id = 'container';
+    container.style.position = 'fixed';
+    container.style.width = '500px';
+    container.style.height = '500px';
+    container.style.top = '0px';
+    container.style.left = '0px';
+  });
+
+  afterAll(() => {
+    removeDom(container);
+    vchart.release();
+  });
+
+  it('should reMake when `visible` of title change from `true` to `false`', () => {
+    const spec = {
+      type: 'area',
+      data: [
+        {
+          id: 'area',
+          values: [
+            { x: '1990', y: 110, from: 'video ad' },
+            { x: '1995', y: 160, from: 'video ad' },
+            { x: '2000', y: 230, from: 'video ad' },
+            { x: '2005', y: 300, from: 'video ad' },
+            { x: '2010', y: 448, from: 'video ad' },
+            { x: '2015', y: 500, from: 'video ad' },
+            { x: '1990', y: 120, from: 'email marketing' },
+            { x: '1995', y: 150, from: 'email marketing' },
+            { x: '2000', y: 200, from: 'email marketing' },
+            { x: '2005', y: 210, from: 'email marketing' },
+            { x: '2010', y: 300, from: 'email marketing' },
+            { x: '2015', y: 320, from: 'email marketing' }
+          ]
+        }
+      ],
+      title: {
+        visible: true,
+        text: 'test'
+      },
+      xField: 'x',
+      yField: 'y',
+      seriesField: 'from'
+    };
+    vchart = new VChart(spec, {
+      dom
+    });
+    vchart.renderSync();
+    const updateRes = (vchart as any)._updateSpec(
+      {
+        ...spec,
+        title: {
+          visible: false
+        }
+      },
+      false
+    );
+
+    expect(updateRes).toEqual({
+      changeBackground: false,
+      change: true,
+      changeTheme: false,
+      reCompile: true,
+      reMake: true,
+      reRender: true,
+      reSize: false,
+      reTransformSpec: false
+    });
+  });
+
+  it('should reMake when `visible` of title change from `false` to `true`', () => {
+    const spec = {
+      type: 'area',
+      data: [
+        {
+          id: 'area',
+          values: [
+            { x: '1990', y: 110, from: 'video ad' },
+            { x: '1995', y: 160, from: 'video ad' },
+            { x: '2000', y: 230, from: 'video ad' },
+            { x: '2005', y: 300, from: 'video ad' },
+            { x: '2010', y: 448, from: 'video ad' },
+            { x: '2015', y: 500, from: 'video ad' },
+            { x: '1990', y: 120, from: 'email marketing' },
+            { x: '1995', y: 150, from: 'email marketing' },
+            { x: '2000', y: 200, from: 'email marketing' },
+            { x: '2005', y: 210, from: 'email marketing' },
+            { x: '2010', y: 300, from: 'email marketing' },
+            { x: '2015', y: 320, from: 'email marketing' }
+          ]
+        }
+      ],
+      title: {
+        visible: false,
+        text: 'test'
+      },
+      xField: 'x',
+      yField: 'y',
+      seriesField: 'from'
+    };
+    vchart = new VChart(spec, {
+      dom
+    });
+    vchart.renderSync();
+    const updateRes = (vchart as any)._updateSpec(
+      {
+        ...spec,
+        title: {
+          visible: true
+        }
+      },
+      false
+    );
+
+    expect(updateRes).toEqual({
+      changeBackground: false,
+      change: false,
+      changeTheme: false,
+      reCompile: false,
+      reMake: true,
+      reRender: true,
+      reSize: false,
+      reTransformSpec: false
+    });
+  });
+});
+
+describe('vchart updateSpec of different indicator', () => {
+  let container: HTMLElement;
+  let dom: HTMLElement;
+  let vchart: VChart;
+  beforeAll(() => {
+    container = createDiv();
+    dom = createDiv(container);
+    dom.id = 'container';
+    container.style.position = 'fixed';
+    container.style.width = '500px';
+    container.style.height = '500px';
+    container.style.top = '0px';
+    container.style.left = '0px';
+  });
+
+  afterAll(() => {
+    removeDom(container);
+    vchart.release();
+  });
+
+  it('should reMake when `visible` of indicator change to `false`', () => {
+    const spec = {
+      type: 'area',
+      data: [
+        {
+          id: 'area',
+          values: [
+            { x: '1990', y: 110, from: 'video ad' },
+            { x: '1995', y: 160, from: 'video ad' },
+            { x: '2000', y: 230, from: 'video ad' },
+            { x: '2005', y: 300, from: 'video ad' },
+            { x: '2010', y: 448, from: 'video ad' },
+            { x: '2015', y: 500, from: 'video ad' },
+            { x: '1990', y: 120, from: 'email marketing' },
+            { x: '1995', y: 150, from: 'email marketing' },
+            { x: '2000', y: 200, from: 'email marketing' },
+            { x: '2005', y: 210, from: 'email marketing' },
+            { x: '2010', y: 300, from: 'email marketing' },
+            { x: '2015', y: 320, from: 'email marketing' }
+          ]
+        }
+      ],
+      title: {
+        visible: true,
+        text: 'test'
+      },
+      xField: 'x',
+      yField: 'y',
+      seriesField: 'from',
+      indicator: {
+        title: {
+          visible: true,
+          style: {
+            text: 'bbb'
+          }
+        },
+        content: [
+          {
+            visible: true,
+            style: {
+              fontSize: 20,
+              text: '2222'
+            }
+          }
+        ]
+      }
+    };
+    vchart = new VChart(spec, {
+      dom
+    });
+    vchart.renderSync();
+    const updateRes = (vchart as any)._updateSpec(
+      {
+        ...spec,
+        indicator: {
+          ...spec.indicator,
+          visible: false
+        }
+      },
+      false
+    );
+
+    expect(updateRes).toEqual({
+      changeBackground: false,
+      change: true,
+      changeTheme: false,
+      reCompile: true,
+      reMake: false,
+      reRender: true,
+      reSize: false,
+      reTransformSpec: false
+    });
+  });
+
+  it('should reMake when `visible` of indicator change from `false` to `true`', () => {
+    const spec = {
+      type: 'area',
+      data: [
+        {
+          id: 'area',
+          values: [
+            { x: '1990', y: 110, from: 'video ad' },
+            { x: '1995', y: 160, from: 'video ad' },
+            { x: '2000', y: 230, from: 'video ad' },
+            { x: '2005', y: 300, from: 'video ad' },
+            { x: '2010', y: 448, from: 'video ad' },
+            { x: '2015', y: 500, from: 'video ad' },
+            { x: '1990', y: 120, from: 'email marketing' },
+            { x: '1995', y: 150, from: 'email marketing' },
+            { x: '2000', y: 200, from: 'email marketing' },
+            { x: '2005', y: 210, from: 'email marketing' },
+            { x: '2010', y: 300, from: 'email marketing' },
+            { x: '2015', y: 320, from: 'email marketing' }
+          ]
+        }
+      ],
+      title: {
+        visible: true,
+        text: 'test'
+      },
+      xField: 'x',
+      yField: 'y',
+      seriesField: 'from',
+      indicator: {
+        title: {
+          visible: false,
+          style: {
+            text: 'bbb'
+          }
+        },
+        content: [
+          {
+            visible: true,
+            style: {
+              fontSize: 20,
+              text: '2222'
+            }
+          }
+        ]
+      }
+    };
+    vchart = new VChart(spec, {
+      dom
+    });
+    vchart.renderSync();
+    const updateRes = (vchart as any)._updateSpec(
+      {
+        ...spec,
+        indicator: {
+          ...spec.indicator,
+          visible: true
+        }
+      },
+      false
+    );
+
+    expect(updateRes).toEqual({
+      changeBackground: false,
+      change: true,
+      changeTheme: false,
+      reCompile: true,
       reMake: false,
       reRender: true,
       reSize: false,

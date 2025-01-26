@@ -1,6 +1,6 @@
 import { markContext as ctx } from '../../util/context';
 import { RuleMark } from '../../../src/mark/rule';
-import { LayoutZIndex } from '../../../src/constant';
+import { LayoutZIndex } from '../../../src/constant/layout';
 
 test('rule mark initial style', () => {
   const ruleMark = new RuleMark('rule0', ctx);
@@ -23,7 +23,7 @@ test('rule mark initial style', () => {
   const borderSpacing = ruleMark.getAttribute('borderSpacing', {});
 
   // mark zindex
-  expect(ruleMark.getZIndex()).toEqual(LayoutZIndex.Mark);
+  expect(ruleMark.getMarkConfig().zIndex).toEqual(LayoutZIndex.Mark);
 
   expect(visible).toEqual(true);
   expect(zindex).toEqual(undefined);

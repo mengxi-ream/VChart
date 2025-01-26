@@ -1,7 +1,7 @@
-import type { RichTextWordBreak } from '@visactor/vrender-core';
-import type { ITooltipShapeActual, StringOrNumber, TextAlign, TextBaseLine } from '../../../typings';
+import type { ITextAttribute } from '@visactor/vrender-core';
+import type { ILayoutNumber, ITooltipShapePattern, StringOrNumber, TextAlign, TextBaseLine } from '../../../typings';
 import type { Padding } from '@visactor/vrender-components';
-import type { ITokenKey } from '../../../theme/token';
+import type { ITokenKey } from '../../../theme/token/interface';
 export interface ITooltipTextTheme<ColorType = string> {
     fontFamily?: string;
     fontSize?: number | ITokenKey;
@@ -14,7 +14,7 @@ export interface ITooltipTextTheme<ColorType = string> {
     spacing?: number;
     multiLine?: boolean;
     maxWidth?: number;
-    wordBreak?: RichTextWordBreak;
+    wordBreak?: ITextAttribute['wordBreak'];
     autoWidth?: boolean;
 }
 export interface ITooltipTheme<ColorType = string> {
@@ -37,14 +37,16 @@ export interface ITooltipTheme<ColorType = string> {
     shape?: {
         size?: number;
         spacing?: number;
-    } & ITooltipShapeActual;
+    } & Omit<ITooltipShapePattern, 'seriesId'>;
     titleLabel?: ITooltipTextTheme<ColorType>;
     keyLabel?: Omit<ITooltipTextTheme<ColorType>, 'autoWidth'>;
     valueLabel?: ITooltipTextTheme<ColorType>;
     spaceRow?: number;
-    maxContentHeight?: number;
+    maxContentHeight?: ILayoutNumber;
     offset?: {
         x?: number;
         y?: number;
     };
+    transitionDuration?: number;
+    align?: 'left' | 'right';
 }

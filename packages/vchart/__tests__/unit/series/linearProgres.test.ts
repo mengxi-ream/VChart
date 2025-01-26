@@ -1,8 +1,7 @@
-import { DataSet, csvParser, dataViewParser } from '@visactor/vdataset';
+import { DataSet, csvParser } from '@visactor/vdataset';
 import type { ISeriesOption } from '../../../src/series/interface';
 import { initChartDataSet, seriesOption } from '../../util/context';
 import { LinearProgressSeries } from '../../../src';
-import type { IGroupMark } from '../../../src/mark/group';
 
 const dataSet = new DataSet();
 initChartDataSet(dataSet);
@@ -24,18 +23,13 @@ describe('[Domain-Series-LinearProgress] LinearProgress Series', () => {
     linearProgress.init({});
 
     const marks = linearProgress.getMarks();
-    expect(marks.length).toEqual(4);
+    expect(marks.length).toEqual(3);
 
-    const groupMark = marks[1] as IGroupMark;
-    expect(groupMark.type).toEqual('group');
-    expect(groupMark.name).toEqual('group');
-    expect(groupMark.getMarks().length).toEqual(2);
-
-    const backgroundMark = groupMark.getMarks()[0];
+    const backgroundMark = marks[1];
     expect(backgroundMark.type).toEqual('rect');
     expect(backgroundMark.name).toEqual('track');
 
-    const progressMark = groupMark.getMarks()[1];
+    const progressMark = marks[2];
     expect(progressMark.type).toEqual('rect');
     expect(progressMark.name).toEqual('progress');
   });

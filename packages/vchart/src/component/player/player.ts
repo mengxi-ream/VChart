@@ -4,11 +4,10 @@ import type { ContinuousPlayerAttributes, DiscretePlayerAttributes } from '@visa
 
 // eslint-disable-next-line no-duplicate-imports
 import { DiscretePlayer, ContinuousPlayer, PlayerEventEnum } from '@visactor/vrender-components';
-import type { Maybe } from '@visactor/vutils';
 // eslint-disable-next-line no-duplicate-imports
-import { isNumber, array, isEqual, isNil, isValidNumber } from '@visactor/vutils';
+import { isNumber, array, isEqual, isValidNumber } from '@visactor/vutils';
 
-import type { IModelRenderOption, IModelSpecInfo } from '../../model/interface';
+import type { IModelRenderOption } from '../../model/interface';
 import type { IRegion } from '../../region/interface';
 
 import type { DirectionType, IPlayer } from './interface';
@@ -21,7 +20,8 @@ import { ComponentTypeEnum } from '../interface/type';
 import { BaseComponent } from '../base/base-component';
 import { transformContinuousSpecToAttrs, transformDiscreteSpecToAttrs } from './utils/transform';
 import { isHorizontal, isVertical } from './utils/orient';
-import { ChartEvent, LayoutLevel, LayoutZIndex } from '../../constant';
+import { LayoutLevel, LayoutZIndex } from '../../constant/layout';
+import { ChartEvent } from '../../constant/event';
 
 export class Player extends BaseComponent<IPlayer> implements IComponent {
   layoutZIndex: number = LayoutZIndex.Player;
@@ -53,21 +53,6 @@ export class Player extends BaseComponent<IPlayer> implements IComponent {
 
   set layoutOrient(v: IOrientType) {
     this._orient = v;
-  }
-
-  static getSpecInfo(chartSpec: any): Maybe<IModelSpecInfo[]> {
-    const playerSpec = chartSpec[this.specKey];
-    if (isNil(playerSpec)) {
-      return null;
-    }
-    return [
-      {
-        spec: playerSpec,
-        specPath: [this.specKey],
-        specInfoPath: ['component', this.specKey, 0],
-        type: ComponentTypeEnum.player
-      }
-    ];
   }
 
   /**
@@ -323,6 +308,21 @@ export class Player extends BaseComponent<IPlayer> implements IComponent {
     return 0;
   };
 
+  changePlayerIndex(index: number) {
+    const spec = this._specs[index];
+    (array(spec.data) as IDataValues[]).forEach(data => {
+      this._option?.globalInstance?.updateData(data.id, data.values);
+    });
+    this.event.emit(ChartEvent.playerChange, {
+      model: this,
+      value: {
+        spec: spec,
+        index: index,
+        specs: this._specs
+      }
+    });
+  }
+
   /**
    * 事件
    */
@@ -360,19 +360,7 @@ export class Player extends BaseComponent<IPlayer> implements IComponent {
     this._playerComponent.addEventListener(PlayerEventEnum.change, (e: { detail: { index: number } }) => {
       // 更新data
       const { index } = e.detail;
-      const spec = this._specs[index];
-      (array(spec.data) as IDataValues[]).forEach(data => {
-        this._option?.globalInstance?.updateData(data.id, data.values);
-      });
-
-      this.event.emit(ChartEvent.playerChange, {
-        model: this,
-        value: {
-          spec: spec,
-          index: index,
-          specs: this._specs
-        }
-      });
+      this.changePlayerIndex(index);
     });
 
     // 后退

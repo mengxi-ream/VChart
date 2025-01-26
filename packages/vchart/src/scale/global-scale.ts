@@ -8,7 +8,7 @@ import { createScale } from '../util/scale';
 import { isDataDomainSpec } from '../util/type';
 import { mergeFields } from '../util/data';
 import type { IVisualScale, IVisualSpecScale } from '../typings';
-import type { StatisticOperations } from '../data/transforms/dimension-statistics';
+import type { StatisticOperations } from '../data/transforms/interface';
 import type { ISeries } from '../series';
 
 export class GlobalScale implements IGlobalScale {
@@ -109,6 +109,10 @@ export class GlobalScale implements IGlobalScale {
       }
       if (lastSpec.type !== s.type) {
         // scale cannot change type, need remake chart
+        result.reMake = true;
+        return result;
+      }
+      if (!isEqual(lastSpec.specified, s.specified)) {
         result.reMake = true;
         return result;
       }

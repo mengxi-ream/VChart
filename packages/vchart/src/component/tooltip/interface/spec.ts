@@ -1,3 +1,4 @@
+import type { EventSourceType, EventType } from '../../../event/interface';
 import type {
   IGroupTooltipPattern,
   ITooltipActual,
@@ -17,7 +18,16 @@ export interface ITooltipSpec
      * & dimension tooltip pattern
      * （*支持在series上设置）
      */
-    ITooltipActiveTypeAsKeys<ITooltipPattern, ITooltipPattern, IGroupTooltipPattern>
+    ITooltipActiveTypeAsKeys<
+      ITooltipPattern & {
+        /**
+         * mark tooltip是否展示触发点所在的所有图形的数据
+         */
+        checkOverlap?: boolean;
+      },
+      ITooltipPattern,
+      IGroupTooltipPattern
+    >
   > {
   /**
    * 是否显示
@@ -34,13 +44,35 @@ export interface ITooltipSpec
   /**
    * tooltip触发方式
    * （*会影响自定义handler）
+   * @since 1.12.10 支持自定义的事件触发
    */
-  trigger?: MaybeArray<'hover' | 'click'> | 'none';
+  trigger?:
+    | MaybeArray<'hover' | 'click' | { eventType: EventType; source?: EventSourceType; consume?: boolean }>
+    | 'none';
   /**
    * 隐藏tooltip的触发方式（目前仅支持和trigger一致的设置以及none）
    * （*会影响自定义handler）
+   * @since 1.12.10 支持自定义的事件触发
    */
-  triggerOff?: MaybeArray<'hover' | 'click'> | 'none';
+  triggerOff?:
+    | MaybeArray<
+        | 'hover'
+        | 'click'
+        | { eventType: EventType; source?: EventSourceType; consume?: boolean; checkOutside?: boolean }
+      >
+    | 'none';
+  /**
+   * 当设置了`enterable: true`，且 trigger类型为`hover`的时候，为了方便鼠标进入提示信息的内容区域，设置的显示延迟时长
+   * 其他情况设置无效
+   * @since 1.12.8
+   */
+  showDelay?: number;
+
+  /**
+   * 隐藏计时器
+   * @since 1.11.7
+   */
+  hideTimer?: number;
   /**
    * 点击后锁定，只有点击才可以更新位置或者解锁，通常用于 trigger 为 `['hover', 'click']` 的场景
    * （*会影响自定义handler）
@@ -48,9 +80,9 @@ export interface ITooltipSpec
    */
   lockAfterClick?: boolean;
   /**
-   * tooltip样式
+   * tooltip样式，是现在支持的三种类型的tooltip组件（包括dimension、mark、group）的公共样式
    */
-  style?: Omit<ITooltipTheme<string>, 'offset'>;
+  style?: Omit<ITooltipTheme<string>, 'offset' | 'transitionDuration'>;
 
   /**
    * 自定义handler方法
@@ -96,11 +128,56 @@ export interface ITooltipSpec
    * @since 1.6.0
    */
   updateElement?: (tooltipElement: HTMLElement, actualTooltip: ITooltipActual, params: TooltipHandlerParams) => void;
-
+  /**
+   * 计算tooltip位置时候的偏移量
+   */
   offset?: {
+    /**
+     * x 方向的偏移量
+     */
     x?: number;
+    /**
+     * y 方向的偏移量
+     */
     y?: number;
   };
+}
+
+type ISeriesToolipPattern = Pick<
+  ITooltipPattern,
+  | 'visible'
+  | 'title'
+  | 'content'
+  | 'hasShape'
+  | 'shapeColor'
+  | 'shapeFill'
+  | 'shapeHollow'
+  | 'shapeLineWidth'
+  | 'shapeSize'
+  | 'shapeStroke'
+  | 'shapeType'
+  | 'updateContent'
+  | 'updateTitle'
+  | 'updatePosition'
+>;
+
+/**
+ * 系列上的tooltip配置，优先级高于全局tooltip配置
+ * 对于visible相当配置，系列tooltip只能关闭，不能覆盖全局tooltip配置
+ */
+export interface ISeriesTooltipSpec extends Pick<ITooltipSpec, 'visible' | 'activeType' | 'handler'> {
+  /**
+   * 该系列数据在dimension tooltip中特有的配置
+   */
+  dimension?: ISeriesToolipPattern;
+  /**
+   * 该系列数据在mark tooltip中特有的配置
+   */
+  mark?: ISeriesToolipPattern;
+  /**
+   * 该系列数据在group tooltip中特有的配置
+   */
+  group?: Pick<IGroupTooltipPattern, 'triggerMark'> & ISeriesToolipPattern;
 }
 
 export interface ITooltipHandlerSpec {

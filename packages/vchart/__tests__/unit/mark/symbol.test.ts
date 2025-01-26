@@ -1,7 +1,7 @@
 import { markContext as ctx } from '../../util/context';
 import { SymbolMark } from '../../../src/mark/symbol';
 import { OrdinalScale } from '@visactor/vscale';
-import { LayoutZIndex } from '../../../src/constant';
+import { LayoutZIndex } from '../../../src/constant/layout';
 
 test('symbol initial style', () => {
   const symbolMark = new SymbolMark('symbol0', ctx);
@@ -26,7 +26,7 @@ test('symbol initial style', () => {
   const borderSpacing = symbolMark.getAttribute('borderSpacing', {});
 
   // mark zindex
-  expect(symbolMark.getZIndex()).toEqual(LayoutZIndex.Mark);
+  expect(symbolMark.getMarkConfig().zIndex).toEqual(LayoutZIndex.Mark);
 
   expect(visible).toEqual(true);
   expect(zindex).toEqual(undefined);

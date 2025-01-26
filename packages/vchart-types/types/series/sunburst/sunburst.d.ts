@@ -36,7 +36,7 @@ export declare class SunburstSeries extends PolarSeries<any> {
     protected initData(): void;
     getStatisticFields(): {
         key: string;
-        operations: ("values" | "max" | "min")[];
+        operations: import("../../data/transforms/interface").StatisticOperations;
     }[];
     protected _addDataIndexAndKey(): void;
     initMark(): void;
@@ -56,5 +56,6 @@ export declare class SunburstSeries extends PolarSeries<any> {
     getStackValueField(): string;
     protected _noAnimationDataKey(datum: Datum, index: number): unknown | undefined;
     getActiveMarks(): IMark[];
+    getMarkData(datum: Datum): any;
 }
 export declare const registerSunBurstSeries: () => void;

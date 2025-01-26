@@ -65,7 +65,7 @@
 
 #${prefix} seriesField(string)
 
-系列分组字段。
+系列分组字段，默认会用于颜色映射；
 
 {{ use: common-series-style(
   prefix = ${prefix}
@@ -146,6 +146,8 @@ morph 动画配置。
   prefix = ${prefix}
 ) }}
 
+{{ if: !${noAnimation} }}
+
 {{ use: animate-animation(
   prefix = ${prefix},
   noPreset = ${noPreset},
@@ -154,6 +156,8 @@ morph 动画配置。
   seriesType = ${seriesType},
   seriesMarks = ${seriesMarks}
 ) }}
+
+{{ /if }}
 
 {{ use: common-interaction(
   prefix = ${prefix}

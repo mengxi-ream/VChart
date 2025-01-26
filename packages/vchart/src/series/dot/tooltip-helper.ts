@@ -1,101 +1,91 @@
 import type { ISeriesTooltipHelper } from '../interface';
 import { BaseSeriesTooltipHelper } from '../base/tooltip-helper';
-import type { ITooltipLinePattern, ITooltipPattern, TooltipActiveType } from '../../typings';
-import { isValid, TimeUtil } from '@visactor/vutils';
+import type {
+  Datum,
+  ITooltipActual,
+  ITooltipLineActual,
+  ITooltipLinePattern,
+  MaybeArray,
+  TooltipActiveType,
+  TooltipData,
+  TooltipPatternProperty
+} from '../../typings';
+import { TimeUtil } from '@visactor/vutils';
+import type { ITooltipSpec } from '../../component/tooltip/interface/spec';
+import type { TooltipHandlerParams } from '../../component/tooltip/interface/common';
 
 export class DotSeriesTooltipHelper extends BaseSeriesTooltipHelper implements ISeriesTooltipHelper {
-  updateTooltipSpec() {
-    super.updateTooltipSpec();
-    if (isValid(this.spec?.mark)) {
-      this.spec!.mark.updateContent = (prev: any, datum: any, params: any) => {
-        const childrenContent: ITooltipLinePattern[] = [];
+  protected enableByType(activeType: TooltipActiveType): boolean {
+    return activeType === 'mark';
+  }
+
+  protected getDefaultTitlePattern(activeType: TooltipActiveType): ITooltipLinePattern {
+    return {
+      key: 'event info',
+      value: 'event info'
+    };
+  }
+
+  shapeTypeCallback = () => {
+    return 'square';
+  };
+
+  protected getDefaultContentList(): MaybeArray<TooltipPatternProperty<MaybeArray<ITooltipLinePattern>>> {
+    return [
+      {
+        key: (datum: any) => datum.type,
+        value: (datum: any) => datum.id
+      },
+      {
+        key: 'event_time',
+        value: (datum: any) => TimeUtil.getInstance().timeFormat('%Y%m%d', datum.event_time)
+      },
+      {
+        key: 'action_type',
+        value: (datum: any) => datum.action_type
+      },
+      {
+        key: 'children',
+        value: (datum: any) => {
+          return datum.children;
+        }
+      }
+    ];
+  }
+
+  getTooltipData(
+    activeType: TooltipActiveType,
+    chartTooltipSpec?: ITooltipSpec,
+    data?: TooltipData,
+    datum?: Datum[],
+    params?: TooltipHandlerParams
+  ): ITooltipActual | null {
+    const res = super.getTooltipData(activeType, chartTooltipSpec, data, datum, params);
+    const userUpdateContent = this.spec?.[activeType]?.updateContent ?? chartTooltipSpec?.[activeType]?.updateContent;
+
+    if (res && !userUpdateContent) {
+      res.updateContent = (prev: any, datum: any, params: any) => {
+        const childrenContent: ITooltipLineActual[] = [];
         const childrenPrev = prev.filter((p: any) => p.key === 'children');
+
         childrenPrev.length > 0 &&
           childrenPrev[0].value.forEach((element: any) => {
             let flag = true;
             for (const key in element) {
               childrenContent.push({
+                ...childrenPrev[0],
                 shapeType: 'circle',
                 hasShape: flag,
-                shapeColor: this.shapeColorCallback(datum[0].datum[0]),
-                shapeStroke: this.shapeStrokeCallback(datum[0].datum[0]),
                 key: key,
                 value: element[key] + ''
-              });
+              } as ITooltipLineActual);
               flag = false;
             }
           });
         return prev.concat(childrenContent);
       };
     }
-  }
 
-  /** 获取默认的tooltip pattern */
-  getDefaultTooltipPattern(activeType: TooltipActiveType): ITooltipPattern | null {
-    if (activeType === 'mark') {
-      return {
-        visible: true,
-        activeType,
-        title: {
-          key: 'event info',
-          value: 'event info'
-        },
-        content: [
-          {
-            hasShape: true,
-            shapeType: 'square',
-            shapeColor: this.shapeColorCallback,
-            shapeStroke: this.shapeStrokeCallback,
-            key: (datum: any) => datum.type,
-            value: (datum: any) => datum.id
-          },
-          {
-            hasShape: true,
-            shapeType: 'square',
-            shapeColor: this.shapeColorCallback,
-            shapeStroke: this.shapeStrokeCallback,
-            key: 'event_time',
-            value: (datum: any) => TimeUtil.getInstance().timeFormat('%Y%m%d', datum.event_time)
-          },
-          {
-            hasShape: true,
-            shapeType: 'square',
-            shapeColor: this.shapeColorCallback,
-            shapeStroke: this.shapeStrokeCallback,
-            key: 'action_type',
-            value: (datum: any) => datum.action_type
-          },
-          {
-            shapeType: 'square',
-            hasShape: true,
-            shapeColor: this.shapeColorCallback,
-            shapeStroke: this.shapeStrokeCallback,
-            key: 'children',
-            value: (datum: any) => {
-              return datum.children;
-            }
-          }
-        ],
-        updateContent: (prev: any, datum: any, params: any) => {
-          const childrenContent: ITooltipLinePattern[] = [];
-          prev[3].value.forEach((element: any) => {
-            let flag = true;
-            for (const key in element) {
-              childrenContent.push({
-                shapeType: 'circle',
-                hasShape: flag,
-                shapeColor: this.shapeColorCallback(datum[0].datum[0]),
-                shapeStroke: this.shapeStrokeCallback(datum[0].datum[0]),
-                key: key,
-                value: element[key] + ''
-              } as ITooltipLinePattern);
-              flag = false;
-            }
-          });
-          return prev.concat(childrenContent);
-        }
-      };
-    }
-    return null;
+    return res;
   }
 }

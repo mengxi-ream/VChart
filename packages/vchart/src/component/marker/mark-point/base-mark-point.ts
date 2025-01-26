@@ -1,6 +1,4 @@
-import { DataView } from '@visactor/vdataset';
 import type { IMarkPoint, IMarkPointSpec } from './interface';
-import { markerAggregation } from '../../../data/transforms/aggregation';
 import {
   computeClipRange,
   computeOffsetFromRegion,
@@ -10,17 +8,14 @@ import {
   transformState,
   transformStyle
 } from '../utils';
-import { registerDataSetInstanceTransform } from '../../../data/register';
 import type { MarkPointAttrs } from '@visactor/vrender-components';
 // eslint-disable-next-line no-duplicate-imports
 import { MarkPoint as MarkPointComponent } from '@visactor/vrender-components';
 import { isValid } from '@visactor/vutils';
 import { transformToGraphic } from '../../../util/style';
 import { BaseMarker } from '../base-marker';
-import { LayoutZIndex } from '../../../constant';
+import { LayoutZIndex } from '../../../constant/layout';
 import type { IGroup } from '@visactor/vrender-core';
-import { markerFilter } from '../../../data/transforms/marker-filter';
-import type { IMarkProcessOptions } from '../interface';
 
 export abstract class BaseMarkPoint extends BaseMarker<IMarkPointSpec> implements IMarkPoint {
   static specKey = 'markPoint';
@@ -30,7 +25,6 @@ export abstract class BaseMarkPoint extends BaseMarker<IMarkPointSpec> implement
   protected declare _markerComponent: MarkPointComponent;
 
   protected abstract _computePointsAttr(): any;
-  protected abstract _computeOptions(): IMarkProcessOptions;
 
   static _getMarkerCoordinateType(markerSpec: any): string {
     const { doPolarProcess, doGeoProcess } = getMarkPointProcessInfo(markerSpec);
@@ -62,19 +56,43 @@ export abstract class BaseMarkPoint extends BaseMarker<IMarkPointSpec> implement
         offset: targetSymbol.offset ?? 0,
         visible: targetSymbol.visible ?? false,
         size: targetSymbol.size ?? 20,
-        style: transformStyle(targetSymbol.style, this._markerData)
+        style: transformStyle(targetSymbol.style, this._markerData, this._markAttributeContext)
       },
       state: {
-        line: transformState(this._spec.itemLine.line?.state ?? {}, this._markerData),
-        lineStartSymbol: transformState(this._spec.itemLine.startSymbol?.state ?? {}, this._markerData),
-        lineEndSymbol: transformState(this._spec.itemLine.endSymbol?.state ?? {}, this._markerData),
-        symbol: transformState(this._spec.itemContent.symbol?.state ?? {}, this._markerData),
-        image: transformState(this._spec.itemContent.image?.state ?? {}, this._markerData),
-        text: transformState(this._spec.itemContent.text?.state ?? {}, this._markerData),
-        textBackground: transformState(this._spec.itemContent.text?.labelBackground?.state, this._markerData),
-        richText: transformState(this._spec.itemContent.richText?.state ?? {}, this._markerData),
-        customMark: transformState(this._spec.itemContent.customMark?.state ?? {}, this._markerData),
-        targetItem: transformState(this._spec.targetSymbol?.state ?? {}, this._markerData)
+        line: transformState(this._spec.itemLine.line?.state ?? {}, this._markerData, this._markAttributeContext),
+        lineStartSymbol: transformState(
+          this._spec.itemLine.startSymbol?.state ?? {},
+          this._markerData,
+          this._markAttributeContext
+        ),
+        lineEndSymbol: transformState(
+          this._spec.itemLine.endSymbol?.state ?? {},
+          this._markerData,
+          this._markAttributeContext
+        ),
+        symbol: transformState(
+          this._spec.itemContent.symbol?.state ?? {},
+          this._markerData,
+          this._markAttributeContext
+        ),
+        image: transformState(this._spec.itemContent.image?.state ?? {}, this._markerData, this._markAttributeContext),
+        text: transformState(this._spec.itemContent.text?.state ?? {}, this._markerData, this._markAttributeContext),
+        textBackground: transformState(
+          this._spec.itemContent.text?.labelBackground?.state,
+          this._markerData,
+          this._markAttributeContext
+        ),
+        richText: transformState(
+          this._spec.itemContent.richText?.state ?? {},
+          this._markerData,
+          this._markAttributeContext
+        ),
+        customMark: transformState(
+          this._spec.itemContent.customMark?.state ?? {},
+          this._markerData,
+          this._markAttributeContext
+        ),
+        targetItem: transformState(this._spec.targetSymbol?.state ?? {}, this._markerData, this._markAttributeContext)
       },
       animation: this._spec.animation ?? false,
       animationEnter: this._spec.animationEnter,
@@ -83,16 +101,26 @@ export abstract class BaseMarkPoint extends BaseMarker<IMarkPointSpec> implement
     };
 
     if (symbol?.style) {
-      markPointAttrs.itemContent.symbolStyle = transformToGraphic(transformStyle(symbol.style, this._markerData));
+      markPointAttrs.itemContent.symbolStyle = transformToGraphic(
+        transformStyle(symbol.style, this._markerData, this._markAttributeContext)
+      );
     }
     if (image?.style) {
-      markPointAttrs.itemContent.imageStyle = transformStyle(image.style, this._markerData);
+      markPointAttrs.itemContent.imageStyle = transformStyle(image.style, this._markerData, this._markAttributeContext);
     }
     if (label) {
-      markPointAttrs.itemContent.textStyle = transformLabelAttributes(label, this._markerData);
+      markPointAttrs.itemContent.textStyle = transformLabelAttributes(
+        label,
+        this._markerData,
+        this._markAttributeContext
+      );
     }
     if (richText?.style) {
-      markPointAttrs.itemContent.richTextStyle = transformStyle(richText.style, this._markerData);
+      markPointAttrs.itemContent.richTextStyle = transformStyle(
+        richText.style,
+        this._markerData,
+        this._markAttributeContext
+      );
     }
 
     const { visible, line = {}, ...restItemLine } = itemLine;
@@ -168,27 +196,6 @@ export abstract class BaseMarkPoint extends BaseMarker<IMarkPointSpec> implement
       return;
     }
 
-    registerDataSetInstanceTransform(this._option.dataSet, 'markerAggregation', markerAggregation);
-    registerDataSetInstanceTransform(this._option.dataSet, 'markerFilter', markerFilter);
-
-    const { options } = this._computeOptions();
-
-    const data = new DataView(this._option.dataSet, { name: `${this.type}_${this.id}_data` });
-    data.parse([this._getRelativeDataView()], {
-      type: 'dataview'
-    });
-    data.transform({
-      type: 'markerAggregation',
-      options
-    });
-
-    data.transform({
-      type: 'markerFilter',
-      options: this._getAllRelativeSeries()
-    });
-    data.target.on('change', () => {
-      this._markerLayout();
-    });
-    this._markerData = data;
+    this._initCommonDataView();
   }
 }

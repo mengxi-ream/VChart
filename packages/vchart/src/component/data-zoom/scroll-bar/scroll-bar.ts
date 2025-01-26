@@ -1,5 +1,4 @@
-import type { Maybe } from '@visactor/vutils';
-import { isArray, isBoolean, isEmpty, isFunction, isNil, isNumber, isValid } from '@visactor/vutils';
+import { isBoolean, isEmpty, isFunction, isNil, isNumber, isValid } from '@visactor/vutils';
 import type { IComponentOption } from '../../interface';
 // eslint-disable-next-line no-duplicate-imports
 import { ComponentTypeEnum } from '../../interface/type';
@@ -9,14 +8,13 @@ import type { ScrollBarAttributes } from '@visactor/vrender-components';
 import { ScrollBar as ScrollBarComponent } from '@visactor/vrender-components';
 import { transformToGraphic } from '../../../util/style';
 import type { IRectGraphicAttribute, INode, IGroup, IGraphic } from '@visactor/vrender-core';
-import { ChartEvent, LayoutLevel, LayoutZIndex } from '../../../constant';
+import { LayoutLevel, LayoutZIndex } from '../../../constant/layout';
+import { ChartEvent } from '../../../constant/event';
 import { SCROLL_BAR_DEFAULT_SIZE } from '../../../constant/scroll-bar';
 import type { IScrollBarSpec } from './interface';
-import { IFilterMode } from '../interface';
 import { Factory } from '../../../core/factory';
 import type { IZoomable } from '../../../interaction/zoom';
 import type { ILayoutType } from '../../../typings/layout';
-import type { IModelSpecInfo } from '../../../model/interface';
 import { isClose } from '../../../util';
 
 export class ScrollBar<T extends IScrollBarSpec = IScrollBarSpec> extends DataFilterBaseComponent<T> {
@@ -33,33 +31,6 @@ export class ScrollBar<T extends IScrollBarSpec = IScrollBarSpec> extends DataFi
 
   // datazoom组件
   protected _component!: ScrollBarComponent;
-
-  static getSpecInfo(chartSpec: any): Maybe<IModelSpecInfo[]> {
-    const compSpec = chartSpec[this.specKey];
-    if (isNil(compSpec)) {
-      return undefined;
-    }
-    if (!isArray(compSpec)) {
-      return [
-        {
-          spec: compSpec,
-          specPath: [this.specKey],
-          specInfoPath: ['component', this.specKey, 0],
-          type: ComponentTypeEnum.scrollBar
-        }
-      ];
-    }
-    const specInfos: IModelSpecInfo[] = [];
-    compSpec.forEach((s, i: number) => {
-      specInfos.push({
-        spec: s,
-        specPath: [this.specKey, i],
-        specInfoPath: ['component', this.specKey, i],
-        type: ComponentTypeEnum.scrollBar
-      });
-    });
-    return specInfos;
-  }
 
   constructor(spec: T, options: IComponentOption) {
     super(spec as any, options);
@@ -165,11 +136,11 @@ export class ScrollBar<T extends IScrollBarSpec = IScrollBarSpec> extends DataFi
 
       this._start = start;
       this._end = end;
-      const startValue = this._statePointToData(start);
-      const endValue = this._statePointToData(end);
+      const startValue = this.statePointToData(start);
+      const endValue = this.statePointToData(end);
       const hasChange = isFunction(this._spec.updateDataAfterChange)
         ? this._spec.updateDataAfterChange(start, end, startValue, endValue)
-        : this._handleStateChange(this._statePointToData(start), this._statePointToData(end));
+        : this._handleStateChange(this.statePointToData(start), this.statePointToData(end));
       if (hasChange) {
         this.event.emit(ChartEvent.scrollBarChange, {
           model: this,
@@ -187,7 +158,10 @@ export class ScrollBar<T extends IScrollBarSpec = IScrollBarSpec> extends DataFi
   }
 
   protected _handleDataCollectionChange() {
-    // do nothing
+    if (this._spec.auto) {
+      const data = this._data.getDataView();
+      data.reRunAllTransform();
+    }
   }
 
   protected _initCommonEvent() {

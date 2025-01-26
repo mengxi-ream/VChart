@@ -1,4 +1,4 @@
-import { CustomEvent, type IGraphic, type IGroup, type INode } from '@visactor/vrender-core';
+import { CustomEvent, type IGraphicAttribute, type IGraphic, type IGroup, type INode } from '@visactor/vrender-core';
 import type { IRegion } from '../../region/interface';
 import type { IComponent, IComponentOption } from '../interface';
 import { ComponentPluginService } from '../../plugin/components/plugin-service';
@@ -7,7 +7,7 @@ import type { IBoundsLike } from '@visactor/vutils';
 // eslint-disable-next-line no-duplicate-imports
 import { isEqual } from '@visactor/vutils';
 import type { IGroupMark } from '@visactor/vgrammar-core';
-import { Event_Source_Type } from '../../constant';
+import { Event_Source_Type } from '../../constant/event';
 import type { IAnimate } from '../../animation/interface';
 import { AnimateManager } from '../../animation/animate-manager';
 // import { preprocessSpecOrTheme } from '../../util/spec/preprocess';
@@ -87,7 +87,7 @@ export class BaseComponent<T extends IComponentSpec = IComponentSpec> extends La
 
   protected getContainer() {
     if (!this._container) {
-      this._container = this._option?.globalInstance.getStage().find(node => node.name === 'root', true);
+      this._container = this._option?.globalInstance.getStage().find(node => node.name === 'root', true) as IGroup;
     }
 
     return this._container;
@@ -138,12 +138,7 @@ export class BaseComponent<T extends IComponentSpec = IComponentSpec> extends La
 
   compileMarks(group?: string | IGroupMark) {
     this.getMarks().forEach(m => {
-      m.compile({ group });
-      m.getProduct()?.configure({
-        context: {
-          model: this
-        }
-      });
+      m.compile({ group, context: { model: this } });
     });
   }
 
@@ -182,5 +177,10 @@ export class BaseComponent<T extends IComponentSpec = IComponentSpec> extends La
 
   getBoundsInRect(rect: ILayoutRect, fullRect: ILayoutRect): IBoundsLike {
     return { x1: 0, x2: 0, y1: 0, y2: 0 };
+  }
+
+  getDatum(graphic?: IGraphic<Partial<IGraphicAttribute>>) {
+    // override
+    return;
   }
 }

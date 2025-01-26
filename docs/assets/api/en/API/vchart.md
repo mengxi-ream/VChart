@@ -127,6 +127,8 @@ registerMap: (key: string, source: GeoSourceType, option?: GeoSourceOption) => v
 Used to register map data.
 
 ```ts
+export type GeoSourceOption = IGeoJsonOption | ITopoJsonOption;
+
 export interface GeoSourceOption {
   type: 'geojson';
   /** Calculate center point */
@@ -154,6 +156,12 @@ export interface GeoSourceOption {
         /** @default false */
         reverse?: boolean;
       };
+}
+
+/** topojson */
+export interface ITopoJsonOption extends Omit<IGeoJsonOption, 'type'> {
+  type: 'topojson';
+  object: string;
 }
 ```
 
@@ -200,33 +208,35 @@ For the spec configuration of the chart, see[configuration item](../../option/)P
 
 Chart configuration, including rendering containers, etc., see the following table for details:
 
-| Attribute Name          | Type                        | Required  | Description                                                                                                                                                                                                                                                                                                                                                                  |
-| ----------------------- | --------------------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `dom`                   | `string\|HTMLElement`       | No        | **Valid only in browser environments.** The parent container of the chart mount, you can directly specify the container id, or you can pass in the dom object                                                                                                                                                                                                                |
-| `renderCanvas`          | `string\|HTMLCanvasElement` | No        | In addition to selecting the dom property to mount the parent container, you can also use the renderCanvas property to directly pass in the canvas instance/canvasId, for the Mini Program/widget environment, please pass in the id directly                                                                                                                                |
-| `dataSet`               | `DataSet`                   | No        | Dataset                                                                                                                                                                                                                                                                                                                                                                      |
-| `autoFit`               | `boolean`                   | No        | Whether to adapt to container size, default is `true`                                                                                                                                                                                                                                                                                                                        |
-| `animation`             | `boolean`                   | No        | Whether to turn on animation, the default is `true`                                                                                                                                                                                                                                                                                                                          |
-| `options3d`             | `srIOption3DType`           | No        | 3d Configuration                                                                                                                                                                                                                                                                                                                                                             |
-| `layout`                | `LayoutCallBack`            | No        | Custom layout function                                                                                                                                                                                                                                                                                                                                                       |
-| `mode`                  | `string`                    | No        | Configure the rendering environment, the default is'desktop-browser ', when you need to render VChart in a non-browser environment, you need to configure this property. `'desktop-browser'`: Default mode, suitable for PC and H5; `'mobile-browser'`: H5 mode; `'node'`: Node rendering; `'worker'`: worker mode; `'miniApp'`: Mini Program Mode; `'lynx'`: lynx rendering |
-| `modeParams`            | any                         | No        | configuration `mode` Parameters are used together for configuration `mode` Some special configurations of the environment corresponding to the parameters                                                                                                                                                                                                                    |
-| `dpr`                   | `number`                    | No        | Set screen definition                                                                                                                                                                                                                                                                                                                                                        |
-| `interactive`           | `boolean`                   | No        | Chart interaction global switch, default is `true`.                                                                                                                                                                                                                                                                                                                          |
-| `viewBox`               | `object`                    | No        | Specifies the rectangular Region to draw, such as `{ x1: 100, y1: 100, x2: 300, y2: 300 }`                                                                                                                                                                                                                                                                                   |
-| `canvasControled`       | `boolean`                   | No        | Used to tell the underlying rendering engine VRender whether the Canvas of the chart is a controlled canvas, and if not, no operations such as resize will be performed.                                                                                                                                                                                                     |
-| `stage`                 | `Stage`                     | No        | External incoming VRender stage                                                                                                                                                                                                                                                                                                                                              |
-| `layer`                 | `Layer`                     | No        | External incoming VRender layer                                                                                                                                                                                                                                                                                                                                              |
-| `beforeRender`          | `Function`                  | No        | Draw the previous hook function,`(stage: IStage) => void`                                                                                                                                                                                                                                                                                                                    |
-| `afterRender`           | `Function`                  | No        | The hook function after drawing,`(stage: IStage) => void`                                                                                                                                                                                                                                                                                                                    |
-| `background`            | `string\object`             | No        | Drawing Region background color setting, you can configure gradual change color                                                                                                                                                                                                                                                                                              |
-| `logLevel`              | `number`                    | No        | Log type for development and debugging                                                                                                                                                                                                                                                                                                                                       |
-| `disableDirtyBounds`    | `boolean`                   | No        | Whether to close dirtyBounds                                                                                                                                                                                                                                                                                                                                                 |
-| `enableView3dTransform` | `boolean`                   | No        | Whether to enable the transformation mode of view3d                                                                                                                                                                                                                                                                                                                          |
-| +                       | `poptip`                    | `boolean` | No                                                                                                                                                                                                                                                                                                                                                                           | Whether to enable poptip for omitting text, used to view the complete text content, enabled by default |
-|                         |
+| Attribute Name          | Type                        | Required | Description                                                                                                                                                                                                                                                                                                                                                                  |
+| ----------------------- | --------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dom`                   | `string\|HTMLElement`       | No       | **Valid only in browser environments.** The parent container of the chart mount, you can directly specify the container id, or you can pass in the dom object                                                                                                                                                                                                                |
+| `renderCanvas`          | `string\|HTMLCanvasElement` | No       | In addition to selecting the dom property to mount the parent container, you can also use the renderCanvas property to directly pass in the canvas instance/canvasId, for the Mini Program/widget environment, please pass in the id directly                                                                                                                                |
+| `dataSet`               | `DataSet`                   | No       | Dataset                                                                                                                                                                                                                                                                                                                                                                      |
+| `autoFit`               | `boolean`                   | No       | Whether to adapt to container size, default is `true`                                                                                                                                                                                                                                                                                                                        |
+| `animation`             | `boolean`                   | No       | Whether to turn on animation, the default is `true`                                                                                                                                                                                                                                                                                                                          |
+| `options3d`             | `srIOption3DType`           | No       | 3d Configuration                                                                                                                                                                                                                                                                                                                                                             |
+| `layout`                | `LayoutCallBack`            | No       | Custom layout function                                                                                                                                                                                                                                                                                                                                                       |
+| `mode`                  | `string`                    | No       | Configure the rendering environment, the default is'desktop-browser ', when you need to render VChart in a non-browser environment, you need to configure this property. `'desktop-browser'`: Default mode, suitable for PC and H5; `'mobile-browser'`: H5 mode; `'node'`: Node rendering; `'worker'`: worker mode; `'miniApp'`: Mini Program Mode; `'lynx'`: lynx rendering |
+| `modeParams`            | any                         | No       | configuration `mode` Parameters are used together for configuration `mode` Some special configurations of the environment corresponding to the parameters                                                                                                                                                                                                                    |
+| `dpr`                   | `number`                    | No       | Set screen definition                                                                                                                                                                                                                                                                                                                                                        |
+| `interactive`           | `boolean`                   | No       | Chart interaction global switch, default is `true`.                                                                                                                                                                                                                                                                                                                          |
+| `viewBox`               | `object`                    | No       | Specifies the rectangular Region to draw, such as `{ x1: 100, y1: 100, x2: 300, y2: 300 }`                                                                                                                                                                                                                                                                                   |
+| `canvasControled`       | `boolean`                   | No       | Used to tell the underlying rendering engine VRender whether the Canvas of the chart is a controlled canvas, and if not, no operations such as resize will be performed.                                                                                                                                                                                                     |
+| `stage`                 | `Stage`                     | No       | External incoming VRender stage                                                                                                                                                                                                                                                                                                                                              |
+| `layer`                 | `Layer`                     | No       | External incoming VRender layer                                                                                                                                                                                                                                                                                                                                              |
+| `beforeRender`          | `Function`                  | No       | Draw the previous hook function,`(stage: IStage) => void`                                                                                                                                                                                                                                                                                                                    |
+| `afterRender`           | `Function`                  | No       | The hook function after drawing,`(stage: IStage) => void`                                                                                                                                                                                                                                                                                                                    |
+| `background`            | `string\object`             | No       | Drawing Region background color setting, you can configure gradual change color                                                                                                                                                                                                                                                                                              |
+| `logLevel`              | `number`                    | No       | Log type for development and debugging                                                                                                                                                                                                                                                                                                                                       |
+| `disableDirtyBounds`    | `boolean`                   | No       | Whether to close dirtyBounds                                                                                                                                                                                                                                                                                                                                                 |
+| `enableView3dTransform` | `boolean`                   | No       | Whether to enable the transformation mode of view3d                                                                                                                                                                                                                                                                                                                          |
+| `poptip`                | `boolean`                   | No       | Whether to enable poptip for omitting text, used to view the complete text content, enabled by default                                                                                                                                                                                                                                                                       |
+| `resizeDelay`           | `number`                    | No       | The interval duration in milliseconds for triggering a resize when automatically responding to container resize events; supported from `1.12.5`.                                                                                                                                                                                                                             |
+| `gestureConfig`         | `GestureConfig`             | No       | Gesture event configuration; when configured as non-empty, gesture-related events are enabled.                                                                                                                                                                                                                                                                               |
+| `autoRefreshDpr`        | `boolean`                   | Yes      | Whether to automatically refresh the dpr when switching screens and the dpr changes; if the dpr is not explicitly set, this feature is enabled by default; supported from version `1.12.14`.                                                                                                                                                                                 |
 
-- `srIOption3DType` Types are defined as follows
+- The `srIOption3DType` type is defined as follows:
 
 ```ts
 export interface srIOption3DType extends IOption3D {
@@ -249,7 +259,7 @@ export interface IOption3D {
 }
 ```
 
-- `LayoutCallBack` Types are defined as follows:
+The `LayoutCallBack` type is defined as follows:
 
 ```ts
 export type LayoutCallBack = (
@@ -258,6 +268,44 @@ export type LayoutCallBack = (
   chartLayoutRect: IRect,
   chartViewBox: IBoundsLike
 ) => void;
+```
+
+- The `GestureConfig` type is defined as follows:
+
+```ts
+export interface GestureConfig {
+  press?: {
+    /**
+     * @default 251
+     * Minimal press time in ms.
+     */
+    time?: number;
+    /**
+     * @default 10
+     * Maximal movement that is allowed while pressing.
+     */
+    threshold?: number;
+  };
+  swipe?: {
+    /**
+     * Minimal distance required before recognizing.
+     * @default 10
+     */
+    threshold?: number;
+    /**
+     * Minimal velocity required before recognizing, unit is in px per ms.
+     * @default 0.3
+     */
+    velocity?: number;
+  };
+  tap?: {
+    /**
+     * max time between the multi-tap taps
+     * @default 300
+     */
+    interval?: number;
+  };
+}
 ```
 
 ### example
@@ -656,6 +704,19 @@ Clear the state of the marks
    * @since 1.11.0
    */
   clearState: (state: string) => void;
+```
+
+### clearAllStates
+
+Clear all states of the marks
+
+```ts
+ /**
+   * clear all states of marks
+   *
+   * @since 1.12.4
+   */
+  clearAllStates: (state: string) => void;
 ```
 
 ### clearSelected
@@ -1178,4 +1239,62 @@ convertValueToPosition: ((value: StringOrNumber, dataLinkInfo: DataLinkAxis, isR
   number | null) &
   ((value: [StringOrNumber, StringOrNumber], dataLinkInfo: DataLinkSeries, isRelativeToCanvas?: boolean) =>
     IPoint | null);
+```
+
+### updateIndicatorDataById
+
+Update the indicator component data based on the component id specified in the spec.
+
+```ts
+  /**
+   * Update the indicator component data based on the component id specified in the spec.
+   * @param id Indicator id in spec.
+   * @param datum Data Item.
+   * @since 1.11.7
+   */
+  updateIndicatorDataById: (id: string, datum?: Datum) => void;
+```
+
+### updateIndicatorDataByIndex
+
+Update the indicator component data based on the component index in the spec.
+
+```ts
+  /**
+   * Update the indicator component data based on the component index in the spec.
+   * @param index Indicator index in spec.
+   * @param datum Data Item
+   * @since 1.11.7
+   */
+  updateIndicatorDataByIndex: (index: number = 0, datum?: Datum) => void;
+```
+
+### geoZoomByIndex
+
+Map Zoom API. Specifies the geo coordinate of a region by index order for zooming.
+
+```ts
+/**
+ * Map Zoom API
+ * @param [regionIndex=0] Specifies the geo coordinate of a region by index order for zooming
+ * @param zoom Zoom ratio
+ * @param center Zoom center
+ * @since 1.11.10
+ */
+  geoZoomByIndex: (regionIndex: number, zoom: number, center?: { x: number; y: number }) => void;
+```
+
+### geoZoomById
+
+Map Zoom API. Specifies the geo coordinate of a region by id for zooming
+
+```ts
+/**
+ * Map Zoom API
+ * @param regionId Specifies the geo coordinate of a region by id for zooming
+ * @param zoom Zoom ratio
+ * @param center Zoom center
+ * @since 1.11.10
+ */
+  geoZoomById: (regionId: string | number, zoom: number, center?: { x: number; y: number }) => void;
 ```

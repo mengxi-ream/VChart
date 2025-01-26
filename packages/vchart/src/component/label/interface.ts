@@ -1,14 +1,31 @@
 import type { BaseLabelAttrs } from '@visactor/vrender-components';
 import type { ConvertToMarkStyleSpec, Datum, IComposedTextMarkSpec, IFormatMethod, ITextMarkSpec } from '../../typings';
 import type { IComponentSpec } from '../base/interface';
-import type { ILabelMark } from '../../mark/label';
-import type { ISeries } from '../../series';
+import type { ILabelMark } from '../../mark/interface';
+import type { ISeries } from '../../series/interface';
+import type { ICompilableMark } from '../../compile/mark/interface';
+import type { IRegion } from '../../region/interface';
+
+export interface ILabelInfo {
+  baseMark: ICompilableMark;
+  labelMark: ILabelMark;
+  series: ISeries;
+  labelSpec: TransformedLabelSpec;
+}
+
+export interface ILabelComponentContext {
+  region: IRegion;
+  labelInfo: ILabelInfo[];
+}
 
 export interface ILabelFormatMethodContext {
   series?: ISeries;
 }
 
-export interface ILabelSpec extends IComponentSpec {
+/**
+ * 系列图元标签配置，一般用于展示数据项
+ */
+export interface ILabelSpec extends IComponentSpec, ILabelAnimationSpec {
   /** 默认不显示标签 */
   visible?: boolean;
   /**
@@ -46,8 +63,11 @@ export interface ILabelSpec extends IComponentSpec {
   overlap?: BaseLabelAttrs['overlap'];
   /** 标签智能反色配置 */
   smartInvert?: BaseLabelAttrs['smartInvert'];
-  /** 动画配置 */
-  animation?: BaseLabelAttrs['animation'];
+  /**
+   * 堆积数据过滤类型
+   * @since 1.12.0
+   */
+  stackDataFilterType?: 'min' | 'max';
   /** 自定义标签数据筛选和排序
    * @since 1.3.0
    */
@@ -62,9 +82,13 @@ export interface ILabelSpec extends IComponentSpec {
    * @since 1.3.0
    */
   customOverlapFunc?: BaseLabelAttrs['customOverlapFunc'];
-  /** 标签布局 */
+  /**
+   * 标签布局
+   */
   labelLayout?: 'series' | 'region';
-  /** 是否支持3D */
+  /**
+   * 是否支持3D
+   */
   support3d?: boolean;
   /**
    * 是否同步数据图元的状态变化
@@ -72,20 +96,42 @@ export interface ILabelSpec extends IComponentSpec {
    * @since 1.9.0
    */
   syncState?: boolean;
+  /**
+   * 是否显示标签关联图元的 mark tooltip
+   * @default false
+   * @since 1.13.5
+   */
+  showRelatedMarkTooltip?: boolean;
 }
 
+export type ILabelAnimationSpec = Pick<
+  BaseLabelAttrs,
+  'animation' | 'animationEnter' | 'animationUpdate' | 'animationExit'
+>;
 export type IMultiLabelSpec<T extends Omit<ILabelSpec, 'position'>> = T | T[];
 
 type LabelStateStyle<T> = {
+  /**
+   * 标签hover状态样式配置
+   */
   hover?: T;
+  /**
+   * 标签hover_reverse状态样式配置
+   */
   hover_reverse?: T;
+  /**
+   * 标签选中状态样式配置
+   */
   selected?: T;
+  /**
+   * 标签未选中状态样式配置
+   */
   selected_reverse?: T;
 };
 
 export type ITotalLabelSpec = Pick<
   ILabelSpec,
-  'visible' | 'formatMethod' | 'interactive' | 'offset' | 'style' | 'state' | 'textType'
+  'visible' | 'formatMethod' | 'interactive' | 'offset' | 'style' | 'state' | 'textType' | 'overlap'
 >;
 
 export interface ITotalLabelTheme

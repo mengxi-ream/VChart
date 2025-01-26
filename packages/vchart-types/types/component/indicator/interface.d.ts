@@ -1,8 +1,9 @@
-import { Datum, IFormatMethod } from '../../typings';
+import type { Datum, IFormatMethod } from '../../typings';
 import type { IPercent } from '../../typings/layout';
 import type { ConvertToMarkStyleSpec, ITextMarkSpec } from '../../typings/visual';
 import type { IComponentSpec } from '../base/interface';
 import type { IComponent } from '../interface';
+import type { ITextGraphicAttribute } from '@visactor/vrender-core';
 export interface IIndicatorItemSpec {
     visible?: boolean;
     field?: string;
@@ -11,12 +12,15 @@ export interface IIndicatorItemSpec {
     autoFit?: boolean;
     fitPercent?: number;
     fitStrategy?: 'default' | 'inscribed';
+    formatMethod?: (text: string | number, textStyle: ITextGraphicAttribute) => IFormatMethod<[activeDatum: Datum]> | ITextMarkSpec['text'] | ReturnType<IFormatMethod<[activeDatum: Datum]>>;
     style?: Omit<ConvertToMarkStyleSpec<ITextMarkSpec>, 'visible' | 'text'> & {
         type?: 'text' | 'rich';
         text?: IFormatMethod<[activeDatum: Datum]> | ITextMarkSpec['text'] | ReturnType<IFormatMethod<[activeDatum: Datum]>>;
     };
 }
-export type IIndicator = IComponent;
+export type IIndicator = IComponent & {
+    updateDatum: (datum: any) => void;
+};
 export interface IIndicatorSpec extends IComponentSpec {
     visible?: boolean;
     fixed?: boolean;

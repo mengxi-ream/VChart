@@ -2,15 +2,22 @@ import type { ICartesianSeriesSpec } from '../cartesian/interface';
 import type { IMarkSpec, IMarkTheme } from '../../typings/spec/common';
 import type { ISymbolMarkSpec, ILineMarkSpec, IAreaMarkSpec } from '../../typings/visual';
 import type { SeriesMarkNameEnum } from '../interface/type';
-import type { ILineLikeLabelSpec, ILineLikeSeriesTheme } from '../mixin/line-mixin';
+import type { ILineLikeLabelSpec, ILineLikeSeriesTheme } from '../mixin/interface';
 import type { IAnimationSpec } from '../../animation/spec';
-import type { AreaAppearPreset } from './animation';
 import type { IDataSamping, IMarkOverlap, IMarkProgressiveConfig } from '../../mark/interface';
-import type { ILabelSpec } from '../../component';
-import type { IMultiLabelSpec } from '../../component/label';
+import type { IMultiLabelSpec, ILabelSpec } from '../../component/label/interface';
+import type { DirectionType } from '../../typings/space';
+
+type AreaMarks = 'point' | 'line' | 'area';
+export interface IAreaAnimationParams {
+  direction: DirectionType;
+}
+
+export type AreaAppearPreset = 'clipIn' | 'fadeIn' | 'grow';
+
 export interface IAreaSeriesSpec
   extends ICartesianSeriesSpec,
-    IAnimationSpec<string, AreaAppearPreset>,
+    IAnimationSpec<AreaMarks, AreaAppearPreset>,
     IMarkProgressiveConfig,
     IDataSamping,
     IMarkOverlap {
@@ -40,13 +47,36 @@ export interface IAreaSeriesSpec
   [SeriesMarkNameEnum.area]?: IMarkSpec<IAreaMarkSpec>;
   /**
    * 标签配置
+   * @since 1.13.1 新增支持 inside-middle 标签位置
    */
-  [SeriesMarkNameEnum.label]?: IMultiLabelSpec<ILineLikeLabelSpec>;
+  [SeriesMarkNameEnum.label]?: IMultiLabelSpec<
+    Omit<ILineLikeLabelSpec, 'position'> & {
+      /**
+       * 标签位置，面积图元支持的标签位置
+       * */
+      position:
+        | 'top'
+        | 'bottom'
+        | 'left'
+        | 'right'
+        | 'top-right'
+        | 'top-left'
+        | 'bottom-right'
+        | 'bottom-left'
+        | 'center'
+        | 'inside-middle';
+    }
+  >;
   /**
    * 面积图元标签配置
    * @since 1.7.0
    */
   [SeriesMarkNameEnum.areaLabel]?: Omit<ILabelSpec, 'position'> & {
+    /**
+     * 面积图元标签的位置配置，支持两种位置：
+     * - start：面积图元的起点
+     * - end：面积图元的终点
+     */
     position?: 'start' | 'end';
   };
   /**

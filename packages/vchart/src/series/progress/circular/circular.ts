@@ -1,6 +1,5 @@
 /* eslint-disable no-duplicate-imports */
 import type { BandScale } from '@visactor/vscale';
-import type { IArcMark } from '../../../mark/arc';
 import type { Datum } from '../../../typings';
 import { isValidNumber } from '@visactor/vutils';
 import type { SeriesMarkMap } from '../../interface';
@@ -11,11 +10,12 @@ import { ProgressLikeSeries } from '../../polar/progress-like/progress-like';
 import type { IStateAnimateSpec } from '../../../animation/spec';
 import { registerArcMark } from '../../../mark/arc';
 import { circularProgressSeriesMark } from './constant';
-import { STACK_FIELD_END, STACK_FIELD_START, AttributeLevel } from '../../../constant';
+import { STACK_FIELD_END, STACK_FIELD_START } from '../../../constant/data';
+import { AttributeLevel } from '../../../constant/attribute';
 import { Factory } from '../../../core/factory';
 import { registerProgressLikeAnimation } from '../../polar/progress-like';
 import { registerFadeInOutAnimation } from '../../../animation/config';
-import type { IMark } from '../../../mark/interface';
+import type { IArcMark, IMark } from '../../../mark/interface';
 import { CircularProgressSeriesSpecTransformer } from './circular-transformer';
 import { registerPolarLinearAxis, registerPolarBandAxis } from '../../../component/axis/polar';
 
@@ -53,12 +53,17 @@ export class CircularProgressSeries<
   }
 
   private _initProgressMark() {
-    this._progressMark = this._createMark(CircularProgressSeries.mark.progress, {
-      parent: this._arcGroupMark,
-      isSeriesMark: true,
-      customShape: this._spec.progress?.customShape,
-      stateSort: this._spec.progress?.stateSort
-    }) as IArcMark;
+    this._progressMark = this._createMark(
+      CircularProgressSeries.mark.progress,
+      {
+        parent: this._arcGroupMark,
+        isSeriesMark: true,
+        stateSort: this._spec.progress?.stateSort
+      },
+      {
+        setCustomizedShape: this._spec.progress?.customShape
+      }
+    ) as IArcMark;
     return this._progressMark;
   }
 
@@ -110,11 +115,16 @@ export class CircularProgressSeries<
   }
 
   private _initTrackMark() {
-    this._trackMark = this._createMark(CircularProgressSeries.mark.track, {
-      parent: this._arcGroupMark,
-      customShape: this._spec.track?.customShape,
-      stateSort: this._spec.track?.stateSort
-    }) as IArcMark;
+    this._trackMark = this._createMark(
+      CircularProgressSeries.mark.track,
+      {
+        parent: this._arcGroupMark,
+        stateSort: this._spec.track?.stateSort
+      },
+      {
+        setCustomizedShape: this._spec.track?.customShape
+      }
+    ) as IArcMark;
     return this._trackMark;
   }
 

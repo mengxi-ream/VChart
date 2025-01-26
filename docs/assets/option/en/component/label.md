@@ -58,7 +58,7 @@ formatMethod: text => {
 };
 ```
 
-For specific usage of rich text, please refer to the[Rich Text Tutorial Document](/vchart/guide/tutorial_docs/Richtext_and_Dom)
+For specific usage of rich text, please refer to the[Rich Text Tutorial Document](/vchart/guide/tutorial_docs/extend/Richtext_and_Dom)
 
 #${prefix} formatter(string)
 
@@ -169,12 +169,19 @@ Overlap avoidance strategy for labels, providing 4 avoidance strategies, respect
   ```ts
   export type PositionStrategy = {
     /**
-     * 可选位置策略。
-     * 若默认位置没有足够的空间放置标签，则考虑 position 内的备选位置。
+     * Optional position strategy.
+     * If the default position does not have enough space to place the label, consider the alternative positions within the position.
      */
     type: 'position';
-    /** position 根据图表类型支持不同支持不同的位置配置 **/
+    /**  position supports different configurations depending on the chart type **/
     position?: Functional<LabelPosition[]>;
+    /**
+     * When the alternative positions in position still cannot accommodate the label, whether the label is returned to its original position.
+     * The default is true, if false, the label will be placed in the last position of the position array.
+     * @since 1.12.15
+     * @default true
+     */
+    restorePosition?: boolean;
   };
   ```
 
@@ -183,12 +190,19 @@ Overlap avoidance strategy for labels, providing 4 avoidance strategies, respect
   ```ts
   export type BoundStrategy = {
     /**
-     * 标签配置在图形内部时使用。
-     * 当图形大小不足以放下标签，则考虑 position 内的备选位置。
+     * Used when configuring labels inside a graphic.
+     * If the graphic size is insufficient to accommodate the label, consider alternative positions within the position.
      */
     type: 'bound';
-    /** position 根据图表类型支持不同支持不同的位置配置 **/
+    /**  position supports different configurations depending on the chart type **/
     position?: Functional<LabelPosition[]>;
+    /**
+     * When the alternative positions in position still cannot accommodate the label, whether the label is returned to its original position.
+     * The default is true, if false, the label will be placed in the last position of the position array.
+     * @since 1.12.15
+     * @default true
+     */
+    restorePosition?: boolean;
   };
   ```
 
@@ -197,12 +211,12 @@ Overlap avoidance strategy for labels, providing 4 avoidance strategies, respect
   ```ts
   export type MoveYStrategy = {
     /**
-     * y 方向散开策略。
-     * 若默认位置没有足够的空间放置标签，则根据 offset 在 y 方向上寻找位置。
+     * Y-direction dispersion strategy.
+     * If the default position does not have enough space to place the label, find a position in the y-direction based on the offset.
      */
     type: 'moveY';
     /**
-     * y 方向上的尝试的位置偏移量，可配置为函数。
+     * The position offset in the y-direction can be configured as a function.
      */
     offset: Functional<number[]>; // number | (data: any) => number[];
   };
@@ -213,12 +227,12 @@ Overlap avoidance strategy for labels, providing 4 avoidance strategies, respect
   ```ts
   export type MoveYStrategy = {
     /**
-     * x 方向散开策略。
-     * 若默认位置没有足够的空间放置标签，则根据 offset 在 x 方向上寻找位置。
+     * X-direction dispersion strategy.
+     * If the default position does not have enough space to place the label, find a position in the x-direction based on the offset.
      */
     type: 'moveX';
     /**
-     * x 方向上的尝试的位置偏移量，可配置为函数。
+     * The position offset in the x-direction can be configured as a function.
      */
     offset: Functional<number[]>; // number | (data: any) => number[];
   };
@@ -302,6 +316,15 @@ The default setting is '#000000'.
 If the label exceeds the mark range, mark will also be used as the background color for inversion.
 The default setting is `false`.
 
+##${prefix} interactInvertType('none' | 'stroked' | 'inside')
+Supported since version 1.12.8
+
+When the label intersects with the graphic but is not completely inside the mark, three handling methods are supported:
+
+- `none`: Do nothing
+- `stroked`: When the label has a stroke, handle it based on the stroke (default behavior)
+- `inside`: Handle it as if the label is completely inside the mark
+
 {{ /if }}
 
 {{ if: !${ignoreCustom} }}
@@ -371,3 +394,19 @@ Label animation playback timing. Defaults to "same-time".
 
   ##${prefix} increaseEffect(boolean)=true
   Enable number increase animation while label data updated.
+
+#${prefix} stackDataFilterType('min'|'max')
+
+Effective from version 1.12.0
+
+Used for filtering stacked group data
+
+- 'min' displays labels for the maximum value in the stacked group
+- 'max' displays labels for the minimum value in the stacked group
+
+#${prefix} showRelatedMarkTooltip(boolean)=false
+
+Available since version 1.13.5.
+
+The default value is `false`, which means hovering over the label will not trigger the tooltip.
+When set to `true`, hovering over the label will trigger the mark tooltip of its associated graphic.

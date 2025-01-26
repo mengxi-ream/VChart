@@ -1,12 +1,13 @@
-import { AttributeLevel, ChartEvent, LayoutZIndex } from '../../constant';
+import { ChartEvent } from '../../constant/event';
+import { AttributeLevel } from '../../constant/attribute';
+import { LayoutZIndex } from '../../constant/layout';
 import { BaseComponent } from '../base/base-component';
-import type { IComponent, IComponentOption } from '../interface';
 // eslint-disable-next-line no-duplicate-imports
 import { ComponentTypeEnum } from '../interface/type';
 import { Brush as BrushComponent, IOperateType as BrushEvent } from '@visactor/vrender-components';
-import type { IBounds, IPointLike, Maybe } from '@visactor/vutils';
+import type { IPointLike, Maybe } from '@visactor/vutils';
 // eslint-disable-next-line no-duplicate-imports
-import { array, isNil, polygonIntersectPolygon, isValid } from '@visactor/vutils';
+import { array, polygonIntersectPolygon, isValid, last } from '@visactor/vutils';
 import type { IModelRenderOption, IModelSpecInfo } from '../../model/interface';
 import type { IRegion } from '../../region/interface';
 import type { IGraphic, IGroup, INode, IPolygon, ISymbolGraphicAttribute } from '@visactor/vrender-core';
@@ -21,6 +22,7 @@ import { Factory } from '../../core/factory';
 import type { DataZoom } from '../data-zoom';
 import type { IBandLikeScale, IContinuousScale, ILinearScale } from '@visactor/vscale';
 import type { AxisComponent } from '../axis/base-axis';
+import { getSpecInfo } from '../util';
 
 const IN_BRUSH_STATE = 'inBrush';
 const OUT_BRUSH_STATE = 'outOfBrush';
@@ -63,7 +65,13 @@ export class Brush<T extends IBrushSpec = IBrushSpec> extends BaseComponent<T> i
   // 根据axis找dataZoom
   private _axisDataZoomMap: { [axisId: string]: DataZoom } = {};
   // 记录当前操作的axis或dataZoom的状态
-  private _zoomRecord: { operateComponent: AxisComponent | DataZoom; start: number; end: number }[] = [];
+  private _zoomRecord: {
+    operateComponent: AxisComponent | DataZoom;
+    start: number;
+    end: number;
+    startValue: number | string;
+    endValue: number | string;
+  }[] = [];
 
   init() {
     const inBrushMarkAttr = this._transformBrushedMarkAttr(this._spec.inBrush);
@@ -94,19 +102,9 @@ export class Brush<T extends IBrushSpec = IBrushSpec> extends BaseComponent<T> i
   }
 
   static getSpecInfo(chartSpec: any): Maybe<IModelSpecInfo[]> {
-    const brushSpec = chartSpec[this.specKey];
-    // brush不支持数组的形式配置
-    if (isNil(brushSpec) || brushSpec.visible === false) {
-      return undefined;
-    }
-    return [
-      {
-        spec: brushSpec,
-        specPath: [this.specKey],
-        specInfoPath: ['component', this.specKey, 0],
-        type: ComponentTypeEnum.brush
-      }
-    ];
+    return getSpecInfo<IBrushSpec>(chartSpec, this.specKey, this.type, (s: IBrushSpec) => {
+      return s.visible !== false;
+    });
   }
 
   created() {
@@ -126,7 +124,7 @@ export class Brush<T extends IBrushSpec = IBrushSpec> extends BaseComponent<T> i
     for (const brushName in elementsMap) {
       for (const elementKey in elementsMap[brushName]) {
         data.push({
-          ...elementsMap[brushName][elementKey].data[0]
+          ...elementsMap[brushName][elementKey]?.data?.[0]
         });
       }
     }
@@ -136,7 +134,9 @@ export class Brush<T extends IBrushSpec = IBrushSpec> extends BaseComponent<T> i
   protected _extendDatumOutOfBrush(elementsMap: { [elementKey: string]: IElement }) {
     const data = [];
     for (const elementKey in elementsMap) {
-      data.push(elementsMap[elementKey].data[0]);
+      // 图例筛选后, elementKey未更新, 导致data可能为null
+      // FIXME: brush透出的map维护逻辑有待优化
+      data.push(elementsMap[elementKey].data?.[0]);
     }
     return data;
   }
@@ -233,14 +233,20 @@ export class Brush<T extends IBrushSpec = IBrushSpec> extends BaseComponent<T> i
       this._needDisablePickable = false;
       const { operateMask } = e.detail as any;
       this._handleBrushChange(ChartEvent.brushEnd, region, e);
-      this._setAxisAndDataZoom(operateMask, region);
+      const inBrushData = this._extendDataInBrush(this._inBrushElementsMap);
+      if (!this._spec.zoomWhenEmpty && inBrushData.length > 0) {
+        this._setAxisAndDataZoom(operateMask, region);
+      }
       this._emitEvent(ChartEvent.brushEnd, region);
     });
 
     brush.addEventListener(BrushEvent.moveEnd, (e: any) => {
       const { operateMask } = e.detail as any;
       this._handleBrushChange(ChartEvent.brushEnd, region, e);
-      this._setAxisAndDataZoom(operateMask, region);
+      const inBrushData = this._extendDataInBrush(this._inBrushElementsMap);
+      if (!this._spec.zoomWhenEmpty && inBrushData.length > 0) {
+        this._setAxisAndDataZoom(operateMask, region);
+      }
       this._emitEvent(ChartEvent.brushEnd, region);
     });
   }
@@ -508,22 +514,34 @@ export class Brush<T extends IBrushSpec = IBrushSpec> extends BaseComponent<T> i
           const endPercent = dataZoom.dataToStatePoint(endValue);
           const newStartPercent = this._stateClamp(startPercent - axisRangeExpand);
           const newEndPercent = this._stateClamp(endPercent + axisRangeExpand);
-          dataZoom.setStartAndEnd(newStartPercent, newEndPercent, ['percent', 'percent']);
+          dataZoom.setStartAndEnd(Math.min(newStartPercent, newEndPercent), Math.max(newStartPercent, newEndPercent), [
+            'percent',
+            'percent'
+          ]);
 
           this._zoomRecord.push({
             operateComponent: dataZoom,
             start: newStartPercent,
-            end: newEndPercent
+            end: newEndPercent,
+            startValue: dataZoom.statePointToData(newStartPercent),
+            endValue: dataZoom.statePointToData(newEndPercent)
           });
         } else {
           const range = axis.getScale().range();
           const rangeFactor = (axis.getScale() as IContinuousScale | IBandLikeScale).rangeFactor() ?? [0, 1];
-          const startPos = boundsStart - region.getLayoutStartPoint()[regionStartAttr];
-          const endPos = boundsEnd - region.getLayoutStartPoint()[regionStartAttr];
+
+          // 判断轴是否为反向轴（last(range) < range[0])，即从右到左, 或从下到上
+          // 如果是反向轴, 计算start和end时, 也要保持 start < end
+          const isAxisReverse = last(range) < range[0];
+          const startPosTemp = boundsStart - region.getLayoutStartPoint()[regionStartAttr];
+          const endPosTemp = boundsEnd - region.getLayoutStartPoint()[regionStartAttr];
+          const endPos = isAxisReverse ? Math.min(startPosTemp, endPosTemp) : Math.max(startPosTemp, endPosTemp);
+          const startPos = isAxisReverse ? Math.max(startPosTemp, endPosTemp) : Math.min(startPosTemp, endPosTemp);
+
           const start =
-            ((startPos - range[0]) / (range[1] - range[0])) * (rangeFactor[1] - rangeFactor[0]) + rangeFactor[0];
+            ((startPos - range[0]) / (last(range) - range[0])) * (rangeFactor[1] - rangeFactor[0]) + rangeFactor[0];
           const end =
-            ((endPos - range[0]) / (range[1] - range[0])) * (rangeFactor[1] - rangeFactor[0]) + rangeFactor[0];
+            ((endPos - range[0]) / (last(range) - range[0])) * (rangeFactor[1] - rangeFactor[0]) + rangeFactor[0];
           const newStart = this._stateClamp(start - axisRangeExpand);
           const newEnd = this._stateClamp(end + axisRangeExpand);
           (axis.getScale() as ILinearScale).rangeFactor([newStart, newEnd]);
@@ -532,7 +550,9 @@ export class Brush<T extends IBrushSpec = IBrushSpec> extends BaseComponent<T> i
           this._zoomRecord.push({
             operateComponent: axis,
             start: newStart,
-            end: newEnd
+            end: newEnd,
+            startValue: axis.getScale().invert(startPos),
+            endValue: axis.getScale().invert(endPos)
           });
         }
       });

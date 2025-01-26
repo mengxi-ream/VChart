@@ -1,8 +1,9 @@
+import { vglobal } from '@visactor/vrender-core';
 import type { IChartSpecInfo } from '../../chart/interface';
 import { domDocument, isMiniAppLikeMode, isString, isTrueBrowser, isValid } from '../../util';
 import { BaseComponentSpecTransformer } from '../base';
 import { TOOLTIP_EL_CLASS_NAME } from './constant';
-import { getTooltipActualActiveType } from './utils';
+import { getTooltipActualActiveType } from './utils/common';
 import { mergeSpec } from '@visactor/vutils-extension';
 
 export class TooltipSpecTransformer extends BaseComponentSpecTransformer<any> {
@@ -13,6 +14,8 @@ export class TooltipSpecTransformer extends BaseComponentSpecTransformer<any> {
   protected _initTheme(spec: any, chartSpec: any): { spec: any; theme: any } {
     const { spec: newSpec, theme } = super._initTheme(spec, chartSpec);
     newSpec.style = mergeSpec({}, this._theme, newSpec.style);
+    newSpec.offset = mergeSpec({}, theme.offset, spec.offset);
+    newSpec.transitionDuration = spec.transitionDuration ?? theme.transitionDuration;
     return { spec: newSpec, theme };
   }
 
@@ -29,19 +32,11 @@ export class TooltipSpecTransformer extends BaseComponentSpecTransformer<any> {
     spec.className = spec.className ?? TOOLTIP_EL_CLASS_NAME;
     spec.enterable = spec.enterable ?? false;
     spec.transitionDuration = spec.transitionDuration ?? 150;
-    spec.triggerOff = spec.triggerOff ?? spec.trigger;
     spec.confine = spec.confine ?? spec.renderMode === 'canvas';
-
-    if (isValid(spec.mark)) {
-      spec.mark.activeType = 'mark';
-    }
-    if (isValid(spec.dimension)) {
-      spec.dimension.activeType = 'dimension';
-    }
 
     if (isValid(spec.parentElement)) {
       if (isString(spec.parentElement)) {
-        spec.parentElement = globalThis?.document?.getElementById(spec.parentElement);
+        spec.parentElement = vglobal.getElementById(spec.parentElement);
       }
     } else if (isTrueBrowser(this._option.mode)) {
       spec.parentElement = domDocument?.body;

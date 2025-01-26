@@ -4,7 +4,7 @@ group: storytelling
 title: 柱状图、散点图间切换的全局动画
 keywords: animation,morphing,bar,scatter,barChart,scatterChart
 order: 42-1
-cover: http://lf9-dp-fe-cms-tos.byteorg.com/obj/bit-cloud/morph-bar-to-scatter.gif
+cover: https://lf9-dp-fe-cms-tos.byteorg.com/obj/bit-cloud/morph-bar-to-scatter.gif
 option: commonChart#series-bar.animationUpdate
 ---
 
@@ -20,6 +20,15 @@ option: commonChart#series-bar.animationUpdate
 ## 代码演示
 
 ```javascript livedemo
+/**
+ * 自1.12.0后，全局形变动画需要手动注册才能生效
+ *
+ * import { registerMorph } from '@visactor/vchart';
+ *
+ * registerMorph();
+ */
+VCHART_MODULE.registerMorph();
+
 function calculateAverage(data, dim) {
   let total = 0;
   for (let i = 0; i < data.length; i++) {

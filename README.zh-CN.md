@@ -35,7 +35,7 @@ VChart，不只是开箱即用的多端图表库，更是生动灵活的数据�
 
 <div align="center">
 
-[English](./README.md) | 简体中文
+[English](./README.md) | 简体中文 | [日本語](./README.ja-JP.md)
 
 </div>
 
@@ -161,6 +161,19 @@ $ rush docs
 | 项目                                                                                  | 介绍                       |
 | ------------------------------------------------------------------------------------- | -------------------------- |
 | [React-VChart](https://github.com/VisActor/VChart/tree/develop/packages/react-vchart) | React for @VisActor/VChart |
+
+## 💖 Thanks
+
+<div>
+  <a href="https://semi.design/#gh-dark-mode-only" target="_blank">
+    <img alt="VisActor Logo" height="60" src="https://lf9-dp-fe-cms-tos.byteorg.com/obj/bit-cloud/visactor/semi-dark.svg"/>
+  </a>
+  <a href="https://semi.design/#gh-light-mode-only" target="_blank">
+    <img alt="VisActor Logo" height="60" src="https://lf9-dp-fe-cms-tos.byteorg.com/obj/bit-cloud/visactor/semi.svg"/>
+  </a>
+</div>
+
+感谢 [semi](https://semi.design/) 提供主题可视化定制解决方案
 
 ## 🤝 参与贡献 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/VisActor/VChart/blob/main/CONTRIBUTING.md#your-first-pull-request)
 

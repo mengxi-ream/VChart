@@ -1,17 +1,16 @@
 import { AreaSeries } from '../area/area';
 import type { SeriesMarkMap } from '../interface';
 import { SeriesTypeEnum } from '../interface/type';
-import type { IAreaMark } from '../../mark/area';
 import { registerAreaMark } from '../../mark/area';
 import { Direction } from '../../typings/space';
 import type { Datum } from '../../typings';
-import { AttributeLevel } from '../../constant';
+import { AttributeLevel } from '../../constant/attribute';
 import { RangeAreaSeriesTooltipHelper } from './tooltip-helper';
 import type { IAreaSeriesSpec } from '../area/interface';
 import { rangeAreaSeriesMark } from './constant';
 import { Factory } from '../../core/factory';
-import { couldBeValidNumber } from '../../util';
 import { registerCartesianLinearAxis, registerCartesianBandAxis } from '../../component/axis/cartesian';
+import type { IAreaMark } from '../../mark/interface';
 
 export class RangeAreaSeries<T extends IAreaSeriesSpec = IAreaSeriesSpec> extends AreaSeries<T> {
   static readonly type: string = SeriesTypeEnum.rangeArea;
@@ -21,13 +20,18 @@ export class RangeAreaSeries<T extends IAreaSeriesSpec = IAreaSeriesSpec> extend
 
   initMark(): void {
     const { customShape, stateSort } = this._spec.area ?? {};
-    this._areaMark = this._createMark(RangeAreaSeries.mark.area, {
-      defaultMorphElementKey: this.getDimensionField()[0],
-      groupKey: this._seriesField,
-      isSeriesMark: true,
-      customShape,
-      stateSort
-    }) as IAreaMark;
+    this._areaMark = this._createMark(
+      RangeAreaSeries.mark.area,
+      {
+        groupKey: this._seriesField,
+        isSeriesMark: true,
+        stateSort
+      },
+      {
+        setCustomizedShape: customShape,
+        morphElementKey: this.getDimensionField()[0]
+      }
+    ) as IAreaMark;
   }
 
   initMarkStyle(): void {
@@ -80,7 +84,6 @@ export class RangeAreaSeries<T extends IAreaSeriesSpec = IAreaSeriesSpec> extend
 
   protected initTooltip() {
     this._tooltipHelper = new RangeAreaSeriesTooltipHelper(this);
-    this._areaMark && this._tooltipHelper.activeTriggerSet.dimension.add(this._areaMark);
   }
 
   protected _isFieldAllValid() {

@@ -33,7 +33,9 @@ export declare enum SeriesTypeEnum {
     heatmap = "heatmap",
     correlation = "correlation",
     liquid = "liquid",
-    venn = "venn"
+    venn = "venn",
+    mosaic = "mosaic",
+    pictogram = "pictogram"
 }
 export declare const enum SeriesMarkNameEnum {
     label = "label",
@@ -84,6 +86,7 @@ export declare const enum SeriesMarkNameEnum {
     stackLabel = "stackLabel",
     word = "word",
     fillingWord = "fillingWord",
+    wordMask = "wordMask",
     nodePoint = "nodePoint",
     ripplePoint = "ripplePoint",
     centerPoint = "centerPoint",
@@ -91,10 +94,12 @@ export declare const enum SeriesMarkNameEnum {
     barBackground = "barBackground",
     lineLabel = "lineLabel",
     areaLabel = "areaLabel",
+    liquidGroup = "liquidGroup",
     liquid = "liquid",
     liquidBackground = "liquidBackground",
     liquidOutline = "liquidOutline",
     circle = "circle",
     overlap = "overlap",
-    overlapLabel = "overlapLabel"
+    overlapLabel = "overlapLabel",
+    pictogram = "pictogram"
 }

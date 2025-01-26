@@ -1,7 +1,7 @@
 import type { Datum, IMarkSpec, IMarkTheme, ISeriesSpec, IOrientType, IPathMarkSpec, IPolygonMarkSpec, IRuleMarkSpec, ITextMarkSpec, IPyramid3dMarkSpec, IPercent, IComposedTextMarkSpec, IFormatMethod } from '../../typings';
 import type { IAnimationSpec } from '../../animation/spec';
 import type { SeriesMarkNameEnum } from '../interface/type';
-import { ILabelSpec } from '../../component';
+import type { ILabelSpec } from '../../component/label/interface';
 type FunnelMarks = 'funnel';
 export type FunnelAppearPreset = 'clipIn' | 'fadeIn';
 export interface IFunnelSeriesSpec extends ISeriesSpec, IAnimationSpec<FunnelMarks, FunnelAppearPreset> {
@@ -36,7 +36,9 @@ export interface IFunnelOuterLabelSpec extends IMarkSpec<IComposedTextMarkSpec> 
     spaceWidth?: number;
     alignLabel?: boolean;
     style?: ITextMarkSpec;
-    line?: IMarkSpec<IRuleMarkSpec>;
+    line?: {
+        minLength?: number;
+    } & IMarkSpec<IRuleMarkSpec>;
 }
 export interface IFunnelSeriesTheme {
     [SeriesMarkNameEnum.funnel]?: Partial<IMarkTheme<IPolygonMarkSpec>>;

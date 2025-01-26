@@ -1,13 +1,7 @@
 import type { IAnimationTypeConfig } from '@visactor/vgrammar-core';
 import type { Datum } from '../../typings';
 import { Factory } from '../../core/factory';
-
-export interface IRoseAnimationParams {
-  innerRadius: () => number;
-  growField?: 'angle' | 'radius';
-}
-
-export type RoseAppearPreset = 'growAngle' | 'growRadius' | 'fadeIn';
+import type { IRoseAnimationParams, RoseAppearPreset } from './interface';
 
 export const Appear_Grow = (params: IRoseAnimationParams): IAnimationTypeConfig => {
   const from = params.growField === 'angle' ? 0 : params.innerRadius;
@@ -18,8 +12,8 @@ export const Appear_Grow = (params: IRoseAnimationParams): IAnimationTypeConfig 
       }
     : {
         channel: {
-          innerRadius: { from, to: (datum: Datum, element: any) => element.getGraphicAttribute('innerRadius') },
-          outerRadius: { from, to: (datum: Datum, element: any) => element.getGraphicAttribute('outerRadius') }
+          innerRadius: { from, to: (datum: Datum, element: any) => element.getFinalGraphicAttributes()?.innerRadius },
+          outerRadius: { from, to: (datum: Datum, element: any) => element.getFinalGraphicAttributes()?.outerRadius }
         }
       };
 };

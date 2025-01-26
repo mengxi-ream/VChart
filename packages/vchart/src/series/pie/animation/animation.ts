@@ -2,13 +2,7 @@ import type { IElement, IAnimationTypeConfig } from '@visactor/vgrammar-core';
 import { AnimationStateEnum } from '../../../animation/interface';
 import type { Datum } from '../../../typings';
 import { Factory } from '../../../core/factory';
-
-export interface IPieAnimationParams {
-  growField?: 'angle' | 'radius';
-  growFrom: (datum: Datum, element: IElement, state: AnimationStateEnum) => number;
-}
-
-export type PieAppearPreset = 'growAngle' | 'growRadius' | 'fadeIn';
+import type { IPieAnimationParams, PieAppearPreset } from '../interface';
 
 /**
  * grow生长option
@@ -97,6 +91,14 @@ export const registerPieAnimation = () => {
       enter: pieEnter(params),
       exit: pieExit(params),
       disappear: pieDisappear(params)
+    };
+  });
+};
+
+export const registerEmptyCircleAnimation = () => {
+  Factory.registerAnimation('emptyCircle', (params: IPieAnimationParams, preset: PieAppearPreset) => {
+    return {
+      appear: piePresetAnimation(params, preset)
     };
   });
 };

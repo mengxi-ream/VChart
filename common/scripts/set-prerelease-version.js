@@ -7,12 +7,12 @@ const setJsonFileByKey = require('./set-json-file');
 function writeVersionOfHarmony(nextVersion) {
   const ohPackageJsonPath = path.join(__dirname, '../../packages/harmony_vchart/library/oh-package.json5');
   let jsonFile = fs.readFileSync(ohPackageJsonPath, { encoding: 'utf-8' });
-  const pkgJson = JSON.parse(jsonFile);
+  
 
-  jsonFile = setJsonFileByKey(jsonFile, pkgJson, ['version'], nextVersion);
+  jsonFile = jsonFile.replace(/(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?/gm, nextVersion);
 
 
-  fs.writeFileSync(pkgJsonPath, jsonFile);
+  fs.writeFileSync(ohPackageJsonPath, jsonFile);
 }
 
 
@@ -97,7 +97,9 @@ function writePrereleaseVersion(nextBump, preReleaseName, nextVersionStr, buildN
     fs.writeFileSync(pkgJsonPath, jsonFile)
   });
   
-  writeVersionOfHarmony(nextVersion);
+  if (!preReleaseName || preReleaseName === 'none') {
+    writeVersionOfHarmony(nextVersion);
+  }
 }
 
 module.exports = writePrereleaseVersion;

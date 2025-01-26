@@ -1,8 +1,7 @@
 import type { IMarkSpec, IMarkTheme } from '../../typings/spec';
 import type { IArcMarkSpec, IPathMarkSpec, IRectMarkSpec } from '../../typings/visual';
-import type { IProgressLikeSeriesSpec, IProgressLikeSeriesTheme } from '../polar/progress-like/interface';
+import type { IProgressLikeSeriesSpec, IProgressLikeSeriesTheme, ProgressLikeAppearPreset } from '../polar/progress-like/interface';
 import type { IAnimationSpec } from '../../animation/spec';
-import type { ProgressLikeAppearPreset } from '../polar/progress-like';
 import type { SeriesMarkNameEnum } from '../interface/type';
 import type { ILabelSpec } from '../../component/label/interface';
 export type GaugePointerMarks = 'pointer' | 'pin' | 'pinBackground';
@@ -15,7 +14,7 @@ export interface IGaugePointerSeriesSpec extends IProgressLikeSeriesSpec, IAnima
     [SeriesMarkNameEnum.pointer]?: IMarkSpec<IPathMarkSpec | IRectMarkSpec> & PointerMarkSpec;
 }
 export type PointerMarkSpec = {
-    type: 'path' | 'rect';
+    type?: 'path' | 'rect';
     width?: number;
     height?: number;
     innerPadding?: number;

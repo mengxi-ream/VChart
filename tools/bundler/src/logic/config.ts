@@ -105,11 +105,20 @@ export interface Config {
   // 构建前执行的任务列表
   preTasks: Record<string, (config: Config, projectRoot: string, rawPackageJson: RawPackageJson) => Promise<unknown>>;
   // 构建后执行的任务列表
-  postTasks: Record<string, (config: Config, projectRoot: string, rawPackageJson: RawPackageJson) => Promise<unknown>>;
+  postTasks: Record<
+    string,
+    (
+      config: Config,
+      projectRoot: string,
+      rawPackageJson: RawPackageJson,
+      debug: (...args: any[]) => any
+    ) => Promise<unknown>
+  >;
   // 全局变量的名称
   globals: Record<string, string>;
   // 额外的 umd 打包入口
   umdEntries: string[];
+  esEntries: string[];
 }
 
 export const DEFAULT_CONFIG_FILE = 'bundler.config.js';
@@ -148,7 +157,8 @@ export function getDefaultConfig(): Config {
     preTasks: {},
     postTasks: {},
     globals: {},
-    umdEntries: []
+    umdEntries: [],
+    esEntries: []
   };
 }
 

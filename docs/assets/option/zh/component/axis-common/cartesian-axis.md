@@ -88,11 +88,19 @@ export type CustomMethod = (items: IText[], separation: number) => IText[];
 
 ##${prefix} autoLimit(boolean) = false
 
-轴标签自动隐藏开关，默认关闭，**需要手动开启，同时需要将 `sampling` 关闭**。
+轴标签自动截断开关，默认关闭，**需要手动开启，同时需要将 `sampling` 关闭**。
 
 ##${prefix} limitEllipsis(string) = '...'
 
 仅当 `autoLimit` 为 true 时生效，省略占位符，默认为 '...'。
+
+##${prefix} autoWrap(boolean) = false
+
+标签自动换行，自 `1.12.5` 版本支持。
+
+与 `autoRotate` 不能同时生效，若开启了 `autoRotate`，则优先使用自动旋转策略。
+
+可以通过 `label.style.lineClamp`配置项，设置最大换行数量。
 
 ##${prefix} layoutFunc(function)
 
@@ -238,3 +246,33 @@ Axis title style settings.
 {{ use: graphic-text(
   prefix = '##' + ${prefix}
 ) }}
+
+#${prefix} innerOffset(Object)
+
+直角坐标系轴的内缩进，可以在绘图区内部产生留白，能避免一些图形被截断的场景。
+
+上下轴支持配置 `left`、`right`，左右轴支持配置 `top`、`bottom`。
+
+##${prefix} left(ILayoutNumber)
+
+上下轴的左侧留白
+
+{{ use: common-layout-number }}
+
+##${prefix} right(ILayoutNumber)
+
+上下轴的右侧留白
+
+{{ use: common-layout-number }}
+
+##${prefix} top(ILayoutNumber)
+
+左右轴的上侧留白
+
+{{ use: common-layout-number }}
+
+##${prefix} bottom(ILayoutNumber)
+
+左右轴的下侧留白
+
+{{ use: common-layout-number }}

@@ -1,4 +1,4 @@
-import type { IBoundsLike, Maybe } from '@visactor/vutils';
+import { type IBoundsLike, type Maybe } from '@visactor/vutils';
 import type { IEffect, IModelInitOption, IModelSpecInfo } from '../../../model/interface';
 import type { ICartesianSeries } from '../../../series/interface';
 import type { IRegion } from '../../../region/interface';
@@ -35,6 +35,7 @@ export declare abstract class CartesianAxis<T extends ICartesianAxisCommonSpec =
     };
     protected _orient: IOrientType;
     getOrient(): IOrientType;
+    protected getDefaultInteractive(): boolean;
     protected _autoIndentOnce: boolean;
     protected _hasAutoIndent: boolean;
     set autoIndentOnce(v: boolean);
@@ -72,6 +73,7 @@ export declare abstract class CartesianAxis<T extends ICartesianAxisCommonSpec =
         values: any[];
     }[]): StringOrNumber[];
     abstract valueToPosition(value: any): number;
+    protected getNewScaleRange(): number[];
     protected updateScaleRange(): boolean;
     init(option: IModelInitOption): void;
     setAttrFromSpec(): void;
@@ -93,8 +95,9 @@ export declare abstract class CartesianAxis<T extends ICartesianAxisCommonSpec =
     };
     _transformLayoutRect: (result: ILayoutRect) => ILayoutRect;
     getBoundsInRect(rect: ILayoutRect): IBoundsLike;
+    positionToData(pos: number, isViewPos?: boolean): any;
     private _getTitleLimit;
-    private _getUpdateAttribute;
+    protected _getUpdateAttribute(ignoreGrid: boolean): any;
     protected getLabelItems(length: number): any[];
     protected initEvent(): void;
     protected _updateAxisLayout: () => void;
@@ -105,4 +108,5 @@ export declare abstract class CartesianAxis<T extends ICartesianAxisCommonSpec =
     onDataUpdate(): void;
     private _appendAxisUnit;
     protected _getNeedClearVRenderComponents(): IGraphic[];
+    private _getLabelOverflowLimit;
 }

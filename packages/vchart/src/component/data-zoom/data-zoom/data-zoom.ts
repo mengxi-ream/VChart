@@ -1,12 +1,11 @@
-import type { Maybe } from '@visactor/vutils';
 // eslint-disable-next-line no-duplicate-imports
 import {
-  isArray,
   isBoolean,
   isFunction,
   isNil,
   isNumber,
   isValid,
+  last,
   maxInArray,
   minInArray,
   uniqArray
@@ -26,12 +25,12 @@ import type { Datum, ILayoutType } from '../../../typings';
 import type { ILinearScale, IBaseScale } from '@visactor/vscale';
 // eslint-disable-next-line no-duplicate-imports
 import { LinearScale, isContinuous, isDiscrete } from '@visactor/vscale';
-import { ChartEvent, LayoutLevel, LayoutZIndex } from '../../../constant';
+import { LayoutLevel, LayoutZIndex } from '../../../constant/layout';
+import { ChartEvent } from '../../../constant/event';
 import type { IDataZoomSpec } from './interface';
 import { Factory } from '../../../core/factory';
 import type { IZoomable } from '../../../interaction/zoom';
 import type { CartesianAxis } from '../../axis/cartesian';
-import type { IModelSpecInfo } from '../../../model/interface';
 import { DataZoomSpecTransformer } from './data-zoom-transformer';
 import { getFormatFunction } from '../../util';
 
@@ -60,33 +59,6 @@ export class DataZoom<T extends IDataZoomSpec = IDataZoomSpec> extends DataFilte
   protected _endHandlerSize!: number;
 
   protected _isReverseCache: boolean = false;
-
-  static getSpecInfo(chartSpec: any): Maybe<IModelSpecInfo[]> {
-    const compSpec = chartSpec[this.specKey];
-    if (isNil(compSpec)) {
-      return undefined;
-    }
-    if (!isArray(compSpec)) {
-      return [
-        {
-          spec: compSpec,
-          specPath: [this.specKey],
-          specInfoPath: ['component', this.specKey, 0],
-          type: ComponentTypeEnum.dataZoom
-        }
-      ];
-    }
-    const specInfos: IModelSpecInfo[] = [];
-    compSpec.forEach((s, i: number) => {
-      specInfos.push({
-        spec: s,
-        specPath: [this.specKey, i],
-        specInfoPath: ['component', this.specKey, i],
-        type: ComponentTypeEnum.dataZoom
-      });
-    });
-    return specInfos;
-  }
 
   constructor(spec: T, options: IComponentOption) {
     super(spec, options);
@@ -176,30 +148,33 @@ export class DataZoom<T extends IDataZoomSpec = IDataZoomSpec> extends DataFilte
       defaultSize + this._startHandlerSize / 2
     ];
 
+    const compWidth = this._computeWidth();
+    const compHeight = this._computeHeight();
+
     if (this._isHorizontal) {
       stateScaleRange = this._visible
-        ? [this._startHandlerSize / 2, this._computeWidth() - handlerSize + this._startHandlerSize / 2]
+        ? [this._startHandlerSize / 2, compWidth - handlerSize + this._startHandlerSize / 2]
         : defaultRange;
       this._stateScale.range(stateScaleRange);
-      this._valueScale.range([this._computeHeight() - this._middleHandlerSize, 0]);
-    } else if (this.layoutOrient === 'left') {
-      stateScaleRange = this._visible
-        ? [this._startHandlerSize / 2, this._computeHeight() - handlerSize + this._startHandlerSize / 2]
-        : defaultRange;
-      this._stateScale.range(stateScaleRange);
-      this._valueScale.range([this._computeWidth() - this._middleHandlerSize, 0]);
+      this._valueScale.range([compHeight - this._middleHandlerSize, 0]);
     } else {
       stateScaleRange = this._visible
-        ? [this._startHandlerSize / 2, this._computeHeight() - handlerSize + this._startHandlerSize / 2]
+        ? [this._startHandlerSize / 2, compHeight - handlerSize + this._startHandlerSize / 2]
         : defaultRange;
+
       this._stateScale.range(stateScaleRange);
-      this._valueScale.range([0, this._computeWidth() - this._middleHandlerSize]);
+
+      if (this.layoutOrient === 'left') {
+        this._valueScale.range([compWidth - this._middleHandlerSize, 0]);
+      } else {
+        this._valueScale.range([0, compWidth - this._middleHandlerSize]);
+      }
     }
     if (this._component && this._cacheVisibility !== false) {
       this._component.setAttributes({
         size: {
-          width: this._computeWidth(),
-          height: this._computeHeight()
+          width: compWidth,
+          height: compHeight
         },
         position: {
           x: this.getLayoutStartPoint().x,
@@ -254,7 +229,7 @@ export class DataZoom<T extends IDataZoomSpec = IDataZoomSpec> extends DataFilte
     if (this._isHorizontal) {
       return this._backgroundSize + this._middleHandlerSize;
     }
-    return this.getLayoutRect().height - (this._startHandlerSize + this._endHandlerSize) / 2;
+    return this.getLayoutRect().height;
   }
 
   protected _isScaleValid(scale: IBaseScale | ILinearScale) {
@@ -262,7 +237,7 @@ export class DataZoom<T extends IDataZoomSpec = IDataZoomSpec> extends DataFilte
       return false;
     }
     const domain = scale.domain();
-    if (isContinuous(scale.type) && domain[0] === domain[1]) {
+    if (isContinuous(scale.type) && domain[0] === last(domain)) {
       return false;
     }
     if (isDiscrete(scale.type) && uniqArray(domain).length === 1) {
@@ -315,8 +290,8 @@ export class DataZoom<T extends IDataZoomSpec = IDataZoomSpec> extends DataFilte
       },
       orient: this._orient,
       size: {
-        width: this.getLayoutRect().width,
-        height: this.getLayoutRect().height
+        width: this._computeWidth(),
+        height: this._computeHeight()
       },
       showDetail: spec.showDetail,
       brushSelect: spec.brushSelect ?? false,
@@ -341,6 +316,7 @@ export class DataZoom<T extends IDataZoomSpec = IDataZoomSpec> extends DataFilte
       const isNeedPreview =
         this._isScaleValid(xScale) && this._isScaleValid(yScale) && this._spec.showBackgroundChart !== false;
       const attrs = this._getAttrs(isNeedPreview);
+
       if (this._component) {
         this._component.setAttributes(attrs);
       } else {
@@ -352,7 +328,7 @@ export class DataZoom<T extends IDataZoomSpec = IDataZoomSpec> extends DataFilte
         } else {
           isNeedPreview && this._component.setPreviewPointsX1(this._dataToPositionX2);
         }
-        this._component.setStatePointToData((state: number) => this._statePointToData(state));
+        this._component.setStatePointToData((state: number) => this.statePointToData(state));
 
         this._component.addEventListener('change', (e: any) => {
           const { start, end, tag } = e.detail;
@@ -375,8 +351,8 @@ export class DataZoom<T extends IDataZoomSpec = IDataZoomSpec> extends DataFilte
 
       this._start = start;
       this._end = end;
-      const startValue = this._statePointToData(start);
-      const endValue = this._statePointToData(end);
+      const startValue = this.statePointToData(start);
+      const endValue = this.statePointToData(end);
       const hasChange = isFunction(this._spec.updateDataAfterChange)
         ? this._spec.updateDataAfterChange(start, end, startValue, endValue)
         : this._handleStateChange(startValue, endValue, tag);

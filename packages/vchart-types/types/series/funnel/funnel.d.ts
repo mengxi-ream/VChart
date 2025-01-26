@@ -2,15 +2,11 @@ import type { IFunnelSeries, SeriesMarkMap } from '../interface';
 import { SeriesMarkNameEnum } from '../interface/type';
 import type { IOrientType, Datum, StringOrNumber } from '../../typings';
 import { SeriesTypeEnum } from '../interface/type';
-import type { IPolygonMark } from '../../mark/polygon/polygon';
 import { BaseSeries } from '../base/base-series';
-import type { IMark } from '../../mark/interface';
+import type { ILabelMark, IMark, IPolygonMark, IRuleMark, ITextMark } from '../../mark/interface';
 import { MarkTypeEnum } from '../../mark/interface/type';
-import type { ITextMark } from '../../mark/text';
 import type { IFunnelSeriesSpec } from './interface';
-import type { IRuleMark } from '../../mark/rule';
 import { SeriesData } from '../base/series-data';
-import type { ILabelMark } from '../../mark/label';
 import { FunnelSeriesSpecTransformer } from './funnel-transformer';
 export declare class FunnelSeries<T extends IFunnelSeriesSpec = IFunnelSeriesSpec> extends BaseSeries<T> implements IFunnelSeries {
     static readonly type: string;
@@ -40,8 +36,10 @@ export declare class FunnelSeries<T extends IFunnelSeriesSpec = IFunnelSeriesSpe
         label?: ITextMark;
         line?: IRuleMark;
     };
+    protected _minLabelLineWidth: number;
     setAttrFromSpec(): void;
     initData(): void;
+    compileData(): void;
     getStatisticFields(): {
         key: string;
         operations: Array<'max' | 'min' | 'values'>;

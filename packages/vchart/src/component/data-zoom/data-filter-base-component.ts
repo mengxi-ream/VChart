@@ -5,8 +5,7 @@ import { eachSeries } from '../../util/model';
 import { BaseComponent } from '../base/base-component';
 import type { IEffect, IModelInitOption } from '../../model/interface';
 import { ComponentTypeEnum, type IComponent, type IComponentOption } from '../interface';
-import type { IGroupMark } from '../../mark/group';
-import { dataFilterComputeDomain, dataFilterWithNewDomain } from './util';
+import { dataFilterComputeDomain, dataFilterWithNewDomain, lockStatisticsFilter } from './util';
 import type { AdaptiveSpec, ILayoutRect, ILayoutType, IOrientType, IRect, StringOrNumber } from '../../typings';
 import { registerDataSetInstanceParser, registerDataSetInstanceTransform } from '../../data/register';
 import { BandScale, isContinuous, isDiscrete } from '@visactor/vscale';
@@ -18,7 +17,19 @@ import type { CartesianAxis, ICartesianBandAxisSpec } from '../axis/cartesian';
 import { getDirectionByOrient, getOrient } from '../axis/cartesian/util/common';
 import type { IBoundsLike } from '@visactor/vutils';
 // eslint-disable-next-line no-duplicate-imports
-import { mixin, clamp, isNil, merge, isEqual, isValid, array, minInArray, maxInArray, abs } from '@visactor/vutils';
+import {
+  mixin,
+  clamp,
+  isNil,
+  merge,
+  isEqual,
+  isValid,
+  array,
+  minInArray,
+  maxInArray,
+  abs,
+  last
+} from '@visactor/vutils';
 // eslint-disable-next-line no-duplicate-imports
 import type { IFilterMode } from './interface';
 import type {
@@ -39,7 +50,8 @@ import type { IDelayType } from '../../typings/event';
 import { TransformLevel } from '../../data/initialize';
 import type { IDataZoomSpec } from './data-zoom/interface';
 import type { IGraphic, IGroup } from '@visactor/vrender-core';
-import { AttributeLevel } from '../../constant';
+import { AttributeLevel } from '../../constant/attribute';
+import type { IGroupMark } from '../../mark/interface/mark';
 
 export abstract class DataFilterBaseComponent<T extends IDataFilterComponentSpec = IDataFilterComponentSpec>
   extends BaseComponent<AdaptiveSpec<T, 'width' | 'height'>>
@@ -89,6 +101,8 @@ export abstract class DataFilterBaseComponent<T extends IDataFilterComponentSpec
   // 窗口范围缓存
   protected _spanCache!: number;
   protected _shouldChange: boolean = true;
+
+  protected _domainCache!: any;
 
   protected _field!: string | undefined;
   protected _stateField: string = 'x';
@@ -256,7 +270,10 @@ export abstract class DataFilterBaseComponent<T extends IDataFilterComponentSpec
           (this._component as DataZoom)?.setStartAndEnd?.(this._start, this._end);
         }
 
-        axis.effect.scaleUpdate();
+        // 强制更新视图, 不管/component/axis/base-axis.ts computeData中的tickData判断
+        axis.effect.scaleUpdate({
+          value: 'force'
+        });
       } else {
         eachSeries(
           this._regions,
@@ -386,10 +403,11 @@ export abstract class DataFilterBaseComponent<T extends IDataFilterComponentSpec
   onDataUpdate(): void {
     const domain = this._computeDomainOfStateScale(isContinuous(this._stateScale.type));
 
-    this._stateScale.domain(domain, true);
+    this._stateScale.domain(domain, false);
     this._handleChange(this._start, this._end, true);
     // auto 模式下需要重新布局
-    if (this._spec.auto) {
+    if (this._spec.auto && !isEqual(this._domainCache, domain)) {
+      this._domainCache = domain;
       this._dataUpdating = true;
       this.getChart()?.setLayoutTag(true, null, false);
     }
@@ -450,6 +468,7 @@ export abstract class DataFilterBaseComponent<T extends IDataFilterComponentSpec
               : yAxisHelper;
           const valueAxisHelper = stateAxisHelper === xAxisHelper ? yAxisHelper : xAxisHelper;
           const isValidateValueAxis = isContinuous(valueAxisHelper.getScale(0).type);
+          const isValidateStateAxis = isContinuous(stateAxisHelper.getScale(0).type);
 
           dataCollection.push(s.getRawData());
           // 这里获取原始的spec中的xField和yField，而非经过stack处理后的fieldX和fieldY，原因如下：
@@ -457,18 +476,29 @@ export abstract class DataFilterBaseComponent<T extends IDataFilterComponentSpec
           // 2. datazoom计算的是原始的value值，如果要根据stack后的数据来算，则需要__VCHART_STACK_END - __VCHART_STACK_START
           const seriesSpec = s.getSpec();
 
-          const xFields = array(seriesSpec.xField);
-          const yFields = array(seriesSpec.yField);
-          const xField = s.coordinate === 'cartesian' ? xFields[0] : seriesSpec.angleField ?? seriesSpec.categoryField;
-          const yField = s.coordinate === 'cartesian' ? yFields[0] : seriesSpec.radiusField ?? seriesSpec.valueField;
+          const xField =
+            s.coordinate === 'cartesian'
+              ? array(seriesSpec.xField)
+              : array(seriesSpec.angleField ?? seriesSpec.categoryField);
+          const yField =
+            s.coordinate === 'cartesian'
+              ? array(seriesSpec.yField)
+              : array(seriesSpec.radiusField ?? seriesSpec.valueField);
 
           originalStateFields[s.id] =
-            s.type === 'link' ? 'from_xField' : stateAxisHelper === xAxisHelper ? xField : yField;
+            s.type === 'link' ? ['from_xField'] : stateAxisHelper === xAxisHelper ? xField : yField;
 
-          stateFields.push(originalStateFields[s.id]);
+          if (isValidateStateAxis) {
+            stateFields.push(originalStateFields[s.id]);
+          } else {
+            stateFields.push(originalStateFields[s.id][0]);
+          }
+
           if (this._valueField) {
-            const valueField = s.type === 'link' ? 'from_yField' : valueAxisHelper === xAxisHelper ? xField : yField;
-            valueFields.push(isValidateValueAxis ? valueField : null);
+            const valueField = s.type === 'link' ? ['from_yField'] : valueAxisHelper === xAxisHelper ? xField : yField;
+            if (isValidateValueAxis) {
+              valueFields.push(...valueField);
+            }
           }
         },
         {
@@ -551,16 +581,16 @@ export abstract class DataFilterBaseComponent<T extends IDataFilterComponentSpec
     this._visible = this._spec.visible ?? true;
   }
 
-  protected _statePointToData(state: number) {
+  statePointToData(state: number) {
     const scale = this._stateScale;
     const domain = scale.domain();
 
     // continuous scale: 本来可以用scale invert，但scale invert在大数据场景下性能不太好，所以这里自行计算
     if (isContinuous(scale.type)) {
       if (this._isReverse()) {
-        return domain[0] + (domain[1] - domain[0]) * (1 - state);
+        return domain[0] + (last(domain) - domain[0]) * (1 - state);
       }
-      return domain[0] + (domain[1] - domain[0]) * state;
+      return domain[0] + (last(domain) - domain[0]) * state;
     }
 
     // discete scale: 根据bandSize计算不准确, bandSize不是最新的, 导致index计算错误, 所以仍然使用invert
@@ -568,7 +598,7 @@ export abstract class DataFilterBaseComponent<T extends IDataFilterComponentSpec
     if (this._isReverse()) {
       range = range.slice().reverse();
     }
-    const posInRange: number = range[0] + (range[1] - range[0]) * state;
+    const posInRange: number = range[0] + (last(range) - range[0]) * state;
     // const bandSize = (scale as BandScale).bandwidth();
     // const domainIndex = Math.min(Math.max(0, Math.floor(posInRange / bandSize)), domain.length - 1);
     // return domain[domainIndex];
@@ -584,14 +614,14 @@ export abstract class DataFilterBaseComponent<T extends IDataFilterComponentSpec
       range = range.slice().reverse();
     }
 
-    return (pos - range[0]) / (range[1] - range[0]);
+    return (pos - range[0]) / (last(range) - range[0]);
   }
 
   protected _modeCheck(statePoint: 'start' | 'end', mode: string): any {
     if (statePoint === 'start') {
-      return (mode === 'percent' && this._spec.start) || (mode === 'value' && this._spec.startValue);
+      return (mode === 'percent' && isValid(this._spec.start)) || (mode === 'value' && isValid(this._spec.startValue));
     }
-    return (mode === 'percent' && this._spec.end) || (mode === 'value' && this._spec.endValue);
+    return (mode === 'percent' && isValid(this._spec.end)) || (mode === 'value' && isValid(this._spec.endValue));
   }
 
   protected _setStateFromSpec() {
@@ -614,18 +644,18 @@ export abstract class DataFilterBaseComponent<T extends IDataFilterComponentSpec
         : 0;
       end = this._spec.end ? this._spec.end : this._spec.endValue ? this.dataToStatePoint(this._spec.endValue) : 1;
     }
-    this._startValue = this._statePointToData(start);
-    this._endValue = this._statePointToData(end);
+    this._startValue = this.statePointToData(start);
+    this._endValue = this.statePointToData(end);
     this._start = start;
     this._end = end;
     this._minSpan = this._spec.minSpan ?? 0;
     this._maxSpan = this._spec.maxSpan ?? 1;
-    if (isContinuous(this._stateScale.type) && this._stateScale.domain()[0] !== this._stateScale.domain()[1]) {
+    if (isContinuous(this._stateScale.type) && this._stateScale.domain()[0] !== last(this._stateScale.domain())) {
       if (this._spec.minValueSpan) {
-        this._minSpan = this._spec.minValueSpan / (this._stateScale.domain()[1] - this._stateScale.domain()[0]);
+        this._minSpan = this._spec.minValueSpan / (last(this._stateScale.domain()) - this._stateScale.domain()[0]);
       }
       if (this._spec.maxValueSpan) {
-        this._maxSpan = this._spec.maxValueSpan / (this._stateScale.domain()[1] - this._stateScale.domain()[0]);
+        this._maxSpan = this._spec.maxValueSpan / (last(this._stateScale.domain()) - this._stateScale.domain()[0]);
       }
     }
     this._minSpan = Math.max(0, this._minSpan);
@@ -680,10 +710,29 @@ export abstract class DataFilterBaseComponent<T extends IDataFilterComponentSpec
   protected _addTransformToSeries() {
     if (!this._relatedAxisComponent || this._filterMode !== 'axis') {
       registerDataSetInstanceTransform(this._option.dataSet, 'dataFilterWithNewDomain', dataFilterWithNewDomain);
+      registerDataSetInstanceTransform(this._option.dataSet, 'lockStatisticsFilter', lockStatisticsFilter);
 
       eachSeries(
         this._regions,
         s => {
+          s.getViewDataStatistics().transform(
+            {
+              type: 'lockStatisticsFilter',
+              options: {
+                originalFields: () => {
+                  return s.getViewDataStatistics().getFields();
+                },
+                getNewDomain: () => this._newDomain,
+                field: () => {
+                  return this._field ?? this._parseFieldOfSeries(s);
+                },
+                isContinuous: () => isContinuous(this._stateScale.type)
+              },
+              level: 1
+            },
+            false
+          );
+
           s.addViewDataFilter({
             type: 'dataFilterWithNewDomain',
             options: {
@@ -870,9 +919,15 @@ export abstract class DataFilterBaseComponent<T extends IDataFilterComponentSpec
     super.updateLayoutAttribute();
   }
 
-  onLayoutStart(layoutRect: IRect, viewRect: ILayoutRect, ctx: any): void {
-    super.onLayoutStart(layoutRect, viewRect, ctx);
-    const isShown = this._autoUpdate(layoutRect);
+  protected _autoVisible(isShown: boolean) {
+    if (!this._auto) {
+      return;
+    }
+    if (isShown) {
+      this.show();
+    } else {
+      this.hide();
+    }
     const sizeKey = this._isHorizontal ? 'height' : 'width';
     this.layout.setLayoutRect(
       {
@@ -882,7 +937,20 @@ export abstract class DataFilterBaseComponent<T extends IDataFilterComponentSpec
         [sizeKey]: AttributeLevel.Built_In
       }
     );
+  }
+
+  onLayoutStart(layoutRect: IRect, viewRect: ILayoutRect, ctx: any): void {
+    super.onLayoutStart(layoutRect, viewRect, ctx);
+    const isShown = this._autoUpdate(layoutRect);
+    this._autoVisible(isShown);
     this._dataUpdating = false;
+  }
+
+  onLayoutEnd(ctx: any): void {
+    // 布局结束后, start和end会发生变化, 因此需要再次更新visible
+    const isShown = !(this._start === 0 && this._end === 1);
+    this._autoVisible(isShown);
+    super.onLayoutEnd(ctx);
   }
 
   /**
@@ -974,11 +1042,6 @@ export abstract class DataFilterBaseComponent<T extends IDataFilterComponentSpec
       isShown = !(start === 0 && end === 1);
     }
     this.setStartAndEnd(this._start, this._end);
-    if (isShown) {
-      this.show();
-    } else {
-      this.hide();
-    }
     this._cacheVisibility = isShown;
     return isShown;
   }

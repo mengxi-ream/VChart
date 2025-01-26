@@ -1,6 +1,637 @@
 # Change Log - @visactor/vchart
 
-This log was last generated on Thu, 06 Jun 2024 05:55:31 GMT and should not be manually modified.
+This log was last generated on Thu, 16 Jan 2025 07:01:11 GMT and should not be manually modified.
+
+## 1.13.4
+Thu, 16 Jan 2025 07:01:11 GMT
+
+### Updates
+
+- fix: fix error of tooltip about `showDelay`, fix #3663
+
+
+- fix: fix offset of tooltip, fix #3666
+
+
+- fix: fix bug of parse lineHeight of tooltip row, fix #3643
+
+
+- feat: add wordCloudConfig in _wordCloudTransformOption()
+- fix: axis break's scope calculate error, fix#3656
+- fix: fix the issue where map drag interaction cannot be terminated outside the canvas, #3650
+- fix: fix the issue where map drag interaction cannot be terminated outside the canvas.
+
+## 1.13.3
+Tue, 07 Jan 2025 10:21:06 GMT
+
+### Updates
+
+- feat: add datum to params on axis-label event 
+- feat: package some hook in vgrammar
+
+
+- fix: fix the issue of incorrect label display in 3D charts, #3584
+- fix: fix the issue of animation in 3d wordcloud not work
+- fix: brush data will be undefined when mark is hovered. fix#3623
+- fix: fix style of dom tooltip when tooltip has customized child, fix #3615
+
+
+- fix: fix error update of dom tooltip when update theme, fix #3619
+
+
+- fix: fix position of html tooltip when confine is false, fix #3632
+
+
+- fix: fix the typographical error of dataset tutorial
+
+
+- fix: compilier should add dpr to vrender
+
+
+- fix: fix invisible region blocking mark events, #3638
+- fix: undefined points shoulde not show when dimension hover, fix #3610
+
+
+
+## 1.13.2
+Mon, 23 Dec 2024 12:30:04 GMT
+
+### Updates
+
+- feat: add miss Series and Chart in react vchart, close #3578
+- feat: vchart support clickInterval params
+- fix: support percentage state radius config in gauge segment mark, #3459
+- fix: media query should not throw error when has empty axis, related to #3575
+
+
+- fix: tooltip should not render empty column when `hasShape` of tooltip is `false`, related to #3572
+
+
+- fix: `othersLine` of tooltip can be hidden by `visible: false`, related to #3572
+
+
+- fix: fix position of tooltip, related to #3590
+
+
+
+## 1.13.1
+Fri, 13 Dec 2024 08:29:40 GMT
+
+### Updates
+
+- fix: fix break of waterfall, fix #3544
+
+
+- feat: add config `customFilter` to legend, support cutomized filter function, close #3492
+
+
+- fix: fix the bug of updateModelSpecSync can not set axis.tick.forceTickCount
+
+
+- fix: fix filter of lock domain when field is array, related #3469
+
+
+- fix: fix size of datazoom when update, fix #3521
+
+
+- fix: html tooltip can reuse the dom content and fix the unneed animation
+
+
+- fix: fix update of extensionMark when mark has `name`, fix #3547
+
+
+- fix: fix indicator when change visible to be false, fix #3506
+
+
+- fix: fix tooltip content when only has `valueFormatter` or `keyFormatter`
+
+
+- fix: fix style of dom tooltip
+
+
+- fix(vchart-extension): series-break should keep align width axis break, related to #3560
+
+
+- fix: breaks should consider the `min` and `max` of axis, related to #3560
+
+## 1.13.0
+Fri, 06 Dec 2024 07:17:54 GMT
+
+### Updates
+
+- feat: react vchart support event filter, close #3461
+
+
+- feat: tooltip key/content support config by field, close #2576
+
+
+- feat: support max height of tooltip, by percent value , close #2675
+
+
+- fix: upgrade vrender to 0.21.2, vgrammar to 0.15.1
+
+
+
+## 1.12.15
+Thu, 05 Dec 2024 09:50:08 GMT
+
+### Updates
+
+- feat: support `restorePosition` in position/bound label overlap strategy
+- fix: optimize `shiftY` of label
+
+## 1.12.14
+Wed, 04 Dec 2024 11:27:00 GMT
+
+### Updates
+
+- feat: support `autoRefreshDpr` in chart options
+
+
+- feat: dataZoom can do filter when has `lockStatisticsByDomain`, close #3469
+
+
+- feat: add marker context to support the same color as series. close#3437
+- fix: upgrade scrollbar visible after layout. fix#3452
+- fix: fix `adjacency` in sankey, fix #3460
+
+
+- feat: update options `maxNodeHeight`, `maxLinkHeight` in sankey, close 3439
+
+
+- fix: not update layout when scrollbar domain is the same as before. fix#3452
+- fix: value in scale range should consider about whole range. fix#3446
+
+## 1.12.13
+Fri, 22 Nov 2024 06:14:56 GMT
+
+### Updates
+
+- fix: fix `groupKey` of boxplot series, fix #3409, related to #2855
+
+
+- fix: fix the issue where the length of the outerlabel line is incorrect when richtext
+
+## 1.12.12
+Fri, 15 Nov 2024 15:21:31 GMT
+
+### Updates
+
+- fix: fix: fix the issue where modifying area.visible through updateSpec does not take effect, related #3393
+- fix: fix incorrect rendering when changing `direction` via updateSpec in area chart, related #3406
+- fix: fix zIndex of background image, fix #3403
+
+
+- perf: optimize the effect of break data
+
+
+- fix: fix error of tooltip when chart is released, fix #3428
+
+
+
+## 1.12.11
+Wed, 13 Nov 2024 10:27:47 GMT
+
+### Updates
+
+- feat: support axis sync to the axis that has breaks
+
+
+- feat: tooltip can support customized `trigger` and `triggerOff`
+
+
+-   fix: fix the issue where the axis breaks render incorrectly in some cases
+- fix: fix `zIndex` of series, fix #3395
+
+
+- fix: fix layout of title when orient is "left" or "right", fix #3401
+
+
+- fix: fix the issue of custom svg string in tooltip shape, related #3384
+- fix: tooltip `enterable` should work when update, fix #3405
+
+
+- fix: fix tooltip position by `mode: pointer`, close #3367
+
+
+- fix: wordcloud should not throw error when `word.visible` is `false`, fix #3378
+
+
+-  fix: fix the issue where the scrolling legend triggers map zooming under certain conditions, related #3391
+
+## 1.12.10
+Thu, 31 Oct 2024 12:08:50 GMT
+
+### Updates
+
+- fix: scroll not dispatch view update when axis is not display. fix#3278
+- fix: changes to `roam` via  updateSpec do not take effect
+- feat: pie series support center of percent string
+
+
+- docs: update changlog of rush
+
+
+- fix: fix the issue of symbolActiveMark visible setting
+
+
+- fix: fix issue with chart background in harmony
+- fix: fix event of angle axis in radarchart, fix #3343
+
+
+- fix: type issue of title theme
+- refactor: optimize setter and getter about markConfig
+
+
+
+## 1.12.9
+Thu, 24 Oct 2024 10:01:43 GMT
+
+### Updates
+
+- fix: fixed the issue where map labels do not scale accordingly after updateSpec.
+- feat: support tooltip for overlapped points, close #3224
+
+
+- fix: all the SeriesData should call `compileData()`, fix #3322
+
+
+- fix: clear throttle timer when out, fix #3326
+
+
+- fix: fix `tooltipHide` event when handler is empty
+
+
+- fix: tooltip data should has `datum` in each line
+
+
+
+## 1.12.8
+Tue, 15 Oct 2024 09:20:45 GMT
+
+### Updates
+
+- fix: upgrade vrender to 0.20.9, vgrammar to 0.14.10
+
+
+- feat: support `firstVisible` of axis label, close #3200
+- feat: support `roam.blank` to enable dragging from blank area of region in map chart
+- feat: optimize data empty condition
+
+
+- fix: chart should `remake` when visible of axis change, fix #3287
+
+
+- fix: fix visible change of label, fix #3277
+
+
+- fix: custom theme by chartType cannot work in initial options, #3285
+- fix: fix issue of `html` and `dom` not work correctly in label
+- fix: axis line on zero should consider the bindAxis's inverse, fixed#3306
+- fix(react-vchart): register labels by default in circlePacking, sankey, sunburst, treemap, venn, fix #3148
+- refactor: refactor implement of `enterable` in tooltip component
+
+
+
+## 1.12.7
+Fri, 27 Sep 2024 10:40:30 GMT
+
+### Updates
+
+- fix: fix error of `updateSpec` when data changed, fix #3261
+
+
+- feat: feat: support `minLength` in funnel outerlabel line
+- feat(react-vchart): support `morphConfig` of react-vchart, close #3219
+
+
+- fix: color of linear progress track in dark mode
+
+
+- fix: datazoom state field and value field is incomplete problem. fix#3199
+- fix: fix title of axis when the bounds is empty, fix #3265
+
+
+- fix: fix media-query when `updateSpec`
+
+
+- fix: fix updateSpec when add attributes `width`, `height` to `spec`
+
+
+
+## 1.12.6
+Fri, 20 Sep 2024 11:03:33 GMT
+
+### Updates
+
+- feat: add life cycle hooks
+
+
+- fix: allow indicator spec in polar chart
+
+
+- chore: delete useless code in test demo
+
+
+- fix: default value
+
+
+- fix: type of pointermarkspec is not required anymore
+- fix: use `throttle` when trigger resize
+
+
+- fix: fix the compare of label in series
+
+
+
+## 1.12.5
+Thu, 12 Sep 2024 14:07:06 GMT
+
+### Updates
+
+-  fix: optimize first axis label autolimit effect
+-  fix: `animationUpdate` should also control labels animation
+- fix: fix default value of circular-progress, fix #2683
+
+
+- feat: extension mark and customized mark support `markName` event filter
+
+
+- fix: fix typos in FAQ documents 86
+
+
+- fix: fix display of radar-chart when has negative radius
+
+
+- fix: `word.style.fontWeight` should change the style of text in wordcloud
+
+
+- refactor: reduce duplicated `getSpecInfo`
+
+
+
+## 1.12.4
+Mon, 09 Sep 2024 08:09:07 GMT
+
+### Updates
+
+- feat: support axis break
+- feat: stackCornerRadius support callback. feat#3164
+- feat: add `crossNodeAlign` to sankey
+
+
+- fix: bind first axis to series but not last. fix#3139
+- chore: clear state when updateSpec. fix#3162
+- fix: crosshair won't update when switch theme
+- fix: wordcloud text overlap. fix#3177
+- fix: fix zIndex of label in pie-chart
+
+
+
+## 1.12.3
+Thu, 05 Sep 2024 05:54:53 GMT
+
+### Updates
+
+- fix: cannot disable label update animation by `option.animation:false`
+- fix: upgrade vrender to 0.20.2, vgrammar to 0.14.3
+
+
+
+## 1.12.2
+Tue, 03 Sep 2024 12:46:51 GMT
+
+### Updates
+
+- fix: rangeMode of scrollbar not work. fix#3147
+- docs: fix issue of treemap.label not shown in option pages, fix #2562
+- docs: update docs about circular progress, close #2987
+
+
+- feat(brush): add config to control zoom when brush empty data. close#2934
+- feat: support 'inside-center' label position in pie chart
+- fix: fix error of `barWidth`, `barMinWidth`, `barMaxWidth` when value is null
+
+
+- fix: x brush filter not work. fix#3111
+- fix: indicator stop tooltip interactive. fix#3123
+- fix: fix error of `getCenter` when layoutRadius is a customized function in radar
+
+
+- fix: media query causes incorrect render result, #3102
+-  fix: normal animation not work since v1.12.0
+- fix: sankey scale update not work
+- fix: fix error of sankey when some customized mark has name "node"
+
+
+- fix: fix dimension value of tooltip when has innerOffset, fix #2923
+
+
+- fix: vchart should not throw error when the values of series data is empty, fix #3082
+
+
+- fix: fix error of `updateSpec` when array change
+
+
+- fix: wordcloud fill not update after updateSpec. fix#3122
+- fix: wordcloud scale update not work. fix#3129
+- refactor: refactor the parser of tooltip pattern
+
+
+
+## 1.12.1
+Wed, 21 Aug 2024 01:09:17 GMT
+
+### Updates
+
+- fix: x brush filter not work. fix#3111
+- fix: fix error of `getCenter` when layoutRadius is a customized function in radar
+
+
+- fix: media query causes incorrect render result, #3102
+- fix: vchart should not throw error when the values of series data is empty, fix #3082
+
+
+
+## 1.12.0
+Fri, 16 Aug 2024 06:12:54 GMT
+
+### Updates
+
+- feat: marker's `coordinates` and `positions` property support callback
+- add emptyPlaceholder and emptyCircle for pie chart
+- sequence support bottom axes. fix#2927
+- feat: support `animationState` config
+- feat: show evenly divided pie chart with showAllZero
+- feat: enable supportNegative option to treat negative values as absolute values
+- feat: support theme config by chart type
+- feat: support text shape of word-cloud
+
+
+- fix: y-axis is reverted after brush zoomin. fix#3089
+- fix: mark-point position type error fix
+- refactor: refactor the graphics in linear-progress chart
+- refactor: use label component to refactor sankey label
+- refactor: stack can be required by need
+
+
+
+## 1.11.12
+Wed, 14 Aug 2024 14:51:54 GMT
+
+### Updates
+
+- fix: fix params of tickCount in linear-axis-mixin,  fix #3053
+
+
+- feat: support `layoutRadius` of pie
+
+
+- fix: fix `padding` of region not work
+
+
+- fix: brush error after legend filter. fix#3061
+- fix: fix funnel chart color bug with different category and series fields
+-  git push --set-upstream origin fix/gauge-angle
+- fix: fix issue with harmony event
+- fix: fix type error of react vchart, fix #3065
+
+
+- fix: tooltip should show when chart has multiple regions
+
+
+- fix: fix the issue background of chart not updated, fix #3054
+
+
+- fix: fix the update of `startAngle` and `endAngle` in pie chart, fix #3059
+
+
+- fix: fix switch `visible` of legend, fix #3060
+
+
+
+## 1.11.11
+Tue, 06 Aug 2024 09:20:16 GMT
+
+### Updates
+
+- feat: label line support custom path. close#3000
+- feat: upgrade vrender to 0.19.20, to support `catmullRom` and `catmullRomClosed` curveType, related #2610
+
+
+- fix: fix crosshair of histogram, fix #2826
+
+
+- fix: use `vglobal.getElementById` to replace `document.getElementById`
+
+
+- fix: liquid gradient not work after reverse
+- fix: add group mark to fix gradient color bug of liquid and add rect shape to fix rect symbol padding bug
+- fix: fix `lockAfterClick` of tooltip, related #1574
+
+
+- fix:  prevent trigger original event in panEnd composite event #2931
+- fix:curveType `monotone` in seriesStyle not work 
+- fix: charts should not stack when only specify `stackValue` but `stack` is false, fix #3005
+
+
+- fix: `updateData` incorrect with datazoom, related #3041
+- fix: fix issue of `updateSpec` when visible of grid in axis change, fix #3004
+
+
+- fix: fix fontFamily when update theme, fix #3028
+
+
+
+## 1.11.10
+Wed, 24 Jul 2024 13:32:11 GMT
+
+### Updates
+
+- chore: update rollup.config.js to fix es5/index.js, fix #2971
+
+
+- fix: prevent issue with ios bug while pointEvent is configed
+- feat: liquid support reverse and target mark. close#2977 & close#2978
+- feat: add `totalScale` params in geo zoom event
+-  feat: support `geoZoomByIndex`/`geoZoomById` API
+- feat: marker label background support  custom path. close#2959
+- fix: liquid gradient not work after reverse
+- fix: prevent trigger original event in zoomEnd composite event #2931
+- fix: fix error of setDimentionIndex when dimension axis is linear
+
+
+
+## 1.11.7
+Tue, 16 Jul 2024 12:19:22 GMT
+
+### Updates
+
+- feat: support configuring callback function in indicator text style attributes, #2540
+- feat: add options `hideTimer` in toolti, to hide tooltip by timer
+
+
+- feat: support `transitionDuration` in tooltip theme
+- feat: support `updateIndicatorDataById`/`updateIndicatorDataByIndex` API, related #2776
+- feat: add `userUpdateOptions` to let user specify update type of charts, fix some animation bug
+
+
+- fix(barbackground): datakey is undefined when set custom datakey
+- fix: fix the issue where `barMaxWidth` does not work when `barWidth` is configured, #2885`
+-  fix: line/area clip animation by incorrect direction
+- fix(crosshair): fix bug of crosshair position when legend filter data. fix#2905
+- fix: fix the error caused by theme change when updatingSpec
+
+
+- fix: clear the timer of tooltip when has update
+
+
+- fix: statistics confict of linear and discrete field. fix#2926 
+- fix: fix polar animation logic for radar charts
+- fix: fix PolarPointUpdate when from point is center
+
+
+- fix: type define fix
+- fix: label should not update when label is set in series, related #2928
+
+
+
+## 1.11.6
+Thu, 27 Jun 2024 09:53:20 GMT
+
+### Updates
+
+- fix: background of chart should support gradient color
+- fix(animation): rose animation not work when update twice. fix#2856
+- fix: fix the type of `ITooltipTheme`, fix #2850
+
+
+- fix: fix the issue of update animation not executed when updateSpec, #2835 #2836
+
+## 1.11.5
+Thu, 20 Jun 2024 10:18:10 GMT
+
+### Updates
+
+- fix: optimize discrete legend pager color in dark theme, related #2654
+- fix: fix the issue issue with stacked waterfall charts where positive and negative values were not stacked separately when there were both positive and negative values in the same stack
+
+
+
+## 1.11.4
+Tue, 18 Jun 2024 06:15:31 GMT
+
+### Updates
+
+- fix: fix bug of `updateSpec` when has `scales`, close #2744
+
+
+- fix: gauge chart might throw error when the value is close to its maximum, fix #2783
+- fix: fix the behavior of the gauge pointer when it exceeds the axis range, fix #2780
+- fix: normal animation not work when appear animation is disabled, fix #2807
+- fix: upgrade vrender to 0.19.10, vgrammar to 0.13.9
+
+
 
 ## 1.11.3
 Thu, 06 Jun 2024 05:55:31 GMT

@@ -4,7 +4,7 @@ group: storytelling
 title: Global animation for switching between bar and pie charts
 keywords: animation,morphing,bar,pie,barChart,pieChart,comparison
 order: 42-0
-cover: http://lf9-dp-fe-cms-tos.byteorg.com/obj/bit-cloud/morph-bar-to-pie.gif
+cover: https://lf9-dp-fe-cms-tos.byteorg.com/obj/bit-cloud/morph-bar-to-pie.gif
 option: pieChart#animationUpdate
 ---
 
@@ -17,6 +17,14 @@ We often use different chart types for different visualization purposes. The sam
 ## Demo source
 
 ```javascript livedemo
+/**
+ * 自1.12.0后，全局形变动画需要手动注册才能生效
+ *
+ * import { registerMorph } from '@visactor/vchart';
+ *
+ * registerMorph();
+ */
+VCHART_MODULE.registerMorph();
 const pieSpec = {
   type: 'pie',
   data: [

@@ -12,7 +12,7 @@
 
 自 1.7.0 版本支持，文本类型。`1.10.0`版本后，建议使用 `formatMethod` 配置富文本。
 
-富文本的具体使用方式，请参考[富文本教程文档](/vchart/guide/tutorial_docs/Richtext_and_Dom)
+富文本的具体使用方式，请参考[富文本教程文档](/vchart/guide/tutorial_docs/extend/Richtext_and_Dom)
 
 可选：
 
@@ -58,7 +58,7 @@ formatMethod: text => {
 };
 ```
 
-更详细的富文本使用方式请参考[富文本教程](/vchart/guide/tutorial_docs/Richtext_and_Dom)
+更详细的富文本使用方式请参考[富文本教程](/vchart/guide/tutorial_docs/extend/Richtext_and_Dom)
 
 #${prefix} formatter(string)
 
@@ -173,6 +173,13 @@ hover 状态样式配置。
     type: 'position';
     /** position 根据图表类型支持不同支持不同的位置配置 **/
     position?: Functional<LabelPosition[]>;
+    /**
+     * 当 position 内的备选位置依然无法放下标签时，标签是否放回原位。
+     * 默认为 true，若为 false，则标签会被放在 position 数组的最后一个位置。
+     * @since 1.12.15
+     * @default true
+     */
+    restorePosition?: boolean;
   };
   ```
 
@@ -187,6 +194,13 @@ hover 状态样式配置。
     type: 'bound';
     /** position 根据图表类型支持不同支持不同的位置配置 **/
     position?: Functional<LabelPosition[]>;
+    /**
+     * 当 position 内的备选位置依然无法放下标签时，标签是否放回原位。
+     * 默认为 true，若为 false，则标签会被放在 position 数组的最后一个位置。
+     * @since 1.12.15
+     * @default true
+     */
+    restorePosition?: boolean;
   };
   ```
 
@@ -300,6 +314,15 @@ label 描边色在智能反色时的四种策略：
 label 超出 mark 范围，也以 mark 作为背景色进行反色。
 默认设置为`false`。
 
+##${prefix} interactInvertType('none' | 'stroked' | 'inside')
+
+自 1.12.8 版本开始支持
+当标签和图形相交，但是没有完全在 mark 内部的时候，支持三种处理方式：
+
+- none: 不做任何处理
+- stroked: 标签存在描边的时候，根据描边进行处理 (默认行为)
+- inside: 和标签完全在 mark 内部一样处理
+
 {{ /if }}
 
 {{ if: !${ignoreCustom} }}
@@ -369,3 +392,19 @@ const layout = (attribute, text, getRelatedGraphic) => {
 
 ##${prefix} increaseEffect(boolean)=true
 标签数值增长动画，当标签数据更新且为数值数据时触发。设置为 `false` 可以关闭此动画效果。
+
+#${prefix} stackDataFilterType('min'|'max')
+
+自 1.12.0 开始生效
+
+用于对堆积分组数据进行过滤
+
+- 'min' 对堆积分组中的最大值展示标签
+- 'max' 对堆积分组中的最小值展示标签
+
+#${prefix} showRelatedMarkTooltip(boolean)=false
+
+自 1.13.5 开始生效
+
+默认值为 `false`，即鼠标悬浮在标签上不会触发 tooltip。
+当设置为 `true` 时，鼠标悬浮在标签上会触发其关联图形的 tooltip。

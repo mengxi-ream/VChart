@@ -7,7 +7,7 @@ on:
 jobs:
   update-changelog-after-publish-a-release:
     name: GitHub Actions Test
-    runs-on: macos-12
+    runs-on: macos-13
 
     strategy:
       matrix:
@@ -49,6 +49,15 @@ jobs:
           langs: 'en,zh'
           tag_name: ${{github.event.release.tag_name}}
           file_name: release.md
+
+      - name: generate changelog of harmony
+        id: generate-changelog-of-harmony
+        uses: xile611/collect-release-changelog@main
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          folder: ./packages/harmony_vchart/library
+          tag_name: ${{github.event.release.tag_name}}
+          file_name: CHANGELOG.md
 
       - name: Push branch
         run: |

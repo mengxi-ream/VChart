@@ -1,5 +1,4 @@
-import { ITextFormatMethod } from './../../../typings/spec/common';
-import type { AxisItem, AxisItemStateStyle } from '@visactor/vrender-components';
+import type { AxisBreakProps, AxisItem, AxisItemStateStyle } from '@visactor/vrender-components';
 import type { IAnimationSpec } from '../../../animation/spec';
 import type {
   Datum,
@@ -14,6 +13,7 @@ import type {
 } from '../../../typings';
 import type { IComponentSpec } from '../../base/interface';
 import type { AxisType, IAxisItem, IBandAxisLayer, ITickCalculationCfg, StyleCallback } from './common';
+import type { IBaseScale } from '@visactor/vscale';
 
 export interface ICommonAxisSpec extends Omit<IComponentSpec, 'orient' | 'center'>, IAnimationSpec<string, string> {
   /**
@@ -73,6 +73,21 @@ export interface ICommonAxisSpec extends Omit<IComponentSpec, 'orient' | 'center
   forceInitTick?: boolean;
 }
 
+export type ILinearAxisBreakSpec = Omit<AxisBreakProps, 'rawRange'> & {
+  /**
+   * 截断标识之间的间距：
+   * 1. `number` 为像素值
+   * 2. `string` 为百分比相对值，如 '1%'
+   * @default 6
+   */
+  gap?: number | string;
+  /**
+   * 计算截断对应range的类型，根据长度或者记录数进行分段
+   * @since 1.12.12
+   */
+  scopeType?: 'count' | 'length';
+};
+
 export interface ILinearAxisSpec {
   // 线性轴数值范围配置
   /** 最小值，**优先级高于 zero，nice** */
@@ -126,16 +141,28 @@ export interface ILinearAxisSpec {
    * @description 当配置了 min和 max，该配置项失效
    */
   expand?: {
+    /**
+     * 轴范围扩展的最小比例
+     */
     min?: number;
+    /**
+     * 轴范围扩展的最大比例
+     */
     max?: number;
   };
 
   /**
    * 连续轴上的 dimension tooltip 数据筛选范围
    * 如果配置为单个数字 d，则筛选区间为 [x0 - d, x0 + d]；如果配置为二元组 [d1, d2]，则筛选区间为 [x0 + d1, x0 + d2]
+   * 如果配置为函数 f, 函数的返回值将会作为数据筛选范围的值
    * @since 1.4.0
    */
-  tooltipFilterRange?: number | [number, number];
+  tooltipFilterRange?: number | [number, number] | ((params: { scale: IBaseScale }) => number | [number, number]);
+  /**
+   * 轴截断配置，只对笛卡尔坐标系的 linear 轴生效
+   * @since 1.12.4
+   */
+  breaks?: ILinearAxisBreakSpec[];
 }
 
 export interface IBandAxisSpec {
@@ -343,10 +370,9 @@ export interface ITitle extends IAxisItem<ITextMarkSpec> {
    * */
   type?: 'text' | 'rich';
   /**
-   * 轴标题内容格式化函数
-   * @param text 原始标签文本值
-   * @param datum 图形数据
-   * @returns 格式化后的文本
+   * 轴标题内容，支持多种格式
+   * - 字符串或者数值
+   * - 字符串或者数值数组
    */
   text?: ITextMarkSpec['text'] | ReturnType<IRichTextFormatMethod<[]>>;
   /**

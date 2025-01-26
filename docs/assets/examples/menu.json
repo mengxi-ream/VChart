@@ -130,6 +130,148 @@
       ]
     },
     {
+      "path": "vscreen",
+      "title": {
+        "zh": "大屏数据可视化",
+        "en": "big screen visualization"
+      },
+      "children": [
+        {
+          "path": "column-parallel-highlight",
+          "title": {
+            "zh": "带高亮动画的并列柱状图",
+            "en": "Column Parallel With HightLight"
+          }
+        },
+        {
+          "path": "column-parallel-streamlight",
+          "title": {
+            "zh": "带流光动画的并列柱状图",
+            "en": "Column Parallel with StreamLight"
+          }
+        },
+        {
+          "path": "line-growth",
+          "title": {
+            "zh": "带生长动画的折线图",
+            "en": "Line with Growth"
+          }
+        },
+        {
+          "path": "line-load",
+          "title": {
+            "zh": "带加载动画的折线图",
+            "en": "Line with Load"
+          }
+        },
+        {
+          "path": "area-growth",
+          "title": {
+            "zh": "带生长动画的面积图",
+            "en": "Area with Growth"
+          }
+        },
+        {
+          "path": "area-load",
+          "title": {
+            "zh": "带加载动画的面积图",
+            "en": "Area with Load"
+          }
+        },
+        {
+          "path": "bar-highlight",
+          "title": {
+            "zh": "带高亮动画的条形图",
+            "en": "Bar With HightLight"
+          }
+        },
+        {
+          "path": "bar-streamlight",
+          "title": {
+            "zh": "带流光动画的条形图",
+            "en": "Bar with StreamLight"
+          }
+        },
+        {
+          "path": "double-axis-load",
+          "title": {
+            "zh": "带加载动画的双轴图",
+            "en": "Double Axis with Load"
+          }
+        },
+        {
+          "path": "pie-scale",
+          "title": {
+            "zh": "带改变尺寸动画的饼图",
+            "en": "Pie with Scale"
+          }
+        },
+        {
+          "path": "pie-relocate",
+          "title": {
+            "zh": "带改变中心位置动画的饼图",
+            "en": "Pie with Relocate"
+          }
+        },
+        {
+          "path": "bilateral-growth",
+          "title": {
+            "zh": "带生长动画的双向条形图",
+            "en": "Bilateral with Growth"
+          }
+        },
+        {
+          "path": "scatter-ripple",
+          "title": {
+            "zh": "带涟漪动画的散点图",
+            "en": "Scatter with Ripple"
+          }
+        },
+        {
+          "path": "radar-ridial",
+          "title": {
+            "zh": "带径向动画的雷达图",
+            "en": "Radar with Ridial"
+          }
+        },
+        {
+          "path": "word-cloud-scale",
+          "title": {
+            "zh": "带文字缩放动画的词云图",
+            "en": "WordCloud with Scale"
+          }
+        },
+        {
+          "path": "sankey",
+          "title": {
+            "zh": "桑基图",
+            "en": "Sankey"
+          }
+        },
+        {
+          "path": "funnel",
+          "title": {
+            "zh": "漏斗图",
+            "en": "Funnel"
+          }
+        },
+        {
+          "path": "gauge",
+          "title": {
+            "zh": "仪表图",
+            "en": "Gauge"
+          }
+        },
+        {
+          "path": "liquid",
+          "title": {
+            "zh": "水波图",
+            "en": "Liquid"
+          }
+        }
+      ]
+    },
+    {
       "path": "line-chart",
       "title": {
         "zh": "line-chart",
@@ -503,6 +645,13 @@
             "zh": "自定义标签的条形图",
             "en": "Bar Chart with Customized Label"
           }
+        },
+        {
+          "path": "bar-break-by-axis",
+          "title": {
+            "zh": "轴截断柱图",
+            "en": "Axis Break Column Chart"
+          }
         }
       ]
     },
@@ -665,6 +814,20 @@
             "zh": "自定义饼图的图例交互",
             "en": "Customized legend interaction of pie chart"
           }
+        },
+        {
+          "path": "richtext-autowrap",
+          "title": {
+            "zh": "饼图富文本自动换行",
+            "en": "Auto-wrap richtext label in pie chart"
+          }
+        },
+        {
+          "path": "richtext-autoEllipsis",
+          "title": {
+            "zh": "饼图富文本自动省略",
+            "en": "Auto-ellipsis richtext label in pie chart"
+          }
         }
       ]
     },
@@ -750,8 +913,8 @@
         {
           "path": "funnel-template",
           "title": {
-            "zh": "漏斗图模板",
-            "en": "Funnel Template"
+            "zh": "漏斗图自定义转换率箭头",
+            "en": "Funnel Conversion Arrows via CustomMarks"
           }
         },
         {
@@ -759,6 +922,13 @@
           "title": {
             "zh": "对比漏斗图模板",
             "en": "Comparative Funnel Template"
+          }
+        },
+        {
+          "path": "conversion-funnel",
+          "title": {
+            "zh": "扩展图表 - 转化率漏斗图",
+            "en": "Extension Chart - Conversion Funnel"
           }
         }
       ]
@@ -957,6 +1127,13 @@
             "zh": "桑基图自定义html渲染节点",
             "en": "set customized node of html in sankey chart"
           }
+        },
+        {
+          "path": "sankey-with-scrollbar",
+          "title": {
+            "zh": "带滚动条的桑基图",
+            "en": "Sankey Diagram with Scrollbar"
+          }
         }
       ]
     },
@@ -1058,6 +1235,20 @@
           "title": {
             "zh": "形状词云图随机旋转角",
             "en": "Shape Word Cloud with Random Rotation Angles"
+          }
+        },
+        {
+          "path": "word-cloud-shape-text",
+          "title": {
+            "zh": "文字轮廓词云图",
+            "en": "Text outline Word Cloud"
+          }
+        },
+        {
+          "path": "word-cloud-shape-geometry",
+          "title": {
+            "zh": "几何形状词云图",
+            "en": "geometric outline Word Cloud"
           }
         }
       ]
@@ -1392,6 +1583,20 @@
             "zh": "水波图指标智能反色",
             "en": "Liquid Chart Smart Invert"
           }
+        },
+        {
+          "path": "liquid-chart-reverse",
+          "title": {
+            "zh": "水波图支持反向绘制",
+            "en": "Liquid Chart Reverse"
+          }
+        },
+        {
+          "path": "liquid-chart-target",
+          "title": {
+            "zh": "水波图支持目标值标记",
+            "en": "Liquid Chart Target"
+          }
         }
       ]
     },
@@ -1414,6 +1619,87 @@
           "title": {
             "zh": "空心韦恩图",
             "en": "Hollow Venn Chart"
+          }
+        }
+      ]
+    },
+    {
+      "path": "mosaic-chart",
+      "title": {
+        "zh": "马赛克图",
+        "en": "mosaic-chart"
+      },
+      "children": [
+        {
+          "path": "basic-mosaic",
+          "title": {
+            "zh": "基础马赛克图",
+            "en": "Basic mosaic chart"
+          }
+        },
+        {
+          "path": "simple-mosaic",
+          "title": {
+            "zh": "简化马赛克图",
+            "en": "simple mosaic chart"
+          }
+        },
+        {
+          "path": "group-mosaic",
+          "title": {
+            "zh": "分组马赛克图",
+            "en": "group mosaic chart"
+          }
+        }
+      ]
+    },
+    {
+      "path": "pictogram-chart",
+      "title": {
+        "zh": "象形图",
+        "en": "pictogram-chart"
+      },
+      "children": [
+        {
+          "path": "pictogram-cat",
+          "title": {
+            "zh": "新手撸猫指南",
+            "en": "Cat Stroking For Beginners"
+          }
+        },
+        {
+          "path": "pictogram-seat-map",
+          "title": {
+            "zh": "选座售票图",
+            "en": "SVG Tickets Seat Map"
+          }
+        },
+        {
+          "path": "pictogram-cow",
+          "title": {
+            "zh": "牛肉部位示意图",
+            "en": "SVG Beef Cuts"
+          }
+        },
+        {
+          "path": "pictogram-keyboard",
+          "title": {
+            "zh": "键盘打字机",
+            "en": "SVG Keyboard"
+          }
+        },
+        {
+          "path": "pictogram-route",
+          "title": {
+            "zh": "SVG 路径动画",
+            "en": "SVG Motion Path Animation"
+          }
+        },
+        {
+          "path": "pictogram-mall",
+          "title": {
+            "zh": "商场业态结构图",
+            "en": "Shopping Mall Tenant Layout"
           }
         }
       ]
@@ -1500,6 +1786,152 @@
           "title": {
             "zh": "组合图中柱系列支持autoBandSize",
             "en": "Bar series in common chart supports autoBandSize"
+          }
+        }
+      ]
+    },
+    {
+      "path": "pivot-chart",
+      "title": {
+        "zh": "透视图",
+        "en": "pivot chart"
+      },
+      "children": [
+        {
+          "path": "pivot-chart",
+          "title": {
+            "zh": "透视组合图",
+            "en": "Pivot Chart"
+          }
+        },
+        {
+          "path": "pivot-chart-pie",
+          "title": {
+            "zh": "透视组合图（饼图）",
+            "en": "Pivot Chart Pie"
+          }
+        },
+        {
+          "path": "pivot-chart-radar",
+          "title": {
+            "zh": "透视组合图（雷达图）",
+            "en": "Pivot Chart Radar"
+          }
+        },
+        {
+          "path": "pivot-chart-scatter",
+          "title": {
+            "zh": "透视组合图（散点图）",
+            "en": "Pivot Chart Scatter"
+          }
+        },
+        {
+          "path": "pivot-chart-wordCloud",
+          "title": {
+            "zh": "透视组合图（词云图）",
+            "en": "Pivot Chart Word Cloud"
+          }
+        }
+      ]
+    },
+    {
+      "path": "gantt",
+      "title": {
+        "zh": "甘特图",
+        "en": "gantt-chart"
+      },
+      "children": [
+        {
+          "path": "gantt-basic",
+          "title": {
+            "zh": "甘特图基础用法",
+            "en": "Gantt Basic"
+          }
+        },
+        {
+          "path": "gantt-customLayout",
+          "title": {
+            "zh": "甘特图自定义渲染",
+            "en": "Gantt Custom Layout"
+          }
+        },
+        {
+          "path": "gantt-edit",
+          "title": {
+            "zh": "甘特图编辑数据",
+            "en": "Gantt Edit"
+          }
+        },
+        {
+          "path": "gantt-dependency-link-line",
+          "title": {
+            "zh": "甘特图依赖线（关联线）",
+            "en": "Gantt Dependency Link Line"
+          }
+        },
+        {
+          "path": "gantt-dependency-link-create",
+          "title": {
+            "zh": "创建依赖线（关联线）",
+            "en": "Create Dependency Link Line"
+          }
+        },
+        {
+          "path": "gantt-interaction-drag-table-width",
+          "title": {
+            "zh": "甘特图交互——拖拽表格宽度",
+            "en": "Gantt Interaction —— Drag Table Width"
+          }
+        },
+        {
+          "path": "gantt-interaction-drag-taskBar",
+          "title": {
+            "zh": "甘特图交互——拖拽任务条",
+            "en": "Gantt Interaction —— Drag TaskBar"
+          }
+        },
+        {
+          "path": "gantt-interaction-creation-button",
+          "title": {
+            "zh": "甘特图交互——创建排期",
+            "en": "Gantt Interaction —— Create Schedule"
+          }
+        },
+        {
+          "path": "gantt-taskShowMode",
+          "title": {
+            "zh": "甘特图子任务布局模式",
+            "en": "Gantt Subtask Show Mode"
+          }
+        },
+        {
+          "path": "gantt-table-mergeCell",
+          "title": {
+            "zh": "任务名称单元格合并",
+            "en": "Gantt Task Merge Cell"
+          }
+        }
+      ]
+    },
+    {
+      "path": "calendar",
+      "title": {
+        "zh": "日历图",
+        "en": "calendar"
+      },
+      "children": [
+        {
+          "path": "calendar-basic",
+          "title": {
+            "zh": "日历图基础用法",
+            "en": "Calendar Basic"
+          }
+        },
+        {
+          "path": "calendar-custom-event",
+          "title": {
+            "zh": "日历图自定义日程",
+            "en": "Calendar Custom Event"
           }
         }
       ]
@@ -1712,6 +2144,13 @@
           }
         },
         {
+          "path": "axis-label-autoWrap",
+          "title": {
+            "zh": "坐标轴文本自动换行",
+            "en": "Axis label autoWrap"
+          }
+        },
+        {
           "path": "axis-label-autoHide-and-autoRotate",
           "title": {
             "zh": "坐标轴组件标签布局组合使用",
@@ -1758,6 +2197,20 @@
           "title": {
             "zh": "轴富文本标签",
             "en": "Axis Richtext Label"
+          }
+        },
+        {
+          "path": "axis-break",
+          "title": {
+            "zh": "轴截断",
+            "en": "Axis Break"
+          }
+        },
+        {
+          "path": "axis-inner-offset",
+          "title": {
+            "zh": "轴内侧留白",
+            "en": "Axis InnerOffset"
           }
         }
       ]
@@ -2141,6 +2594,20 @@
           }
         },
         {
+          "path": "mark-line-color-with-series",
+          "title": {
+            "zh": "markLine支持跟随系列颜色",
+            "en": "markLine support color with series"
+          }
+        },
+        {
+          "path": "mark-line-custom-label-back",
+          "title": {
+            "zh": "markLine 支持自定义标签背景path",
+            "en": "markLine supports custom label background path"
+          }
+        },
+        {
           "path": "mark-line-axis",
           "title": {
             "zh": "markLine 轴空间定位",
@@ -2293,6 +2760,13 @@
             "zh": "地理坐标系下的markPoint",
             "en": "markPoint in geo coordinates"
           }
+        },
+        {
+          "path": "trend-line",
+          "title": {
+            "zh": "使用 MarkLine 绘制趋势线",
+            "en": "Draw trend line using MarkLine"
+          }
         }
       ]
     },
@@ -2387,6 +2861,13 @@
           "title": {
             "zh": "富文本标签",
             "en": "RichText Label"
+          }
+        },
+        {
+          "path": "label-mark-tooltip",
+          "title": {
+            "zh": "标签触发图元 Tooltip",
+            "en": "Enable mark tooltip triggered by label"
           }
         }
       ]
@@ -2549,6 +3030,20 @@
           "title": {
             "zh": "自定义矩形渲染html拓展属性",
             "en": "Render html in custom rect"
+          }
+        },
+        {
+          "path": "business-funnel",
+          "title": {
+            "zh": "业务漏斗图（柱状图模拟）",
+            "en": "Business Funnel(Simulated with Bar)"
+          }
+        },
+        {
+          "path": "pie-extension-icon",
+          "title": {
+            "zh": "饼图自定义Icon标记",
+            "en": "Pie Extension Icon"
           }
         }
       ]

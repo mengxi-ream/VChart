@@ -45,6 +45,7 @@ export declare class BoxPlotSeries<T extends IBoxPlotSeriesSpec = IBoxPlotSeries
     initMarkStyle(): void;
     initBoxPlotMarkStyle(): void;
     initData(): void;
+    compileData(): void;
     init(option: IModelInitOption): void;
     private _getMarkWidth;
     onLayoutEnd(ctx: any): void;
@@ -53,7 +54,7 @@ export declare class BoxPlotSeries<T extends IBoxPlotSeriesSpec = IBoxPlotSeries
     protected initTooltip(): void;
     getStatisticFields(): {
         key: string;
-        operations: import("../../data/transforms/dimension-statistics").StatisticOperations;
+        operations: import("../../data/transforms/interface").StatisticOperations;
     }[];
     onEvaluateEnd(ctx: IModelEvaluateOption): void;
     getDefaultShapeType(): string;

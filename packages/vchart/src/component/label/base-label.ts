@@ -4,7 +4,7 @@ import type { IComponentOption } from '../interface';
 import { ComponentTypeEnum } from '../interface/type';
 import type { IRegion } from '../../region/interface';
 import type { IModelRenderOption } from '../../model/interface';
-import { LayoutZIndex } from '../../constant';
+import { LayoutZIndex } from '../../constant/layout';
 import type { ILabelSpec } from './interface';
 import type { IHoverSpec, ISelectSpec } from '../../interaction/interface';
 import type { LooseFunction } from '@visactor/vutils';
@@ -60,13 +60,5 @@ export abstract class BaseLabelComponent<T = any> extends BaseComponent<T> {
   }
   protected _getNeedClearVRenderComponents(): IGraphic[] {
     return [];
-  }
-
-  protected _delegateLabelEvent(component: IGroup) {
-    // TODO: 待优化 @zwx
-    if (component.listenerCount('*') === 0) {
-      component.addEventListener('*', ((event: any, type: string) =>
-        this._delegateEvent(component as unknown as IGraphic, event, type)) as LooseFunction);
-    }
   }
 }

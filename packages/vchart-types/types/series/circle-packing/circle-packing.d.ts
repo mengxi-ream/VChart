@@ -33,7 +33,7 @@ export declare class CirclePackingSeries<T extends ICirclePackingSeriesSpec = IC
     private _initLabelMarkStyle;
     getStatisticFields(): {
         key: string;
-        operations: import("../../data/transforms/dimension-statistics").StatisticOperations;
+        operations: import("../../data/transforms/interface").StatisticOperations;
     }[];
     protected initTooltip(): void;
     initAnimation(): void;
@@ -41,5 +41,6 @@ export declare class CirclePackingSeries<T extends ICirclePackingSeriesSpec = IC
     onLayoutEnd(ctx: any): void;
     protected _noAnimationDataKey(datum: Datum, index: number): unknown | undefined;
     getActiveMarks(): IMark[];
+    getMarkData(datum: Datum): any;
 }
 export declare const registerCirclePackingSeries: () => void;

@@ -1,26 +1,31 @@
 import { DataSet, DataView } from '@visactor/vdataset';
 import type { Maybe } from '@visactor/vutils';
 // eslint-disable-next-line no-duplicate-imports
-import { array, isValid, isNil, isString, isEmpty, isArray, isEqual } from '@visactor/vutils';
+import { array, isValid, isNil, isString, isEqual } from '@visactor/vutils';
 import type { IModelRenderOption, IModelSpecInfo } from '../../model/interface';
 import type { IRegion } from '../../region/interface';
 import type { ICartesianSeries } from '../../series/interface';
-import type { ILayoutRect, ILayoutType, IRect, StringOrNumber } from '../../typings';
+import type { CoordinateType, ILayoutRect, ILayoutType, IRect, StringOrNumber } from '../../typings';
 import { BaseComponent } from '../base/base-component';
 import type {
   IAggrType,
-  ICoordinateOption,
-  IDataPointSpec,
   IDataPos,
   IDataPosCallback,
+  IMarkerAttributeContext,
   IMarkerSpec,
-  IMarkerSupportSeries
+  IMarkerSupportSeries,
+  IMarkProcessOptions
 } from './interface';
 import type { IGraphic, IGroup } from '@visactor/vrender-core';
 import { calcLayoutNumber } from '../../util/space';
 import { isAggrSpec } from './utils';
 import { getFirstSeries } from '../../util';
 import { arrayParser } from '../../data/parser/array';
+import { getSpecInfo } from '../util';
+import type { IOptionWithCoordinates } from '../../data/transforms/interface';
+import { registerDataSetInstanceTransform } from '../../data/register';
+import { markerAggregation } from '../../data/transforms/aggregation';
+import { markerFilter } from '../../data/transforms/marker-filter';
 
 export abstract class BaseMarker<T extends IMarkerSpec> extends BaseComponent<T> {
   layoutType: ILayoutType | 'none' = 'none';
@@ -29,7 +34,7 @@ export abstract class BaseMarker<T extends IMarkerSpec> extends BaseComponent<T>
   static specKey: string;
   static type: string;
   static coordinateType: string;
-  coordinateType: string;
+  coordinateType: CoordinateType;
 
   protected _startRelativeSeries!: IMarkerSupportSeries;
   protected _endRelativeSeries!: IMarkerSupportSeries;
@@ -55,42 +60,30 @@ export abstract class BaseMarker<T extends IMarkerSpec> extends BaseComponent<T>
   protected abstract _initDataView(): void;
   protected abstract _createMarkerComponent(): IGroup;
   protected abstract _markerLayout(): void;
+  protected abstract _computeOptions(): IMarkProcessOptions;
   // 该方法需要子组件复写
   static _getMarkerCoordinateType(markerSpec: any): string {
     return 'cartesian';
   }
 
   static getSpecInfo(chartSpec: any): Maybe<IModelSpecInfo[]> {
-    const markerSpec = chartSpec[this.specKey];
-    if (isEmpty(markerSpec)) {
-      return undefined;
-    }
-    if (
-      !isArray(markerSpec) &&
-      markerSpec.visible !== false &&
-      this._getMarkerCoordinateType(markerSpec) === this.coordinateType
-    ) {
-      return [
-        {
-          spec: markerSpec,
-          specPath: [this.specKey],
-          specInfoPath: ['component', this.specKey, 0],
-          type: this.type
-        }
-      ];
-    }
-    const specInfos: IModelSpecInfo[] = [];
-    array(markerSpec).forEach((m: any, i: number) => {
-      if (m.visible !== false && this._getMarkerCoordinateType(m) === this.coordinateType) {
-        specInfos.push({
-          spec: m,
-          specPath: [this.specKey, i],
-          specInfoPath: ['component', this.specKey, i],
-          type: this.type
-        });
-      }
+    return getSpecInfo<IMarkerSpec>(chartSpec, this.specKey, this.type, (s: IMarkerSpec) => {
+      return s.visible !== false && this._getMarkerCoordinateType(s) === this.coordinateType;
     });
-    return specInfos;
+  }
+
+  protected _markAttributeContext: IMarkerAttributeContext;
+  getMarkAttributeContext() {
+    return this._markAttributeContext;
+  }
+
+  protected _buildMarkerAttributeContext() {
+    this._markAttributeContext = {
+      relativeSeries: this._relativeSeries,
+      startRelativeSeries: this._startRelativeSeries,
+      endRelativeSeries: this._endRelativeSeries,
+      vchart: this._option.globalInstance
+    };
   }
 
   created() {
@@ -98,6 +91,7 @@ export abstract class BaseMarker<T extends IMarkerSpec> extends BaseComponent<T>
     this._bindSeries();
     this._initDataView();
     this.initEvent();
+    this._buildMarkerAttributeContext();
   }
 
   protected _getAllRelativeSeries() {
@@ -145,86 +139,14 @@ export abstract class BaseMarker<T extends IMarkerSpec> extends BaseComponent<T>
     };
   }
 
-  protected _processSpecCoo(spec: any) {
-    const coordinates = spec.coordinates ?? array(spec.coordinate);
-    let option: ICoordinateOption;
-    return coordinates.map((coordinate: IDataPointSpec) => {
-      const refRelativeSeries = this._getSeriesByIdOrIndex(
-        coordinate.refRelativeSeriesId,
-        coordinate.refRelativeSeriesIndex
-      );
-
-      if (this.coordinateType === 'cartesian') {
-        const { xField, yField } = refRelativeSeries.getSpec();
-        const { xFieldDim, xFieldIndex, yFieldDim, yFieldIndex } = coordinate;
-        let bindXField = xField;
-        if (isValid(xFieldIndex)) {
-          bindXField = array(xField)[xFieldIndex];
-        }
-        if (xFieldDim && array(xField).includes(xFieldDim)) {
-          bindXField = xFieldDim;
-        }
-
-        let bindYField = yField;
-        if (isValid(yFieldIndex)) {
-          bindYField = array(yField)[yFieldIndex];
-        }
-        if (yFieldDim && array(yField).includes(yFieldDim)) {
-          bindYField = yFieldDim;
-        }
-
-        option = {
-          x: undefined,
-          y: undefined,
-          ...this._getAllRelativeSeries()
-        };
-
-        if (isString(coordinate[bindXField]) && isAggrSpec(coordinate[bindXField] as IDataPos)) {
-          option.x = { field: bindXField, aggrType: coordinate[bindXField] as IAggrType };
-        } else {
-          option.x = array(bindXField).map(field => coordinate[field]);
-        }
-
-        if (isString(coordinate[bindYField]) && isAggrSpec(coordinate[bindYField] as IDataPos)) {
-          option.y = { field: bindYField, aggrType: coordinate[bindYField] as IAggrType };
-        } else {
-          option.y = array(bindYField).map(field => coordinate[field]);
-        }
-      } else if (this.coordinateType === 'polar') {
-        const { valueField: radiusField, categoryField: angleField } = refRelativeSeries.getSpec();
-        const { angleFieldDim, angleFieldIndex } = coordinate;
-        let bindAngleField = angleField;
-        if (isValid(angleFieldIndex)) {
-          bindAngleField = array(angleField)[angleFieldIndex];
-        }
-        if (angleFieldDim && array(angleField).includes(angleFieldDim)) {
-          bindAngleField = angleFieldDim;
-        }
-
-        const bindRadiusField = radiusField;
-
-        option = {
-          angle: undefined,
-          radius: undefined,
-          ...this._getAllRelativeSeries()
-        };
-
-        if (isString(coordinate[bindAngleField]) && isAggrSpec(coordinate[bindAngleField] as IDataPos)) {
-          option.angle = { field: bindAngleField, aggrType: coordinate[bindAngleField] as IAggrType };
-        } else {
-          option.angle = array(bindAngleField).map(field => coordinate[field]);
-        }
-
-        if (isString(coordinate[bindRadiusField]) && isAggrSpec(coordinate[bindRadiusField] as IDataPos)) {
-          option.radius = { field: bindRadiusField, aggrType: coordinate[bindRadiusField] as IAggrType };
-        } else {
-          option.radius = array(bindRadiusField).map(field => coordinate[field]);
-        }
-      }
-
-      option.getRefRelativeSeries = () => refRelativeSeries;
-      return option;
-    });
+  protected _processSpecCoo(spec: any): IOptionWithCoordinates {
+    return {
+      coordinates: spec.coordinates || spec.coordinate,
+      ...this._getAllRelativeSeries(),
+      getSeriesByIdOrIndex: (seriesUserId: StringOrNumber, seriesIndex: number) =>
+        this._getSeriesByIdOrIndex(seriesUserId, seriesIndex),
+      coordinateType: this.coordinateType
+    };
   }
 
   protected _getRelativeDataView() {
@@ -351,5 +273,31 @@ export abstract class BaseMarker<T extends IMarkerSpec> extends BaseComponent<T>
       result.change = true;
     }
     return result;
+  }
+
+  _initCommonDataView() {
+    const { options } = this._computeOptions();
+
+    const seriesData = this._getRelativeDataView();
+    registerDataSetInstanceTransform(this._option.dataSet, 'markerAggregation', markerAggregation);
+    registerDataSetInstanceTransform(this._option.dataSet, 'markerFilter', markerFilter);
+    const data = new DataView(this._option.dataSet, { name: `${this.type}_${this.id}_data` });
+    data.parse([seriesData], {
+      type: 'dataview'
+    });
+    data.transform({
+      type: 'markerAggregation',
+      options
+    });
+
+    data.transform({
+      type: 'markerFilter',
+      options: this._getAllRelativeSeries()
+    });
+
+    data.target.on('change', () => {
+      this._markerLayout();
+    });
+    this._markerData = data;
   }
 }

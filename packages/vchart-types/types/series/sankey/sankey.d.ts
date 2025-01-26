@@ -6,23 +6,27 @@ import { SeriesData } from '../base/series-data';
 import type { ISankeySeriesSpec } from './interface';
 import type { ExtendEventParam } from '../../event/interface';
 import type { IElement, IGlyphElement, IMark as IVgrammarMark } from '@visactor/vgrammar-core';
-import type { IMark } from '../../mark/interface';
+import type { IMark, ITextMark } from '../../mark/interface';
+import { SankeySeriesSpecTransformer } from './sankey-transformer';
+import type { ILabelSpec } from '../../component';
 export declare class SankeySeries<T extends ISankeySeriesSpec = ISankeySeriesSpec> extends CartesianSeries<T> {
     static readonly type: string;
     type: SeriesTypeEnum;
+    static readonly transformerConstructor: any;
+    readonly transformerConstructor: typeof SankeySeriesSpecTransformer;
     static readonly mark: SeriesMarkMap;
     private _nodeMark;
     private _linkMark;
-    private _labelMark?;
     private _nodeLayoutZIndex;
     private _labelLayoutZIndex;
-    private _labelLimit;
     protected _nodesSeriesData?: SeriesData;
     protected _linksSeriesData?: SeriesData;
     private _viewBox;
     protected _categoryField: string;
     private _colorScale;
     private _nodeList;
+    private _needClear;
+    get direction(): "vertical" | "horizontal";
     getCategoryField(): string;
     setCategoryField(f: string): string;
     protected _valueField: string;
@@ -30,6 +34,7 @@ export declare class SankeySeries<T extends ISankeySeriesSpec = ISankeySeriesSpe
     setValueField(f: string): string;
     setAttrFromSpec(): void;
     initData(): void;
+    compileData(): void;
     initMark(): void;
     protected _buildMarkAttributeContext(): void;
     valueToNode(value: StringOrNumber | StringOrNumber[]): any;
@@ -41,7 +46,7 @@ export declare class SankeySeries<T extends ISankeySeriesSpec = ISankeySeriesSpe
     protected _fillByNode: (datum: Datum) => any;
     protected _fillByLink: (datum: Datum) => any;
     protected _initLinkMarkStyle(): void;
-    protected _initLabelMarkStyle(): void;
+    initLabelMarkStyle(labelMark: ITextMark, labelSpec: ILabelSpec): void;
     private _createText;
     initAnimation(): void;
     protected initEvent(): void;
@@ -72,5 +77,6 @@ export declare class SankeySeries<T extends ISankeySeriesSpec = ISankeySeriesSpe
     getDefaultShapeType(): string;
     protected _noAnimationDataKey(datum: Datum, index: number): unknown | undefined;
     getActiveMarks(): IMark[];
+    getMarkData(datum: Datum): any;
 }
 export declare const registerSankeySeries: () => void;

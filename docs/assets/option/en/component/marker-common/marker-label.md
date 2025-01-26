@@ -30,6 +30,21 @@ Label background panel configuration.
 
 Label background panel visibility.
 
+##${prefix} customShape(function)
+Since version 1.11.10, label background supports custom paths.
+
+The callback function is defined as follows:
+
+```ts
+/**
+ * @params vrender marker component
+ * @params label background attribute
+ * @params path object, user-defined drawing
+ * @return Returns the path after drawing is completed
+ */
+(component: IGroup, attrs: Partial<IGraphicAttribute>, path: ICustomPath2D) => ICustomPath2D;
+```
+
 ##${prefix} padding(Object)
 
 Label panel internal padding.

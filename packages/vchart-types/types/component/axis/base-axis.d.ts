@@ -1,15 +1,15 @@
 import type { ITickDataOpt } from '@visactor/vrender-components';
 import type { IBaseScale } from '@visactor/vscale';
-import type { IGroup, IGraphic } from '@visactor/vrender-core';
+import type { IGraphic } from '@visactor/vrender-core';
 import type { IOrientType, IPolarOrientType, StringOrNumber, CoordinateType } from '../../typings';
 import { BaseComponent } from '../base/base-component';
 import { CompilableData } from '../../compile/data';
 import type { IAxis, ICommonAxisSpec, ITick } from './interface';
-import type { IComponentOption } from '../interface';
+import { type IComponentOption } from '../interface';
 import type { ISeries } from '../../series/interface';
 import type { ITransformOptions } from '@visactor/vdataset';
 import { DataView } from '@visactor/vdataset';
-import type { IComponentMark } from '../../mark/component';
+import type { IComponentMark } from '../../mark/interface/mark';
 export declare abstract class AxisComponent<T extends ICommonAxisSpec & Record<string, any> = any> extends BaseComponent<T> implements IAxis {
     static specKey: string;
     specKey: string;
@@ -42,6 +42,7 @@ export declare abstract class AxisComponent<T extends ICommonAxisSpec & Record<s
     protected abstract collectSeriesField(depth: number, series: ISeries): string | string[];
     abstract transformScaleDomain(): void;
     protected abstract updateScaleRange(): boolean;
+    protected abstract getDefaultInteractive(): boolean;
     protected _dataFieldText: string;
     protected _axisMark: IComponentMark;
     protected _gridMark: IComponentMark;
@@ -77,7 +78,6 @@ export declare abstract class AxisComponent<T extends ICommonAxisSpec & Record<s
         reSize: boolean;
         reCompile: boolean;
     };
-    protected _delegateAxisContainerEvent(component: IGroup): void;
     protected _getAxisAttributes(): any;
     protected _getGridAttributes(): {
         alternateColor: any;
@@ -96,9 +96,11 @@ export declare abstract class AxisComponent<T extends ICommonAxisSpec & Record<s
         };
     };
     protected _getLabelFormatMethod(): (value: any, datum: any, index: number) => any;
+    protected abstract registerTicksTransform(): string;
     protected _initTickDataSet<T extends ITickDataOpt>(options: T, index?: number): DataView;
     protected _tickTransformOption(): ITickDataOpt;
     addTransformToTickData(options: ITransformOptions, execute?: boolean): void;
     dataToPosition(values: any[]): number;
+    getDatum(childGraphic?: IGraphic): any;
 }
 export declare const registerAxis: () => void;

@@ -1,7 +1,7 @@
 import { isValid, radianToDegree } from '@visactor/vutils';
 import { BaseChartSpecTransformer } from '../base';
 import type { ISunburstChartSpec } from './interface';
-import { POLAR_START_ANGLE } from '../../constant';
+import { POLAR_START_ANGLE } from '../../constant/polar';
 import type { ISunburstSeriesSpec } from '../../series';
 // eslint-disable-next-line no-duplicate-imports
 import { SeriesTypeEnum } from '../../series';
@@ -15,34 +15,25 @@ export class SunburstChartSpecTransformer<
     // 结束角度默认使用用户的配置, 若用户没配置, 默认补成整圆.
     const endAngle = isValid(spec.endAngle) ? spec.endAngle : startAngle + radianToDegree(Math.PI * 2);
 
-    const series: ISunburstSeriesSpec = {
-      ...super._getDefaultSeriesSpec(spec),
-      categoryField: spec.categoryField,
-      valueField: spec.valueField,
-      seriesField: spec.seriesField,
+    const series: ISunburstSeriesSpec = super._getDefaultSeriesSpec(spec, [
+      'categoryField',
+      'valueField',
+      'centerX',
+      'centerY',
+      'offsetX',
+      'offsetY',
+      'innerRadius',
+      'outerRadius',
+      'gap',
+      'labelLayout',
+      'label',
+      'labelAutoVisible',
+      'drill',
+      'drillField'
+    ]);
 
-      centerX: spec.centerX,
-      centerY: spec.centerY,
-      offsetX: spec.offsetX,
-      offsetY: spec.offsetY,
-
-      startAngle: startAngle,
-      endAngle: endAngle,
-
-      innerRadius: spec.innerRadius,
-      outerRadius: spec.outerRadius,
-      gap: spec.gap,
-      labelLayout: spec.labelLayout,
-      label: spec.label,
-      labelAutoVisible: spec.labelAutoVisible,
-
-      drill: spec.drill,
-      drillField: spec.drillField
-    };
-
-    const seriesType = SeriesTypeEnum.sunburst;
-    series.type = seriesType;
-    series[seriesType] = spec[seriesType];
+    series.startAngle = startAngle;
+    series.endAngle = endAngle;
 
     return series;
   }

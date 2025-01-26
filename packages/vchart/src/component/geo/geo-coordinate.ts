@@ -1,4 +1,4 @@
-import { LayoutZIndex } from './../../constant/index';
+import { LayoutZIndex } from './../../constant/layout';
 /* eslint-disable no-duplicate-imports */
 import type { IPoint } from '../../typings/coordinate';
 import { Projection } from './projection';
@@ -8,15 +8,16 @@ import { BaseComponent } from '../base/base-component';
 import type { IGeoRegionSpec, IRegion, RegionSpec } from '../../region/interface';
 import { eachSeries } from '../../util/model';
 import { mergeSpec } from '@visactor/vutils-extension';
-import { ChartEvent, PREFIX } from '../../constant/index';
+import { ChartEvent } from '../../constant/event';
+import { PREFIX } from '../../constant/base';
 import type { ICartesianSeries, IGeoSeries } from '../../series/interface';
 import { SeriesTypeEnum } from '../../series/interface/type';
 import type { IGeoCoordinate, IGeoCoordinateHelper, IGeoCoordinateSpec, IProjectionSpec } from './interface';
 import type { BaseEventParams, ExtendEventParam, PanEventParam, ZoomEventParam } from '../../event/interface';
 import type { StringOrNumber } from '../../typings';
-import type { IZoomable } from '../../interaction/zoom/zoomable';
+import type { IZoomable, ZoomEventParams } from '../../interaction/zoom/zoomable';
 import { Zoomable } from '../../interaction/zoom/zoomable';
-import { isValid, mixin, isNil, Matrix } from '@visactor/vutils';
+import { isValid, mixin, isNil, Matrix, isEqual } from '@visactor/vutils';
 import type { Maybe } from '@visactor/vutils';
 import { DEFAULT_MAP_LOOK_UP_KEY } from '../../data/transforms/map';
 import { Factory } from '../../core/factory';
@@ -129,10 +130,7 @@ export class GeoCoordinate extends BaseComponent<IGeoRegionSpec> implements IGeo
     // this.rescaleMark();
   }
 
-  private _handleChartZoom = (
-    params: { zoomDelta: number; zoomX?: number; zoomY?: number },
-    event?: BaseEventParams['event']
-  ) => {
+  private _handleChartZoom = (params: ZoomEventParams, event?: BaseEventParams['event']) => {
     let scale = params.zoomDelta;
     // check if the next scale will outrange
     const _lastActualScale = this._actualScale;
@@ -144,11 +142,8 @@ export class GeoCoordinate extends BaseComponent<IGeoRegionSpec> implements IGeo
       this._actualScale = this._spec.zoomLimit?.max;
       scale = this._spec.zoomLimit?.max / _lastActualScale;
     }
-    if (event) {
-      (event as any).zoomDelta = scale;
-    }
     this.zoom(scale, [params.zoomX, params.zoomY]);
-    return scale;
+    return { scale, totalScale: this._actualScale };
   };
 
   dispatchZoom(zoomDelta: number, center?: { x: number; y: number }) {
@@ -156,11 +151,12 @@ export class GeoCoordinate extends BaseComponent<IGeoRegionSpec> implements IGeo
       x: this.getLayoutStartPoint().x + this.getLayoutRect().width / 2,
       y: this.getLayoutStartPoint().y + this.getLayoutRect().height / 2
     };
-    const scale = this._handleChartZoom({ zoomDelta, zoomX: scaleCenter.x, zoomY: scaleCenter.y });
+    const { scale, totalScale } = this._handleChartZoom({ zoomDelta, zoomX: scaleCenter.x, zoomY: scaleCenter.y });
     if (scale !== 1) {
       this.event.emit('zoom', {
         scale,
         scaleCenter,
+        totalScale,
         model: this
       } as unknown as ExtendEventParam);
     }
@@ -173,9 +169,14 @@ export class GeoCoordinate extends BaseComponent<IGeoRegionSpec> implements IGeo
       this.effect.scaleUpdate.bind(this)
     );
 
-    if (this._spec.roam) {
+    const { roam } = this._spec;
+    if (roam) {
       (this as unknown as IZoomable).initZoomEventOfRegions(this._regions, null, this._handleChartZoom);
-      (this as unknown as IZoomable).initDragEventOfRegions(this._regions, () => true, this.pan);
+      (this as unknown as IZoomable).initDragEventOfRegions(
+        this._regions,
+        (roam as any).blank ? null : () => true,
+        this.pan
+      );
 
       this._regions.forEach(r => {
         r.getSeries().forEach(s => {
@@ -214,7 +215,7 @@ export class GeoCoordinate extends BaseComponent<IGeoRegionSpec> implements IGeo
 
     this._regions.forEach(r => {
       r.getSeries().forEach(s => {
-        if (s.type === SeriesTypeEnum.map) {
+        if (s.type === SeriesTypeEnum.map || s.type === SeriesTypeEnum.pictogram) {
           (s as IGeoSeries).setCoordinateHelper(helper);
         } else {
           // 散点地图
@@ -278,8 +279,8 @@ export class GeoCoordinate extends BaseComponent<IGeoRegionSpec> implements IGeo
     scale && this._projection.scale(scale);
     center && this._projection.center(center);
     eachSeries(this._regions, s => {
-      if (s.type === SeriesTypeEnum.map) {
-        (s as MapSeries).areaPath.clear();
+      if (s.type === SeriesTypeEnum.map || s.type === SeriesTypeEnum.pictogram) {
+        (s as MapSeries).areaPath?.clear();
         const pathGroup = s.getRootMark().getProduct()?.getGroupGraphicItem();
         if (pathGroup) {
           if (pathGroup.attribute.postMatrix) {
@@ -313,7 +314,7 @@ export class GeoCoordinate extends BaseComponent<IGeoRegionSpec> implements IGeo
     const features: any[] = [];
     this._regions.forEach(r => {
       r.getSeries().forEach(s => {
-        if (s.type === SeriesTypeEnum.map) {
+        if (s.type === SeriesTypeEnum.map || s.type === SeriesTypeEnum.pictogram) {
           features.push(...((s as unknown as IGeoSeries).getMapViewData()?.latestData ?? []));
         }
       });
@@ -401,6 +402,17 @@ export class GeoCoordinate extends BaseComponent<IGeoRegionSpec> implements IGeo
         }
       });
     });
+  }
+
+  _compareSpec(spec: IGeoRegionSpec, prevSpec: IGeoRegionSpec) {
+    const result = super._compareSpec(spec, prevSpec);
+    if (!result.reMake) {
+      result.reMake = ['roam', 'longitudeField', 'latitudeField', 'projection', 'zoomLimit'].some(k => {
+        return !isEqual(prevSpec?.[k], spec[k]);
+      });
+    }
+
+    return result;
   }
 
   release(): void {

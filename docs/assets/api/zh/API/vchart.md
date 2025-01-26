@@ -127,6 +127,9 @@ registerMap: (key: string, source: GeoSourceType, option?: GeoSourceOption) => v
 注册地图数据。
 
 ```ts
+export type GeoSourceOption = IGeoJsonOption | ITopoJsonOption;
+
+/** geojson 相关配置 */
 export interface GeoSourceOption {
   type: 'geojson';
   /** 计算中心点 */
@@ -154,6 +157,12 @@ export interface GeoSourceOption {
         /** @default false */
         reverse?: boolean;
       };
+}
+
+/** topojson 相关配置 */
+export interface ITopoJsonOption extends Omit<IGeoJsonOption, 'type'> {
+  type: 'topojson';
+  object: string;
 }
 ```
 
@@ -230,6 +239,9 @@ new VChart(spec: ISpec, options: IInitOption);
 | `supportsTouchEvents`   | `boolean`                   | 否   | 是否支持 touch 事件，不支持就不监听 touch 事件; 从`1.8.9`版本开始支持                                                                                                                                                                                                |
 | `supportsPointerEvents` | `boolean`                   | 否   | 是否支持 pointer 事件，不支持就监听 mouse 事件; 从`1.8.9`版本开始支持                                                                                                                                                                                                |
 | `ReactDOM`              | `object`                    | 否   | `react-dom`包导出产物，用于开启 vrender 渲染 react 元素; 从`1.11.0`版本开始支持                                                                                                                                                                                      |
+| `resizeDelay`           | `number`                    | 否   | 当自动响应容器 resize 事件时，触发 resize 的间隔时长，单位毫秒；从`1.12.5`开始支持                                                                                                                                                                                   |
+| `gestureConfig`         | `GestureConfig`             | 否   | 手势事件配置；当配置非空，开启手势相关事件                                                                                                                                                                                                                           |
+| `autoRefreshDpr`        | `boolean`                   | 是   | 当切换屏幕的时候，dpr 发发生变更，是否自动刷新 dpr；当没有显示设置 dpr 的时候，默认开启该功能；自`1.12.14`版本开始支持                                                                                                                                               |
 
 - `srIOption3DType` 类型定义如下
 
@@ -263,6 +275,44 @@ export type LayoutCallBack = (
   chartLayoutRect: IRect,
   chartViewBox: IBoundsLike
 ) => void;
+```
+
+- `GestureConfig` 类型定义如下:
+
+```ts
+export interface GestureConfig {
+  press?: {
+    /**
+     * @default 251
+     * 最小按压时间，单位为毫秒。
+     */
+    time?: number;
+    /**
+     * @default 10
+     * 按压时允许的最大移动距离。
+     */
+    threshold?: number;
+  };
+  swipe?: {
+    /**
+     * 识别滑动所需的最小距离。
+     * @default 10
+     */
+    threshold?: number;
+    /**
+     * 识别滑动所需的最小速度，单位为每毫秒像素。
+     * @default 0.3
+     */
+    velocity?: number;
+  };
+  tap?: {
+    /**
+     * 多次点击之间的最大时间间隔。
+     * @default 300
+     */
+    interval?: number;
+  };
+}
 ```
 
 ### 示例
@@ -665,6 +715,19 @@ vchart.setHovered(null);
    * @since 1.11.0
    */
   clearState: (state: string) => void;
+```
+
+### clearAllStates
+
+清除图元的所有状态
+
+```ts
+ /**
+   * 清除所有图元的状态
+   *
+   * @since 1.12.4
+   */
+  clearAllStates: (state: string) => void;
 ```
 
 ### clearSelected
@@ -1191,6 +1254,60 @@ convertValueToPosition: ((value: StringOrNumber, dataLinkInfo: DataLinkAxis, isR
     IPoint | null);
 ```
 
+### updateIndicatorDataById
+
+根据指标卡组件 id 更新指标卡数据。
+
+```ts
+  /**
+   * 根据 indicator 组件 id 更新 indicator 数据
+   * @param id spec 中定义的 indicator id
+   * @param datum 具体数据项
+   * @since 1.11.7
+   */
+  updateIndicatorDataById: (id: string, datum?: Datum) => void;
 ```
 
+### updateIndicatorDataByIndex
+
+根据指标卡组件索引更新指标卡数据。
+
+```ts
+  /**
+   * 根据 indicator 组件 id 更新 indicator 数据
+   * @param index  indicator 索引下标
+   * @param datum 具体数据项
+   * @since 1.11.7
+   */
+  updateIndicatorDataByIndex: (index: number = 0, datum?: Datum) => void;
+```
+
+### geoZoomByIndex
+
+地图缩放 API，根据索引顺序指定某个 region 区域的地图坐标系进行缩放。
+
+```ts
+/**
+ * 地图缩放 API
+ * @param [regionIndex=0] 根据索引顺序指定某个 region 区域的地图坐标系进行缩放
+ * @param zoom 缩放比例
+ * @param center 缩放中心
+ * @since 1.11.10
+ */
+geoZoomByIndex: (regionIndex: number, zoom: number, center?: { x: number; y: number }) => void;
+```
+
+### geoZoomById
+
+地图缩放 API，根据 region id 指定某个 region 区域的地图坐标系进行缩放。
+
+```ts
+/**
+ * 地图缩放 API
+ * @param 根据 region id 指定某个 region 区域的地图坐标系进行缩放
+ * @param zoom 缩放比例
+ * @param center 缩放中心
+ * @since 1.11.10
+ */
+geoZoomById: (regionId: string | number, zoom: number, center?: { x: number; y: number }) => void;
 ```

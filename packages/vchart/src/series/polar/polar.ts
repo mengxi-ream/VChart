@@ -2,7 +2,6 @@ import type { IBaseScale } from '@visactor/vscale';
 import type { IPoint, IPolarPoint } from '../../typings/coordinate';
 import type { IPolarSeries } from '../interface';
 import { array, isValid, isNil } from '@visactor/vutils';
-import { couldBeValidNumber } from '../../util/type';
 import type { IPolarAxisHelper } from '../../component/axis/polar/interface';
 // eslint-disable-next-line no-duplicate-imports
 import { isContinuous } from '@visactor/vscale';
@@ -11,9 +10,8 @@ import { BaseSeries } from '../base/base-series';
 import type { IPolarSeriesSpec } from './interface';
 import type { Datum, StringOrNumber } from '../../typings';
 import { sortDataInAxisHelper } from '../util/utils';
-import { ChartEvent } from '../../constant';
-import { registerDataSetInstanceTransform } from '../../data/register';
-import { invalidTravel } from '../../data/transforms/invalid-travel';
+import { ChartEvent } from '../../constant/event';
+import type { StatisticOperations } from '../../data/transforms/interface';
 
 export abstract class PolarSeries<T extends IPolarSeriesSpec = IPolarSeriesSpec>
   extends BaseSeries<T>
@@ -83,6 +81,7 @@ export abstract class PolarSeries<T extends IPolarSeriesSpec = IPolarSeriesSpec>
   public get angleAxisHelper() {
     return this._angleAxisHelper;
   }
+
   public set angleAxisHelper(h: IPolarAxisHelper) {
     this._angleAxisHelper = h;
     this.onAngleAxisHelperUpdate();
@@ -114,8 +113,17 @@ export abstract class PolarSeries<T extends IPolarSeriesSpec = IPolarSeriesSpec>
     if (isNil(angleValue) || isNil(radiusValue) || !this.angleAxisHelper || !this.radiusAxisHelper) {
       return { x: Number.NaN, y: Number.NaN };
     }
-    const angle = this.angleAxisHelper.dataToPosition(array(angleValue));
     const radius = this.radiusAxisHelper.dataToPosition(array(radiusValue));
+    if (radius < 0) {
+      // 'link' 实现还有问题
+      if (this._invalidType === 'break' || this._invalidType === 'link') {
+        return { x: Number.NaN, y: Number.NaN };
+      } else if (this._invalidType === 'zero') {
+        return this.angleAxisHelper.center();
+      }
+    }
+    const angle = this.angleAxisHelper.dataToPosition(array(angleValue));
+
     // FIXME: 由于存在两个轴，这里的 坐标系转换逻辑会有点尬
     return this.angleAxisHelper.coordToPoint({ angle, radius });
   }
@@ -158,7 +166,7 @@ export abstract class PolarSeries<T extends IPolarSeriesSpec = IPolarSeriesSpec>
   }
 
   getStatisticFields() {
-    const fields: { key: string; operations: Array<'max' | 'min' | 'values'> }[] = [];
+    const fields: { key: string; operations: StatisticOperations }[] = [];
     if (this.radiusAxisHelper?.getScale) {
       this._radiusField.forEach(f => {
         const result: { key: string; operations: Array<'max' | 'min' | 'values'> } = { key: f, operations: [] };

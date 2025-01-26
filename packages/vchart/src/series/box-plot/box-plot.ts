@@ -1,15 +1,15 @@
 /* eslint-disable no-duplicate-imports */
-import type { ISymbolMark } from '../../mark/symbol';
-import { AttributeLevel, DEFAULT_DATA_INDEX, PREFIX } from '../../constant';
-import type { IBoxPlotMark } from '../../mark/box-plot';
+import { AttributeLevel } from '../../constant/attribute';
+import { DEFAULT_DATA_INDEX } from '../../constant/data';
+import { PREFIX } from '../../constant/base';
 import type { IModelEvaluateOption, IModelInitOption } from '../../model/interface';
-import type { BoxPlotShaftShape, IOutlierMarkSpec, Maybe, Datum } from '../../typings';
+import type { BoxPlotShaftShape, IOutlierMarkSpec, Datum } from '../../typings';
 import { Direction } from '../../typings/space';
 import { valueInScaleRange } from '../../util/scale';
 import { CartesianSeries } from '../cartesian/cartesian';
 import type { SeriesMarkMap } from '../interface';
 import { SeriesMarkNameEnum, SeriesTypeEnum } from '../interface/type';
-import type { IBoxPlotSeriesSpec, IBoxPlotSeriesTheme } from './interface';
+import type { IBoxPlotSeriesSpec } from './interface';
 import { STATE_VALUE_ENUM } from '../../compile/mark/interface';
 import { registerDataSetInstanceTransform } from '../../data/register';
 import { DataView } from '@visactor/vdataset';
@@ -26,7 +26,7 @@ import { registerBoxPlotMark } from '../../mark/box-plot';
 import { registerSymbolMark } from '../../mark/symbol';
 import { boxPlotSeriesMark } from './constant';
 import { Factory } from '../../core/factory';
-import type { IMark } from '../../mark/interface';
+import type { IBoxPlotMark, IMark, ISymbolMark } from '../../mark/interface';
 import { merge, isNumber } from '@visactor/vutils';
 import { getGroupAnimationParams } from '../util/utils';
 import { registerCartesianLinearAxis, registerCartesianBandAxis } from '../../component/axis/cartesian';
@@ -129,16 +129,24 @@ export class BoxPlotSeries<T extends IBoxPlotSeriesSpec = IBoxPlotSeriesSpec> ex
       largeThreshold: this._spec.largeThreshold
     };
 
-    this._boxPlotMark = this._createMark(BoxPlotSeries.mark.boxPlot, {
-      isSeriesMark: true,
+    this._boxPlotMark = this._createMark(
+      BoxPlotSeries.mark.boxPlot,
+      {
+        groupKey: this._seriesField,
+        isSeriesMark: true
+      },
       progressive
-    }) as IBoxPlotMark;
-    this._outlierMark = this._createMark(BoxPlotSeries.mark.outlier, {
-      progressive,
-      key: DEFAULT_DATA_INDEX,
-      dataView: this._outlierDataView.getDataView(),
-      dataProductId: this._outlierDataView.getProductId()
-    }) as ISymbolMark;
+    ) as IBoxPlotMark;
+    this._outlierMark = this._createMark(
+      BoxPlotSeries.mark.outlier,
+      {
+        key: DEFAULT_DATA_INDEX,
+        groupKey: this._seriesField,
+        dataView: this._outlierDataView.getDataView(),
+        dataProductId: this._outlierDataView.getProductId()
+      },
+      progressive
+    ) as ISymbolMark;
   }
 
   initMarkStyle(): void {
@@ -302,6 +310,11 @@ export class BoxPlotSeries<T extends IBoxPlotSeriesSpec = IBoxPlotSeriesSpec> ex
     );
 
     this._outlierDataView = new SeriesData(this._option, outlierDataView);
+  }
+
+  compileData() {
+    super.compileData();
+    this._outlierDataView?.compile();
   }
 
   init(option: IModelInitOption): void {

@@ -2,10 +2,9 @@ import type { DataView } from '@visactor/vdataset';
 import { isArray } from '@visactor/vutils';
 /* eslint-disable no-duplicate-imports */
 import { LineLikeSeriesMixin } from '../mixin/line-mixin';
-import type { IAreaMark } from '../../mark/area';
 import { Direction } from '../../typings/space';
 import { CartesianSeries } from '../cartesian/cartesian';
-import { AttributeLevel } from '../../constant';
+import { AttributeLevel } from '../../constant/attribute';
 import type { Datum, InterpolateType } from '../../typings';
 import { valueInScaleRange } from '../../util/scale';
 import type { SeriesMarkMap } from '../interface';
@@ -22,11 +21,12 @@ import { AreaSeriesTooltipHelper } from './tooltip-helpter';
 import { areaSeriesMark } from './constant';
 import { Factory } from '../../core/factory';
 import { registerAreaSeriesAnimation } from './animation';
-import type { IMark } from '../../mark/interface';
+import type { IMark, IAreaMark } from '../../mark/interface';
 import { registerSampleTransform, registerMarkOverlapTransform } from '@visactor/vgrammar-core';
 import { AreaSeriesSpecTransformer } from './area-transformer';
 import { getGroupAnimationParams } from '../util/utils';
 import { registerCartesianLinearAxis, registerCartesianBandAxis } from '../../component/axis/cartesian';
+import { STACK_FIELD_END } from '../../constant/data';
 
 export interface AreaSeries<T extends IAreaSeriesSpec = IAreaSeriesSpec>
   extends Pick<
@@ -66,18 +66,24 @@ export class AreaSeries<T extends IAreaSeriesSpec = IAreaSeriesSpec> extends Car
     };
 
     const areaSpec = this._spec.area || {};
-    const isAreaVisible = areaSpec.visible !== false && areaSpec.style?.visible !== false;
 
     const seriesMark = this._spec.seriesMark ?? 'area';
+    const isAreaMarkVisible = this._isAreaVisible() || this._isLineVisible();
     // area
-    this._areaMark = this._createMark(AreaSeries.mark.area, {
-      groupKey: this._seriesField,
-      defaultMorphElementKey: this.getDimensionField()[0],
-      progressive,
-      isSeriesMark: isAreaVisible && seriesMark !== 'point',
-      customShape: areaSpec.customShape,
-      stateSort: areaSpec.stateSort
-    }) as IAreaMark;
+    this._areaMark = this._createMark(
+      AreaSeries.mark.area,
+      {
+        groupKey: this._seriesField,
+        isSeriesMark: isAreaMarkVisible && seriesMark !== 'point',
+        stateSort: areaSpec.stateSort
+      },
+      {
+        ...progressive,
+        morphElementKey: this.getDimensionField()[0],
+        setCustomizedShape: areaSpec.customShape
+      }
+    ) as IAreaMark;
+
     this.initSymbolMark(progressive, seriesMark === 'point');
   }
 
@@ -101,6 +107,14 @@ export class AreaSeries<T extends IAreaSeriesSpec = IAreaSeriesSpec> extends Car
     // area
     const areaMark = this._areaMark;
     if (areaMark) {
+      const isAreaVisible = this._isAreaVisible();
+      const isLineVisible = this._isLineVisible();
+      if (isAreaVisible || isLineVisible) {
+        areaMark.setVisible(true);
+      } else {
+        areaMark.setVisible(false);
+      }
+
       if (this._direction === Direction.horizontal) {
         this.setMarkStyle(
           this._areaMark,
@@ -110,6 +124,7 @@ export class AreaSeries<T extends IAreaSeriesSpec = IAreaSeriesSpec> extends Car
               return valueInScaleRange(this.dataToPositionX1(datum), this._xAxisHelper?.getScale?.(0));
             },
             y: this.dataToPositionY.bind(this),
+            y1: this.dataToPositionY.bind(this),
             z: this._fieldZ ? this.dataToPositionZ.bind(this) : null,
             orient: this._direction
           },
@@ -121,6 +136,7 @@ export class AreaSeries<T extends IAreaSeriesSpec = IAreaSeriesSpec> extends Car
           this._areaMark,
           {
             x: this.dataToPositionX.bind(this),
+            x1: this.dataToPositionX.bind(this),
             y1: (datum: Datum) => {
               return valueInScaleRange(this.dataToPositionY1(datum), this._yAxisHelper?.getScale?.(0));
             },
@@ -134,12 +150,13 @@ export class AreaSeries<T extends IAreaSeriesSpec = IAreaSeriesSpec> extends Car
       this.setMarkStyle(
         areaMark,
         {
-          fill: this.getColorAttribute(),
-          stroke: this.getColorAttribute()
+          fill: isAreaVisible ? this.getColorAttribute() : false,
+          stroke: isLineVisible ? this.getColorAttribute() : false
         },
         'normal',
         AttributeLevel.Series
       );
+
       if (this._invalidType !== 'zero') {
         this.setMarkStyle(
           areaMark,
@@ -151,6 +168,19 @@ export class AreaSeries<T extends IAreaSeriesSpec = IAreaSeriesSpec> extends Car
           AttributeLevel.Series
         );
       }
+
+      if (this.getStack()) {
+        // 在堆叠情况下面积系列需要控制图元层级，https://github.com/VisActor/VChart/issues/3684
+        this.setMarkStyle(
+          areaMark,
+          {
+            zIndex: (datum: Datum) => -datum[STACK_FIELD_END] // 越在堆叠下层，datum[STACK_FIELD_END] 越小,  zIndex越大
+          },
+          'normal',
+          AttributeLevel.Series
+        );
+      }
+
       this.setMarkStyle(
         areaMark,
         {
@@ -208,15 +238,23 @@ export class AreaSeries<T extends IAreaSeriesSpec = IAreaSeriesSpec> extends Car
     }
   }
 
+  protected _isAreaVisible() {
+    const areaSpec = this._spec.area || {};
+    return areaSpec.visible !== false && areaSpec.style?.visible !== false;
+  }
+
+  protected _isLineVisible() {
+    const lineSpec = this._spec.line || {};
+    return lineSpec.visible !== false && lineSpec.style?.visible !== false;
+  }
+
   protected initTooltip() {
     this._tooltipHelper = new AreaSeriesTooltipHelper(this);
-    const { dimension, group, mark } = this._tooltipHelper.activeTriggerSet;
+    const { group, mark } = this._tooltipHelper.activeTriggerSet;
     if (this._areaMark) {
-      dimension.add(this._areaMark);
       group.add(this._areaMark);
     }
     if (this._lineMark) {
-      dimension.add(this._lineMark);
       group.add(this._lineMark);
     }
     if (this._symbolMark) {

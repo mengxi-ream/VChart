@@ -1,5 +1,5 @@
 import type { ICartesianHorizontal } from './interface/spec';
-import type { IBounds, IBoundsLike, Maybe } from '@visactor/vutils';
+import { Bounds, last, type IBounds, type IBoundsLike, type Maybe } from '@visactor/vutils';
 // eslint-disable-next-line no-duplicate-imports
 import type { IEffect, IModelInitOption, IModelSpecInfo } from '../../../model/interface';
 import type { ICartesianSeries } from '../../../series/interface';
@@ -15,7 +15,8 @@ import {
   isUndefined,
   calcLayoutNumber,
   maxInArr,
-  minInArr
+  minInArr,
+  clamp
 } from '../../../util';
 import type { IOrientType, IRect } from '../../../typings/space';
 // eslint-disable-next-line no-duplicate-imports
@@ -25,9 +26,9 @@ import type { IBaseScale } from '@visactor/vscale';
 import { isContinuous } from '@visactor/vscale';
 import { Factory } from '../../../core/factory';
 import { isXAxis, getOrient, isZAxis, isYAxis, getCartesianAxisInfo, transformInverse } from './util/common';
-import { ChartEvent, DEFAULT_LAYOUT_RECT_LEVEL, LayoutZIndex, USER_LAYOUT_RECT_LEVEL } from '../../../constant';
-import { LayoutLevel } from '../../../constant/index';
-import { AxisSyncPlugin } from '../../../plugin/components';
+import { ChartEvent } from '../../../constant/event';
+import { LayoutLevel, DEFAULT_LAYOUT_RECT_LEVEL, LayoutZIndex, USER_LAYOUT_RECT_LEVEL } from '../../../constant/layout';
+import { AxisSyncPlugin } from '../../../plugin/components/axis-sync/axis-sync';
 import type { Datum, StringOrNumber } from '../../../typings/common';
 import type { IPoint } from '../../../typings/coordinate';
 import type { ILayoutRect, ILayoutType } from '../../../typings/layout';
@@ -37,7 +38,7 @@ import { ComponentTypeEnum } from '../../interface/type';
 import { HOOK_EVENT } from '@visactor/vgrammar-core';
 import type { AxisItem, LineAxisAttributes } from '@visactor/vrender-components';
 // eslint-disable-next-line no-duplicate-imports
-import { getAxisItem, isValidCartesianAxis } from '../util';
+import { getAxisItem, isValidCartesianAxis, shouldUpdateAxis } from '../util';
 import type { IAxis, ITick } from '../interface';
 // eslint-disable-next-line no-duplicate-imports
 import type { ICartesianTickDataOpt } from '@visactor/vrender-components';
@@ -48,7 +49,7 @@ import { AxisComponent } from '../base-axis';
 import type { IGraphic, IText } from '@visactor/vrender-core';
 // eslint-disable-next-line no-duplicate-imports
 import { createText } from '@visactor/vrender-core';
-import type { ICartesianChartSpec } from '../../../chart';
+import type { ICartesianChartSpec } from '../../../chart/cartesian/interface';
 
 const CartesianAxisPlugin = [AxisSyncPlugin];
 
@@ -80,6 +81,10 @@ export abstract class CartesianAxis<T extends ICartesianAxisCommonSpec = ICartes
   protected _orient: IOrientType = 'left';
   getOrient() {
     return this._orient;
+  }
+
+  protected getDefaultInteractive() {
+    return true;
   }
 
   protected _autoIndentOnce: boolean = false;
@@ -209,13 +214,36 @@ export abstract class CartesianAxis<T extends ICartesianAxisCommonSpec = ICartes
         this._regions,
         s => {
           const orient = this.getOrient();
-
           if (isXAxis(orient)) {
-            (s as ICartesianSeries).setXAxisHelper(this.axisHelper());
+            if (
+              shouldUpdateAxis(
+                (s as ICartesianSeries).getXAxisHelper(),
+                this.axisHelper(),
+                isValid(this._seriesUserId) || isValid(this._seriesIndex)
+              )
+            ) {
+              (s as ICartesianSeries).setXAxisHelper(this.axisHelper());
+            }
           } else if (isYAxis(orient)) {
-            (s as ICartesianSeries).setYAxisHelper(this.axisHelper());
+            if (
+              shouldUpdateAxis(
+                (s as ICartesianSeries).getYAxisHelper(),
+                this.axisHelper(),
+                isValid(this._seriesUserId) || isValid(this._seriesIndex)
+              )
+            ) {
+              (s as ICartesianSeries).setYAxisHelper(this.axisHelper());
+            }
           } else if (isZAxis(orient)) {
-            (s as ICartesianSeries).setZAxisHelper(this.axisHelper());
+            if (
+              shouldUpdateAxis(
+                (s as ICartesianSeries).getZAxisHelper(),
+                this.axisHelper(),
+                isValid(this._seriesUserId) || isValid(this._seriesIndex)
+              )
+            ) {
+              (s as ICartesianSeries).setZAxisHelper(this.axisHelper());
+            }
           }
         },
         {
@@ -229,8 +257,7 @@ export abstract class CartesianAxis<T extends ICartesianAxisCommonSpec = ICartes
   protected abstract computeDomain(data: { min: number; max: number; values: any[] }[]): StringOrNumber[];
   abstract valueToPosition(value: any): number;
 
-  protected updateScaleRange() {
-    let isScaleChange = false;
+  protected getNewScaleRange() {
     const { width, height } = this.getLayoutRect();
     const { left, right, top, bottom } = this._innerOffset;
     let newRange: number[] = [];
@@ -248,9 +275,19 @@ export abstract class CartesianAxis<T extends ICartesianAxisCommonSpec = ICartes
         newRange = this._inverse ? [top, height - bottom] : [height - bottom, top];
       }
     }
-    const [start, end] = this._scale.range();
-    if (newRange[0] !== start || newRange[1] !== end) {
-      isScaleChange = true;
+
+    return newRange;
+  }
+
+  protected updateScaleRange() {
+    let isScaleChange = false;
+
+    const newRange = this.getNewScaleRange();
+    const range = this._scale.range();
+    if (newRange.length === range.length && newRange.every((value, index) => value === range[index])) {
+      isScaleChange = false; // No change
+    } else {
+      isScaleChange = true; // Change detected
       this._scale.range(newRange);
     }
 
@@ -295,16 +332,16 @@ export abstract class CartesianAxis<T extends ICartesianAxisCommonSpec = ICartes
       const spec = this._spec as ICartesianVertical | ICartesianHorizontal;
       if (isYAxis(this.getOrient())) {
         ['top', 'bottom'].forEach(orient => {
-          this._innerOffset[orient] = calcLayoutNumber(
-            (spec as ICartesianVertical).innerOffset[orient],
+          this._innerOffset[orient as 'top' | 'bottom'] = calcLayoutNumber(
+            (spec as ICartesianVertical).innerOffset[orient as 'top' | 'bottom'],
             viewRect.height,
             viewRect
           );
         });
       } else {
         ['left', 'right'].forEach(orient => {
-          this._innerOffset[orient] = calcLayoutNumber(
-            (spec as ICartesianHorizontal).innerOffset[orient],
+          this._innerOffset[orient as 'left' | 'right'] = calcLayoutNumber(
+            (spec as ICartesianHorizontal).innerOffset[orient as 'left' | 'right'],
             viewRect.width,
             viewRect
           );
@@ -333,6 +370,7 @@ export abstract class CartesianAxis<T extends ICartesianAxisCommonSpec = ICartes
       ...super._tickTransformOption(),
       noDecimals: this._tick?.noDecimals,
       labelLastVisible: this._spec.label?.lastVisible,
+      labelFirstVisible: this._spec.label?.firstVisible,
       labelFlush: this._spec.label?.flush
     } as ICartesianTickDataOpt;
   }
@@ -371,7 +409,6 @@ export abstract class CartesianAxis<T extends ICartesianAxisCommonSpec = ICartes
               this.pluginService && plugin.onDidLayoutVertical && plugin.onDidLayoutVertical(this.pluginService, this);
             });
           }
-          this._delegateAxisContainerEvent(product.getGroupGraphicItem());
 
           // 更新单位的显示位置
           if (this._unitText) {
@@ -453,14 +490,38 @@ export abstract class CartesianAxis<T extends ICartesianAxisCommonSpec = ICartes
       this._regions,
       s => {
         if (isXAxis(orient)) {
-          (s as ICartesianSeries).setScaleX(this._scale);
-          (s as ICartesianSeries).setXAxisHelper(this.axisHelper());
+          if (
+            shouldUpdateAxis(
+              (s as ICartesianSeries).getXAxisHelper(),
+              this.axisHelper(),
+              isValid(this._seriesUserId) || isValid(this._seriesIndex)
+            )
+          ) {
+            (s as ICartesianSeries).setScaleX(this._scale);
+            (s as ICartesianSeries).setXAxisHelper(this.axisHelper());
+          }
         } else if (isYAxis(orient)) {
-          (s as ICartesianSeries).setScaleY(this._scale);
-          (s as ICartesianSeries).setYAxisHelper(this.axisHelper());
+          if (
+            shouldUpdateAxis(
+              (s as ICartesianSeries).getYAxisHelper(),
+              this.axisHelper(),
+              isValid(this._seriesUserId) || isValid(this._seriesIndex)
+            )
+          ) {
+            (s as ICartesianSeries).setScaleY(this._scale);
+            (s as ICartesianSeries).setYAxisHelper(this.axisHelper());
+          }
         } else if (isZAxis(orient)) {
-          (s as ICartesianSeries).setScaleZ(this._scale);
-          (s as ICartesianSeries).setZAxisHelper(this.axisHelper());
+          if (
+            shouldUpdateAxis(
+              (s as ICartesianSeries).getZAxisHelper(),
+              this.axisHelper(),
+              isValid(this._seriesUserId) || isValid(this._seriesIndex)
+            )
+          ) {
+            (s as ICartesianSeries).setScaleZ(this._scale);
+            (s as ICartesianSeries).setZAxisHelper(this.axisHelper());
+          }
         }
       },
       {
@@ -571,15 +632,18 @@ export abstract class CartesianAxis<T extends ICartesianAxisCommonSpec = ICartes
       const axisComponent = product.getGroupGraphicItem();
 
       const spec = mergeSpec({ ...this.getLayoutStartPoint() }, this._axisStyle, attrs, { line: { visible: false } });
-      const updateBounds = axisComponent.getBoundsWithoutRender(spec);
+      let updateBounds = axisComponent.getBoundsWithoutRender(spec);
+
+      if (updateBounds.empty()) {
+        // 如果包围盒为空，设置为布局起点，宽高为0的包围盒
+        updateBounds = new Bounds().set(spec.x, spec.y, spec.x, spec.y);
+      }
 
       hasBounds = true;
       this._latestBounds = updateBounds;
-      if (isFinite(updateBounds.width())) {
-        // 因为轴单位在某些区域显示的时候，是不参与轴某个方向的包围盒计算的，
-        // 所以不太合适放在轴组件内支持，所以就在 VChart 层的轴组件上通过添加 text 图元支持
-        result = this._appendAxisUnit(updateBounds, isX);
-      }
+      // 因为轴单位在某些区域显示的时候，是不参与轴某个方向的包围盒计算的，
+      // 所以不太合适放在轴组件内支持，所以就在 VChart 层的轴组件上通过添加 text 图元支持
+      result = this._appendAxisUnit(updateBounds, isX);
     }
 
     if (!hasBounds) {
@@ -588,9 +652,30 @@ export abstract class CartesianAxis<T extends ICartesianAxisCommonSpec = ICartes
     return result;
   }
 
+  positionToData(pos: number, isViewPos?: boolean) {
+    const isX = isXAxis(this.getOrient());
+    if (isViewPos) {
+      pos -= isX ? this.getLayoutStartPoint().x : this.getLayoutStartPoint().y;
+    }
+
+    if (this._innerOffset) {
+      pos = isX
+        ? clamp(pos, this._innerOffset.left, this.getLayoutRect().width - this._innerOffset.right)
+        : clamp(pos, this._innerOffset.top, this.getLayoutRect().height - this._innerOffset.bottom);
+    }
+    const range = this._scale.range();
+
+    if ((pos - range[0]) * (pos - last(range)) > 0) {
+      return null;
+    }
+
+    return this._scale.invert(pos);
+  }
+
   private _getTitleLimit(isX: boolean) {
-    if (this._spec.title.visible && isNil(this._spec.title.style?.maxLineWidth)) {
-      const angle = this._axisStyle.title?.angle ?? this._spec.title.style?.angle ?? 0;
+    const titleSpec = this._spec.title;
+    if (titleSpec.visible && isNil(titleSpec.style?.maxLineWidth)) {
+      const angle = this._axisStyle.title?.angle ?? titleSpec.style?.angle ?? 0;
       if (isX) {
         const width = this.getLayoutRect().width;
         const cosValue = Math.abs(Math.cos(angle));
@@ -608,7 +693,7 @@ export abstract class CartesianAxis<T extends ICartesianAxisCommonSpec = ICartes
     return null;
   }
 
-  private _getUpdateAttribute(ignoreGrid: boolean) {
+  protected _getUpdateAttribute(ignoreGrid: boolean) {
     // 获取更新的坐标轴属性
     let regionHeight = 0;
     let regionWidth = 0;
@@ -637,19 +722,43 @@ export abstract class CartesianAxis<T extends ICartesianAxisCommonSpec = ICartes
     const isX = isXAxis(this._orient);
     const isY = isYAxis(this._orient);
     const isZ = isZAxis(this._orient);
-    let end = { x: 0, y: 0 };
-    let gridLength = 0;
-    let axisLength = 0;
     const depth = this.layout3dBox ? this.layout3dBox.length : 0;
+    let end = { x: 0, y: 0 };
+    let gridLength = regionHeight;
+    let axisLength = width;
+
     if (isX) {
       end = { x: width, y: 0 };
-      gridLength = regionHeight;
-      axisLength = width;
     } else if (isY) {
       end = { x: 0, y: height };
       gridLength = regionWidth;
       axisLength = height;
+    } else if (isZ) {
+      end = { x: depth, y: 0 };
     }
+
+    const items = this.getLabelItems(axisLength);
+    const attrs: any = {
+      start: { x: 0, y: 0 },
+      end,
+      title: {
+        text: this._spec.title.text || this._dataFieldText,
+        maxWidth: this._getTitleLimit(isX)
+      },
+      items
+    };
+    if (!ignoreGrid) {
+      attrs.grid = {
+        type: 'line',
+        start: { x: 0, y: 0 },
+        end,
+        items: items[0],
+        verticalFactor: this._axisStyle.verticalFactor,
+        depth,
+        length: gridLength
+      };
+    }
+
     if (isZ) {
       const directionStr = this.directionStr ?? 'r2l';
       const depthZ = this.layout3dBox ? this.layout3dBox.width : 0;
@@ -661,63 +770,26 @@ export abstract class CartesianAxis<T extends ICartesianAxisCommonSpec = ICartes
         anchor3d = [0, 0, 0];
         alpha = Math.PI / 2;
       }
-      const items = this.getLabelItems(width);
-      const axisAttrs: any = {
-        start: { x: 0, y: 0 },
-        end: { x: depth, y: 0 },
-        z: z,
-        alpha,
-        anchor3d,
-        title: {
-          text: this._spec.title.text || this._dataFieldText,
-          maxWidth: this._getTitleLimit(isX)
-        },
-        items
-      };
+      attrs.z = z;
+      attrs.alpha = alpha;
+      attrs.anchor3d = anchor3d;
+
       if (!ignoreGrid) {
-        axisAttrs.grid = {
-          type: 'line',
-          start: { x: 0, y: 0 },
-          end: { x: depth, y: 0 },
-          items: items[0],
-          verticalFactor: this._axisStyle.verticalFactor,
-          depth: depthZ,
-          length: regionHeight,
-          z: z,
-          alpha,
-          anchor3d
-        };
+        attrs.grid.depth = depthZ;
       }
-      return axisAttrs;
-    }
-    let verticalMinSize = isX ? this.layout.minHeight : this.layout.minWidth;
-    if (
-      (isX && this._layout.layoutRectLevelMap.height === USER_LAYOUT_RECT_LEVEL) ||
-      (isY && this._layout.layoutRectLevelMap.width === USER_LAYOUT_RECT_LEVEL)
-    ) {
-      verticalMinSize = this._verticalLimitSize;
-    }
-    const items = this.getLabelItems(axisLength);
-    const attrs: any = {
-      start: { x: 0, y: 0 },
-      end,
-      title: {
-        text: this._spec.title.text || this._dataFieldText,
-        maxWidth: this._getTitleLimit(isX)
-      },
-      items,
-      verticalLimitSize: this._verticalLimitSize,
-      verticalMinSize
-    };
-    if (!ignoreGrid) {
-      attrs.grid = {
-        type: 'line',
-        start: { x: 0, y: 0 },
-        end,
-        items: items[0],
-        verticalFactor: this._axisStyle.verticalFactor,
-        depth,
-        length: gridLength
+    } else {
+      let verticalMinSize = isX ? this.layout.minHeight : this.layout.minWidth;
+      if (
+        (isX && this._layout.layoutRectLevelMap.height === USER_LAYOUT_RECT_LEVEL) ||
+        (isY && this._layout.layoutRectLevelMap.width === USER_LAYOUT_RECT_LEVEL)
+      ) {
+        verticalMinSize = this._verticalLimitSize;
+      }
+
+      attrs.verticalLimitSize = this._verticalLimitSize;
+      attrs.verticalMinSize = verticalMinSize;
+      attrs.label = {
+        overflowLimitLength: this._getLabelOverflowLimit(isX)
       };
     }
 
@@ -733,7 +805,17 @@ export abstract class CartesianAxis<T extends ICartesianAxisCommonSpec = ICartes
             const normalizedValue = this._getNormalizedValue([obj.value], length);
             return getAxisItem(obj.value, normalizedValue);
           })
-          .filter((entry: AxisItem) => entry.value >= 0 && entry.value <= 1)
+          .filter((entry: AxisItem) => {
+            const { value, rawValue } = entry;
+            const domain = this._scale.domain();
+            if (this.getSpec().type === 'log') {
+              return value >= 0 && value <= 1;
+            }
+            if (isContinuous(this._scale.type)) {
+              return rawValue >= domain[0] && rawValue <= last(domain);
+            }
+            return domain.includes(rawValue);
+          })
       ];
     }
     return [];
@@ -791,7 +873,7 @@ export abstract class CartesianAxis<T extends ICartesianAxisCommonSpec = ICartes
                 .getTickData()
                 .getLatestData()
                 ?.find((d: any) => d.value === 0)
-            : item.getScale().domain()[0] <= 0 && item.getScale().domain()[1] >= 0)
+            : item.getScale().domain()[0] <= 0 && last(item.getScale().domain()) >= 0)
         );
       };
       const relativeAxes = axesComponents.filter(item => isValidAxis(item));
@@ -817,14 +899,26 @@ export abstract class CartesianAxis<T extends ICartesianAxisCommonSpec = ICartes
             axisMark.encode({
               line: {
                 ...this._axisStyle.line,
-                dy: this._orient === 'bottom' ? -(bindAxis.getScale().range()[0] - position) : position
+                dy:
+                  this._orient === 'bottom'
+                    ? -(
+                        (bindAxis.getInverse() ? bindAxis.getScale().range()[1] : bindAxis.getScale().range()[0]) -
+                        position
+                      )
+                    : position
               }
             });
           } else {
             axisMark.encode({
               line: {
                 ...this._axisStyle.line,
-                dx: this._orient === 'left' ? position : -(bindAxis.getScale().range()[1] - position)
+                dx:
+                  this._orient === 'left'
+                    ? position
+                    : -(
+                        (bindAxis.getInverse() ? bindAxis.getScale().range()[0] : bindAxis.getScale().range()[1]) -
+                        position
+                      )
               }
             });
           }
@@ -835,10 +929,10 @@ export abstract class CartesianAxis<T extends ICartesianAxisCommonSpec = ICartes
 
   protected _layoutCacheProcessing(rect: ILayoutRect) {
     ['width', 'height'].forEach(key => {
-      if (rect[key] < this._layoutCache[key]) {
-        rect[key] = this._layoutCache[key];
+      if (rect[key as 'width' | 'height'] < this._layoutCache[key as 'width' | 'height']) {
+        rect[key as 'width' | 'height'] = this._layoutCache[key as 'width' | 'height'];
       } else {
-        this._layoutCache[key] = rect[key];
+        this._layoutCache[key as 'width' | 'height'] = rect[key as 'width' | 'height'];
       }
     });
 
@@ -846,15 +940,21 @@ export abstract class CartesianAxis<T extends ICartesianAxisCommonSpec = ICartes
     if (this._autoIndentOnce && this._hasAutoIndent) {
       // use cache
       ['x1', 'x2', 'y1', 'y2'].forEach(key => {
-        this.layout.getLastComputeOutBounds()[key] = this._layoutCache._lastComputeOutBounds[key];
+        this.layout.getLastComputeOutBounds()[key as 'x1' | 'x2' | 'y1' | 'y2'] =
+          this._layoutCache._lastComputeOutBounds[key as 'x1' | 'x2' | 'y1' | 'y2'];
       });
     } else {
       this._hasAutoIndent = true;
       ['x1', 'x2', 'y1', 'y2'].forEach(key => {
-        if (this.layout.getLastComputeOutBounds()[key] < this._layoutCache._lastComputeOutBounds[key]) {
-          this.layout.getLastComputeOutBounds()[key] = this._layoutCache._lastComputeOutBounds[key];
+        if (
+          this.layout.getLastComputeOutBounds()[key as 'x1' | 'x2' | 'y1' | 'y2'] <
+          this._layoutCache._lastComputeOutBounds[key as 'x1' | 'x2' | 'y1' | 'y2']
+        ) {
+          this.layout.getLastComputeOutBounds()[key as 'x1' | 'x2' | 'y1' | 'y2'] =
+            this._layoutCache._lastComputeOutBounds[key as 'x1' | 'x2' | 'y1' | 'y2'];
         } else {
-          this._layoutCache._lastComputeOutBounds[key] = this.layout.getLastComputeOutBounds()[key];
+          this._layoutCache._lastComputeOutBounds[key as 'x1' | 'x2' | 'y1' | 'y2'] =
+            this.layout.getLastComputeOutBounds()[key as 'x1' | 'x2' | 'y1' | 'y2'];
         }
       });
     }
@@ -931,5 +1031,36 @@ export abstract class CartesianAxis<T extends ICartesianAxisCommonSpec = ICartes
 
   protected _getNeedClearVRenderComponents(): IGraphic[] {
     return this._unitText ? [this._unitText] : [];
+  }
+
+  private _getLabelOverflowLimit(isX: boolean) {
+    if (isX && this._spec.label?.visible !== false && this._spec.label?.autoLimit === true) {
+      const axesComponents = this._option.getComponentsByKey('axes') as IAxis[];
+      const relativeRegions = this.getRegions();
+      const relativeAxes = axesComponents.filter(item => {
+        const orient = item.getOrient();
+        return (
+          (orient === 'left' || orient === 'right') &&
+          item.getRegions().some(region => relativeRegions.includes(region))
+        );
+      });
+
+      let leftLimitLength = 0;
+      let rightLimitLength = 0;
+      const startX = this.getLayoutStartPoint().x;
+      const endX = startX + this.getLayoutRect().width;
+      relativeAxes.forEach(axis => {
+        const relativeStartX = axis.getLayoutStartPoint().x;
+        if (axis.getOrient() === 'left' && relativeStartX === startX) {
+          const leftAxisWidth = axis.getLayoutRect().width;
+          leftLimitLength = Math.max(leftLimitLength, leftAxisWidth);
+        } else if (relativeStartX === endX) {
+          const rightAxisWidth = axis.getLayoutRect().width;
+          rightLimitLength = Math.max(rightLimitLength, rightAxisWidth);
+        }
+      });
+      return { left: leftLimitLength, right: rightLimitLength };
+    }
+    return undefined;
   }
 }

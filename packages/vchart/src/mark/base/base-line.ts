@@ -3,7 +3,7 @@ import type { StateValueType } from '../../compile/mark';
 import type { ConvertToMarkStyleSpec, ILineLikeMarkSpec } from '../../typings/visual';
 import { isFunction, isNil } from '@visactor/vutils';
 import { BaseMark } from './base-mark';
-import type { IMarkStyle, StyleConvert } from '../interface';
+import type { IMarkStyle } from '../interface';
 
 export abstract class BaseLineMark<T extends ILineLikeMarkSpec = ILineLikeMarkSpec> extends BaseMark<T> {
   protected abstract _getIgnoreAttributes(): string[];
@@ -62,16 +62,14 @@ export abstract class BaseLineMark<T extends ILineLikeMarkSpec = ILineLikeMarkSp
         enableSegments = true;
       }
 
-      let styleConverter = this._styleConvert(attrStyle);
-
-      if (isUserLevel && attr === 'angle') {
-        styleConverter = this.convertAngleToRadian(styleConverter as StyleConvert<number>);
-      }
+      const styleConverter = this._filterAttribute(attr as any, attrStyle, state, level, isUserLevel, stateStyle);
 
       this.setAttribute(attr as any, styleConverter, state, level, stateStyle);
     });
     if (enableSegments) {
-      this.setEnableSegments(enableSegments);
+      this.setMarkConfig({
+        enableSegments: true
+      });
     }
   }
 }

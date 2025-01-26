@@ -1,14 +1,10 @@
-import type { AxisCurrentValueMap } from '../../../../component/crosshair';
-import type { IHair } from '../../../../component/crosshair/base';
-import { LayoutType } from '../../../../component/crosshair/config';
-import {
-  layoutByValue,
-  layoutHorizontalCrosshair,
-  layoutVerticalCrosshair
-} from '../../../../component/crosshair/utils/cartesian';
-import type { IDimensionInfo } from '../../../../event';
+import type { IAxis } from '../../../../component/axis';
+import type { AxisCurrentValueMap, CrossHairStateByField } from '../../../../component/crosshair';
+
+import { layoutByValue, layoutCrosshair } from '../../../../component/crosshair/utils/cartesian';
+import type { IDimensionData } from '../../../../event';
 import type { ICartesianSeries } from '../../../../series';
-import type { ILayoutPoint } from '../../../../typings';
+import { Direction, type ILayoutPoint } from '../../../../typings';
 import type {
   IFixedTooltipPositionPattern,
   IGlobalTooltipPositionPattern,
@@ -19,14 +15,14 @@ import { isFunction, isNumber, isObject, isValid } from '@visactor/vutils';
 export const getActualTooltipPositionValue = (
   position: number | ((event: MouseEvent) => number) | null | undefined,
   event: MouseEvent
-) => {
-  let result;
+): number => {
+  let result: number;
   if (isValid(position)) {
     if (isNumber(position)) {
-      result = position;
+      result = position as number;
     } else if (isFunction(position)) {
       //  这里额外判断下是否合法
-      const tooltipPosition = position(event);
+      const tooltipPosition = (position as (event: MouseEvent) => number)(event);
 
       if (isNumber(tooltipPosition)) {
         result = tooltipPosition;
@@ -36,87 +32,88 @@ export const getActualTooltipPositionValue = (
   return result;
 };
 
-export type TooltipHorizontalPositionType = 'left' | 'right' | 'center' | 'centerLeft' | 'centerRight';
-export type TooltipVerticalPositionType = 'top' | 'bottom' | 'center' | 'centerTop' | 'centerBottom';
+// 'left' | 'centerLeft' | 'center'  | 'centerRight' |  'right'
+// 'top' | 'centerTop' | 'center' | 'centerBottom' | 'bottom'
+export type TooltipPositionType = -2 | -1 | 0 | 1 | 2;
 
 /** position 对齐方式在 x、y 分量下的分解 */
-export const positionType: Record<TooltipFixedPosition, [TooltipHorizontalPositionType, TooltipVerticalPositionType]> =
-  {
-    left: ['left', 'center'],
-    right: ['right', 'center'],
-    top: ['center', 'top'],
-    lt: ['left', 'top'],
-    tl: ['left', 'top'],
-    rt: ['right', 'top'],
-    tr: ['right', 'top'],
-    bottom: ['center', 'bottom'],
-    bl: ['left', 'bottom'],
-    lb: ['left', 'bottom'],
-    br: ['right', 'bottom'],
-    rb: ['right', 'bottom'],
-    inside: ['center', 'center'], // 旧版兼容
-    center: ['center', 'center'],
-    centerBottom: ['center', 'centerBottom'],
-    centerTop: ['center', 'centerTop'],
-    centerLeft: ['centerLeft', 'center'],
-    centerRight: ['centerRight', 'center']
-  };
+export const positionType: Record<TooltipFixedPosition, [TooltipPositionType, TooltipPositionType]> = {
+  left: [-2, 0],
+  right: [2, 0],
+  top: [0, -2],
+  lt: [-2, -2],
+  tl: [-2, -2],
+  rt: [2, -2],
+  tr: [2, -2],
+  bottom: [0, 2],
+  bl: [-2, 2],
+  lb: [-2, 2],
+  br: [2, 2],
+  rb: [2, 2],
+  inside: [0, 0], // 旧版兼容
+  center: [0, 0],
+  centerBottom: [0, 1],
+  centerTop: [0, -1],
+  centerLeft: [-1, 0],
+  centerRight: [1, 0]
+};
 
-export const getHorizontalPositionType = (
+export const getPositionType = (
   position: TooltipFixedPosition,
-  defaultCase?: TooltipHorizontalPositionType
-): TooltipHorizontalPositionType => positionType[position]?.[0] ?? defaultCase;
+  dim: 'x' | 'y',
+  defaultCase: TooltipPositionType = 2
+): TooltipPositionType => positionType[position]?.[dim === 'x' ? 0 : 1] ?? defaultCase;
 
-export const getVerticalPositionType = (
-  position: TooltipFixedPosition,
-  defaultCase?: TooltipVerticalPositionType
-): TooltipVerticalPositionType => positionType[position]?.[1] ?? defaultCase;
-
-export const getCartesianCrosshairRect = (
-  dimensionInfo: IDimensionInfo[],
-  series: ICartesianSeries,
-  layoutStartPoint: ILayoutPoint
-) => {
+export const getCartesianCrosshairRect = (dimensionData: IDimensionData, layoutStartPoint: ILayoutPoint) => {
   const currValueX: AxisCurrentValueMap = new Map();
   const currValueY: AxisCurrentValueMap = new Map();
-  // 将 dimensionInfo 转换为 AxisCurrentValueMap
-  dimensionInfo.forEach(({ axis, value }) => {
-    if (['top', 'bottom'].includes(axis.getOrient())) {
-      currValueX.set(axis.getSpecIndex(), {
-        value,
-        axis
-      });
-    } else {
-      currValueY.set(axis.getSpecIndex(), {
-        value,
-        axis
-      });
-    }
+  const { series, datum } = dimensionData;
+  const isHorizontal = (series as ICartesianSeries).direction === Direction.horizontal;
+  const axisHelper = isHorizontal
+    ? (series as ICartesianSeries).getYAxisHelper()
+    : (series as ICartesianSeries).getXAxisHelper();
+  const axisId = axisHelper.getAxisId();
+  const axis = series
+    .getChart()
+    .getComponentsByKey('axes')
+    .find(axis => axis.id === axisId) as IAxis;
+
+  if (!axis) {
+    return undefined;
+  }
+  (isHorizontal ? currValueY : currValueX).set(axis.getSpecIndex(), {
+    datum: series.getDatumPositionValues(datum[0], series.getDimensionField())?.[0],
+    axis
   });
 
-  const xHair: IHair = {
-    visible: !!currValueX.size,
-    type: 'rect'
-  };
-  const yHair: IHair = {
-    visible: !!currValueY.size,
-    type: 'rect'
+  const state: CrossHairStateByField = {
+    xField: {
+      coordKey: 'x',
+      anotherAxisKey: 'y',
+      currentValue: currValueX,
+      attributes: {
+        visible: !!currValueX.size,
+        type: 'rect'
+      }
+    },
+    yField: {
+      coordKey: 'y',
+      anotherAxisKey: 'x',
+      currentValue: currValueY,
+      attributes: {
+        visible: !!currValueY.size,
+        type: 'rect'
+      }
+    }
   };
 
-  const {
-    x: crosshairInfoX,
-    y: crosshairInfoY,
-    offsetWidth,
-    offsetHeight,
-    bandWidth,
-    bandHeight
-  } = layoutByValue(LayoutType.ALL, series, layoutStartPoint, currValueX, currValueY, xHair, yHair);
+  layoutByValue(state, series as ICartesianSeries, layoutStartPoint);
 
-  if (crosshairInfoX) {
-    return layoutVerticalCrosshair(xHair, crosshairInfoX, bandWidth, offsetWidth);
+  if (state.xField.cacheInfo) {
+    return layoutCrosshair(state.xField);
   }
-  if (crosshairInfoY) {
-    return layoutHorizontalCrosshair(yHair, crosshairInfoY, bandHeight, offsetHeight);
+  if (state.yField.cacheInfo) {
+    return layoutCrosshair(state.yField);
   }
   return undefined;
 };

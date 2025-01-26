@@ -15,9 +15,9 @@ import type { MarkLine as MarkLineComponent, MarkArcLine as MarkArcLineComponent
 import { transformToGraphic } from '../../../util/style';
 import { BaseMarker } from '../base-marker';
 import type { IGroup } from '@visactor/vrender-core';
-import type { IMarkProcessOptions, IMarkerSymbol } from '../interface';
+import type { IMarkerSymbol } from '../interface';
 import { markerRegression } from '../../../data/transforms/regression';
-import { LayoutZIndex } from '../../../constant';
+import { LayoutZIndex } from '../../../constant/layout';
 import { markerFilter } from '../../../data/transforms/marker-filter';
 
 export abstract class BaseMarkLine extends BaseMarker<IMarkLineSpec> implements IMarkLine {
@@ -30,7 +30,6 @@ export abstract class BaseMarkLine extends BaseMarker<IMarkLineSpec> implements 
     attr: MarkLineAttrs | MarkArcLineAttrs
   ): MarkLineComponent | MarkArcLineComponent;
   protected abstract _computePointsAttr(): any;
-  protected abstract _computeOptions(): IMarkProcessOptions;
 
   static _getMarkerCoordinateType(markerSpec: any): string {
     const { doAngleProcess, doRadiusProcess, doAngRadRad1Process, doRadAngAng1Process, doRadAngProcess } =
@@ -72,15 +71,27 @@ export abstract class BaseMarkLine extends BaseMarker<IMarkLineSpec> implements 
       radius: 0,
       startAngle: 0,
       endAngle: 0,
-      lineStyle: transformStyle(transformToGraphic(this._spec.line?.style), this._markerData),
+      lineStyle: transformStyle(
+        transformToGraphic(this._spec.line?.style),
+        this._markerData,
+        this._markAttributeContext
+      ),
       clipInRange: this._spec.clip ?? false,
-      label: transformLabelAttributes(label, this._markerData),
+      label: transformLabelAttributes(label, this._markerData, this._markAttributeContext),
       state: {
-        line: transformState(this._spec.line?.state ?? {}, this._markerData),
-        lineStartSymbol: transformState(this._spec.startSymbol?.state ?? {}, this._markerData),
-        lineEndSymbol: transformState(this._spec.endSymbol?.state ?? {}, this._markerData),
-        label: transformState(this._spec?.label?.state ?? {}, this._markerData),
-        labelBackground: transformState(this._spec?.label?.labelBackground?.state ?? {}, this._markerData)
+        line: transformState(this._spec.line?.state ?? {}, this._markerData, this._markAttributeContext),
+        lineStartSymbol: transformState(
+          this._spec.startSymbol?.state ?? {},
+          this._markerData,
+          this._markAttributeContext
+        ),
+        lineEndSymbol: transformState(this._spec.endSymbol?.state ?? {}, this._markerData, this._markAttributeContext),
+        label: transformState(this._spec?.label?.state ?? {}, this._markerData, this._markAttributeContext),
+        labelBackground: transformState(
+          this._spec?.label?.labelBackground?.state ?? {},
+          this._markerData,
+          this._markAttributeContext
+        )
       },
       animation: this._spec.animation ?? false,
       animationEnter: this._spec.animationEnter,
@@ -92,7 +103,7 @@ export abstract class BaseMarkLine extends BaseMarker<IMarkLineSpec> implements 
       markLineAttrs.startSymbol = {
         ...startSymbol,
         visible: true,
-        style: transformToGraphic(startSymbol.style)
+        style: transformStyle(transformToGraphic(startSymbol.style), this._markerData, this._markAttributeContext)
       };
     } else {
       markLineAttrs.startSymbol = {
@@ -104,7 +115,7 @@ export abstract class BaseMarkLine extends BaseMarker<IMarkLineSpec> implements 
       markLineAttrs.endSymbol = {
         ...endSymbol,
         visible: true,
-        style: transformToGraphic(endSymbol.style)
+        style: transformStyle(transformToGraphic(endSymbol.style), this._markerData, this._markAttributeContext)
       };
     } else {
       markLineAttrs.endSymbol = {

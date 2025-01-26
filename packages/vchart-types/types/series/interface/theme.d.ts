@@ -14,7 +14,7 @@ import type { IDotSeriesTheme } from '../dot/interface';
 import type { IWordCloud3dSeriesTheme, IWordCloudSeriesTheme } from '../word-cloud/interface';
 import type { IFunnel3dSeriesTheme, IFunnelSeriesTheme } from '../funnel/interface';
 import type { ILinearProgressSeriesTheme } from '../progress/linear/interface';
-import type { IGaugePointerSeriesTheme, IGaugeSeriesTheme } from '../gauge';
+import type { IGaugePointerSeriesTheme, IGaugeSeriesTheme } from '../gauge/interface';
 import type { ISankeySeriesTheme } from '../sankey/interface';
 import type { ITreemapSeriesTheme } from '../treemap/interface';
 import type { ISunburstSeriesTheme } from '../sunburst/interface';
@@ -22,11 +22,11 @@ import type { IRangeColumnSeriesTheme } from '../range-column/interface';
 import type { ICirclePackingSeriesTheme } from '../circle-packing/interface';
 import type { IHeatmapSeriesTheme } from '../heatmap/interface';
 import type { ICorrelationSeriesTheme } from '../correlation/interface';
-import { SeriesTypeEnum } from './type';
-import type { SeriesMarkMap } from './common';
+import type { SeriesTypeEnum } from './type';
 import type { IRangeAreaSeriesTheme } from '../range-area/interface';
 import type { ILiquidSeriesTheme } from '../liquid/interface';
 import type { IVennSeriesTheme } from '../venn/interface';
+import type { IMosaicSeriesTheme } from '../mosaic/interface';
 export interface ISeriesTheme {
     [SeriesTypeEnum.bar]?: IBarSeriesTheme;
     [SeriesTypeForThemeEnum.bar_vertical]?: IBarSeriesTheme;
@@ -88,6 +88,7 @@ export interface ISeriesTheme {
     [SeriesTypeEnum.correlation]?: ICorrelationSeriesTheme;
     [SeriesTypeEnum.liquid]?: ILiquidSeriesTheme;
     [SeriesTypeEnum.venn]?: IVennSeriesTheme;
+    [SeriesTypeEnum.mosaic]?: IMosaicSeriesTheme;
 }
 export declare enum SeriesTypeForThemeEnum {
     area_horizontal = "area_horizontal",
@@ -121,4 +122,3 @@ export declare enum SeriesTypeForThemeEnum {
     radar_stack = "radar_stack",
     rose_stack = "rose_stack"
 }
-export declare const seriesMarkInfoMap: Record<SeriesTypeEnum, SeriesMarkMap>;

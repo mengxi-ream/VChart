@@ -1,20 +1,20 @@
 import { DataView } from '@visactor/vdataset';
 import type { DataSet, ITransformOptions } from '@visactor/vdataset';
 import type { IRegion } from '../../region/interface';
-import type { IMark } from '../../mark/interface';
-import type { CoordinateType, IInvalidType, IPoint, DataKeyType, Datum, Maybe, ISeriesSpec, IGroup, ILayoutType, ILayoutPoint, ILayoutRect } from '../../typings';
+import type { ICompileMarkConfig, IGroupMark, IMark } from '../../mark/interface';
+import type { CoordinateType, IInvalidType, IPoint, DataKeyType, Datum, Maybe, ISeriesSpec, IExtensionMarkSpec, IExtensionGroupMarkSpec, EnableMarkType, IGroup, ILayoutType, ILayoutPoint, ILayoutRect } from '../../typings';
 import { BaseModel } from '../../model/base-model';
 import type { ISeriesOption, ISeries, ISeriesMarkInitOption, ISeriesStackData, ISeriesTooltipHelper, SeriesMarkMap, ISeriesMarkInfo, ISeriesSpecInfo, ISeriesStackDataLeaf, ISeriesStackDataMeta, ISeriesSeriesInfo } from '../interface';
-import type { IModelEvaluateOption, IModelRenderOption } from '../../model/interface';
+import type { IModelEvaluateOption, IModelRenderOption, IUpdateSpecResult } from '../../model/interface';
 import type { AddVChartPropertyContext } from '../../data/transforms/add-property';
-import type { IBaseInteractionSpec } from '../../interaction/interface';
-import type { StatisticOperations } from '../../data/transforms/dimension-statistics';
+import type { IBaseInteractionSpec, IHoverSpec, ISelectSpec } from '../../interaction/interface';
 import { SeriesData } from './series-data';
-import type { IGroupMark } from '../../mark/group';
 import type { ISeriesMarkAttributeContext } from '../../compile/mark';
 import { STATE_VALUE_ENUM } from '../../compile/mark';
 import { BaseSeriesSpecTransformer } from './base-series-transformer';
 import type { EventType } from '@visactor/vgrammar-core';
+import type { ILabelSpec } from '../../component/label/interface';
+import type { StatisticOperations } from '../../data/transforms/interface';
 export declare abstract class BaseSeries<T extends ISeriesSpec> extends BaseModel<T> implements ISeries {
     readonly specKey: string;
     readonly type: string;
@@ -140,9 +140,6 @@ export declare abstract class BaseSeries<T extends ISeriesSpec> extends BaseMode
         triggerOff: EventType;
         blurState: STATE_VALUE_ENUM;
         highlightState: STATE_VALUE_ENUM;
-        reverseState?: undefined;
-        state?: undefined;
-        isMultiple?: undefined;
     } | {
         type: string;
         seriesId: number;
@@ -153,9 +150,28 @@ export declare abstract class BaseSeries<T extends ISeriesSpec> extends BaseMode
         reverseState: STATE_VALUE_ENUM;
         state: STATE_VALUE_ENUM;
         isMultiple: boolean;
-        blurState?: undefined;
-        highlightState?: undefined;
     })[];
+    protected _defaultHoverConfig(selector: string[], finalHoverSpec: IHoverSpec): {
+        seriesId: number;
+        regionId: number;
+        selector: string[];
+        type: string;
+        trigger: EventType;
+        triggerOff: EventType;
+        blurState: STATE_VALUE_ENUM;
+        highlightState: STATE_VALUE_ENUM;
+    };
+    protected _defaultSelectConfig(selector: string[], finalSelectSpec: ISelectSpec): {
+        type: string;
+        seriesId: number;
+        regionId: number;
+        selector: string[];
+        trigger: EventType;
+        triggerOff: EventType;
+        reverseState: STATE_VALUE_ENUM;
+        state: STATE_VALUE_ENUM;
+        isMultiple: boolean;
+    };
     protected _parseInteractionConfig(mainMarks?: IMark[]): void;
     initInteraction(): void;
     initAnimation(): void;
@@ -169,9 +185,9 @@ export declare abstract class BaseSeries<T extends ISeriesSpec> extends BaseMode
     protected initEvent(): void;
     protected _releaseEvent(): void;
     protected initTooltip(): void;
-    _compareSpec(spec: T, prevSpec: T, ignoreCheckKeys?: {
-        [key: string]: true;
-    }): {
+    _compareExtensionMarksSpec(newMarks: (IExtensionMarkSpec<Exclude<EnableMarkType, 'group'>> | IExtensionGroupMarkSpec)[], prevMarks: (IExtensionMarkSpec<Exclude<EnableMarkType, 'group'>> | IExtensionGroupMarkSpec)[], compareResult: IUpdateSpecResult): void;
+    _compareLabelSpec(newLabels: ILabelSpec[], prevLabels: ILabelSpec[], compareResult: IUpdateSpecResult): void;
+    _compareSpec(spec: T, prevSpec: T, ignoreCheckKeys?: Record<string, boolean>): {
         change: boolean;
         reMake: boolean;
         reRender: boolean;
@@ -201,7 +217,7 @@ export declare abstract class BaseSeries<T extends ISeriesSpec> extends BaseMode
     getMeasureField(): string[];
     protected onMarkPositionUpdate(): void;
     protected onMarkTreePositionUpdate(marks: IMark[]): void;
-    protected _createMark<M extends IMark>(markInfo: ISeriesMarkInfo, option?: ISeriesMarkInitOption): NonNullable<M>;
+    protected _createMark<M extends IMark>(markInfo: ISeriesMarkInfo, option?: ISeriesMarkInitOption, config?: ICompileMarkConfig): NonNullable<M>;
     protected _getDataIdKey(): string | ((datum: Datum) => string);
     protected _getSeriesDataKey(datum: Datum): string;
     addViewDataFilter(option: ITransformOptions): void;
@@ -211,7 +227,6 @@ export declare abstract class BaseSeries<T extends ISeriesSpec> extends BaseMode
     compile(): void;
     getDefaultShapeType(): string;
     getFieldAlias(field: string): any;
-    getMarkInfoList(): import("../../model/interface").IModelMarkInfo[];
     protected _getInvalidConnectType(): "none" | "zero" | "connect";
     protected _getInvalidDefined(datum: Datum): boolean;
     protected _getRelatedComponentSpecInfo(specKey: string): import("../../model/interface").IModelSpecInfo<any>[];

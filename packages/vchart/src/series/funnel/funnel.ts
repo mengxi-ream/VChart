@@ -3,12 +3,13 @@ import type { IFunnelSeries, SeriesMarkMap } from '../interface';
 import { SeriesMarkNameEnum } from '../interface/type';
 import type { IOrientType, IPoint, TextAlign, TextBaseLine, Datum, StringOrNumber } from '../../typings';
 import { SeriesTypeEnum } from '../interface/type';
-import type { IPolygonMark } from '../../mark/polygon/polygon';
 import { BaseSeries } from '../base/base-series';
-import { AttributeLevel, DEFAULT_DATA_KEY, PREFIX } from '../../constant';
+import { AttributeLevel } from '../../constant/attribute';
+import { DEFAULT_DATA_KEY } from '../../constant/data';
+import { PREFIX } from '../../constant/base';
 import { registerDataSetInstanceTransform } from '../../data/register';
 import { DataView } from '@visactor/vdataset';
-import type { IMark } from '../../mark/interface';
+import type { ILabelMark, IMark, IPolygonMark, IRuleMark, ITextMark } from '../../mark/interface';
 import { MarkTypeEnum } from '../../mark/interface/type';
 import type { IFunnelOpt } from '../../data/transforms/funnel';
 import { funnel, funnelTransform } from '../../data/transforms/funnel';
@@ -28,13 +29,11 @@ import {
   FUNNEL_TRANSFORM_RATIO,
   FUNNEL_VALUE_RATIO
 } from '../../constant/funnel';
-import type { ITextMark } from '../../mark/text';
 import { calcLayoutNumber } from '../../util/space';
 import { field } from '../../util/object';
 import type { FunnelAppearPreset, IFunnelSeriesSpec } from './interface';
-import type { IRuleMark } from '../../mark/rule';
 import { FunnelSeriesTooltipHelper } from './tooltip-helper';
-import { isFunction, isValid, isNumber, isBoolean } from '@visactor/vutils';
+import { isFunction, isValid, isNumber } from '@visactor/vutils';
 import {
   FadeInOutAnimation,
   registerCartesianGroupClipAnimation,
@@ -47,7 +46,6 @@ import { registerPolygonMark } from '../../mark/polygon/polygon';
 import { registerTextMark } from '../../mark/text';
 import { registerRuleMark } from '../../mark/rule';
 import { funnelSeriesMark } from './constant';
-import type { ILabelMark } from '../../mark/label';
 import type { LabelItem } from '@visactor/vrender-components';
 import { Factory } from '../../core/factory';
 import { FunnelSeriesSpecTransformer } from './funnel-transformer';
@@ -97,6 +95,8 @@ export class FunnelSeries<T extends IFunnelSeriesSpec = IFunnelSeriesSpec>
   protected _transformLabelMark: ILabelMark | null = null;
   protected _funnelOuterLabelMark: { label?: ITextMark; line?: IRuleMark } = {};
 
+  protected _minLabelLineWidth: number;
+
   setAttrFromSpec(): void {
     super.setAttrFromSpec();
 
@@ -105,6 +105,7 @@ export class FunnelSeries<T extends IFunnelSeriesSpec = IFunnelSeriesSpec>
 
     this._funnelOrient = this._spec.funnelOrient ?? 'top';
     this._shape = this._spec.shape ?? 'trapezoid';
+    this._minLabelLineWidth = this._spec.outerLabel?.line?.minLength ?? FUNNEL_LABEL_LINE_LENGTH;
 
     if (this._isHorizontal()) {
       this._funnelAlign = ['top', 'bottom'].includes(this._spec.funnelAlign) ? this._spec.funnelAlign : 'center';
@@ -112,7 +113,7 @@ export class FunnelSeries<T extends IFunnelSeriesSpec = IFunnelSeriesSpec>
       this._funnelAlign = ['left', 'right'].includes(this._spec.funnelAlign) ? this._spec.funnelAlign : 'center';
     }
 
-    if (this._spec.categoryField) {
+    if (!this._seriesField && this._spec.categoryField) {
       this.setSeriesField(this._spec.categoryField);
     }
   }
@@ -132,6 +133,11 @@ export class FunnelSeries<T extends IFunnelSeriesSpec = IFunnelSeriesSpec>
     });
 
     this._viewDataTransform = new SeriesData(this._option, viewDataTransform);
+  }
+
+  compileData() {
+    super.compileData();
+    this._viewDataTransform?.compile();
   }
 
   getStatisticFields() {
@@ -180,13 +186,15 @@ export class FunnelSeries<T extends IFunnelSeriesSpec = IFunnelSeriesSpec>
       },
       {
         themeSpec: this._theme?.funnel,
-        morph: shouldMarkDoMorph(this._spec, this._funnelMarkName),
-        defaultMorphElementKey: this._seriesField,
         groupKey: this._seriesField,
         isSeriesMark: true,
-        customShape: this._spec.funnel?.customShape,
         stateSort: this._spec.funnel?.stateSort,
         noSeparateStyle: true
+      },
+      {
+        setCustomizedShape: this._spec.funnel?.customShape,
+        morph: shouldMarkDoMorph(this._spec, this._funnelMarkName),
+        morphElementKey: this._seriesField
       }
     ) as IPolygonMark;
 
@@ -199,12 +207,14 @@ export class FunnelSeries<T extends IFunnelSeriesSpec = IFunnelSeriesSpec>
         },
         {
           themeSpec: this._theme?.transform,
-          skipBeforeLayouted: false,
+          skipBeforeLayouted: true,
           dataView: this._viewDataTransform.getDataView(),
           dataProductId: this._viewDataTransform.getProductId(),
-          customShape: this._spec.transform?.customShape,
           stateSort: this._spec.transform?.stateSort,
           noSeparateStyle: true
+        },
+        {
+          setCustomizedShape: this._spec.transform?.customShape
         }
       );
     }
@@ -276,22 +286,32 @@ export class FunnelSeries<T extends IFunnelSeriesSpec = IFunnelSeriesSpec>
       this.setMarkStyle(
         outerLabelMark,
         {
-          text: (datum: Datum) => {
-            const text = `${datum[this.getCategoryField()]}`;
-            if (isFunction(this._spec.outerLabel.formatMethod)) {
-              return this._spec.outerLabel.formatMethod(text, datum) as unknown as any;
-            }
-            return text;
-          },
+          text: (datum: Datum) => `${datum[this.getCategoryField()]}`,
           x: (datum: Datum) => this._computeOuterLabelPosition(datum).x,
           y: (datum: Datum) => this._computeOuterLabelPosition(datum).y,
           textAlign: (datum: Datum) => this._computeOuterLabelPosition(datum).align,
           textBaseline: (datum: Datum) => this._computeOuterLabelPosition(datum).textBaseline,
-          maxLineWidth: (datum: Datum) => this._computeOuterLabelLimit(datum)
+          maxLineWidth: (datum: Datum) => this._computeOuterLabelLimit(datum),
+          /** 不设置 width/height 会导致 richtext 有默认宽高, case: richtext-bounds */
+          /** width 和 height 对 text 标签不影响 */
+          width: 0,
+          height: 0
         },
         'normal',
         AttributeLevel.Series
       );
+      if (isFunction(this._spec.outerLabel.formatMethod)) {
+        this.setMarkStyle(
+          outerLabelMark,
+          {
+            text: (datum: Datum) => {
+              return this._spec.outerLabel.formatMethod(`${datum[this.getCategoryField()]}`, datum) as any;
+            }
+          },
+          'normal',
+          AttributeLevel.User_Mark
+        );
+      }
     }
     const outerLabelLineMark = this._funnelOuterLabelMark.line;
     if (outerLabelLineMark && outerLabelMark) {
@@ -769,13 +789,13 @@ export class FunnelSeries<T extends IFunnelSeriesSpec = IFunnelSeriesSpec>
     const funnelLabelBounds = this._labelMark
       ?.getComponent()
       ?.getProduct()
-      .getGroupGraphicItem()
-      .find(({ attribute, type }: { attribute: LabelItem; type: string }) => {
+      ?.getGroupGraphicItem()
+      ?.find(({ attribute, type }: { attribute: LabelItem; type: string }) => {
         return type === 'text' && attribute.data?.[categoryField] === datum[categoryField];
       }, true)?.AABBBounds;
 
     const funnelLabelWidth = funnelLabelBounds ? funnelLabelBounds.x2 - funnelLabelBounds.x1 : 0;
-    const outerLineSpace = this._funnelOuterLabelMark.line ? FUNNEL_LABEL_LINE_LENGTH : 0;
+    const outerLineSpace = this._funnelOuterLabelMark.line ? this._minLabelLineWidth : 0;
 
     let space = this.getLayoutRect().width - Math.max(shapeMiddleWidth, funnelLabelWidth);
     if (this._funnelAlign === 'center') {
@@ -794,8 +814,8 @@ export class FunnelSeries<T extends IFunnelSeriesSpec = IFunnelSeriesSpec>
     const labelMarkBounds = this._labelMark
       ?.getComponent()
       ?.getProduct()
-      .getGroupGraphicItem()
-      .find(({ attribute, type }: { attribute: LabelItem; type: string }) => {
+      ?.getGroupGraphicItem()
+      ?.find(({ attribute, type }: { attribute: LabelItem; type: string }) => {
         return type === 'text' && attribute.data?.[categoryField] === datum[categoryField];
       }, true)?.AABBBounds;
     const outerLabelSpec = this._spec.outerLabel ?? {};
@@ -811,13 +831,13 @@ export class FunnelSeries<T extends IFunnelSeriesSpec = IFunnelSeriesSpec>
         y1 = this._getPolygonCenter(points).y - shapeMiddleHeight / 2 - spaceWidth;
         y2 = outerLabelSpec.alignLabel !== false ? outerLabelMarkBounds?.y2 + spaceWidth : y1 - spaceWidth;
         x1 = this._getPolygonCenter(points).x;
-        y1 - y2 < FUNNEL_LABEL_LINE_LENGTH && (y2 = y1 - FUNNEL_LABEL_LINE_LENGTH);
+        y1 - y2 < this._minLabelLineWidth && (y2 = y1 - this._minLabelLineWidth);
         x2 = x1;
       } else {
         y1 = this._getPolygonCenter(points).y + shapeMiddleHeight / 2 + spaceWidth;
         y2 = outerLabelSpec.alignLabel !== false ? outerLabelMarkBounds?.y1 - spaceWidth : y1 + spaceWidth;
         x1 = this._getPolygonCenter(points).x;
-        y2 - y1 < FUNNEL_LABEL_LINE_LENGTH && (y2 = y1 + FUNNEL_LABEL_LINE_LENGTH);
+        y2 - y1 < this._minLabelLineWidth && (y2 = y1 + this._minLabelLineWidth);
         x2 = x1;
       }
       return { x1, x2, y1, y2 };
@@ -831,13 +851,13 @@ export class FunnelSeries<T extends IFunnelSeriesSpec = IFunnelSeriesSpec>
       x1 = this._getPolygonCenter(points).x + Math.max(labelWidth / 2, shapeMiddleWidth / 2) + spaceWidth;
       x2 = outerLabelSpec.alignLabel !== false ? outerLabelMarkBounds?.x1 - spaceWidth : x1 + spaceWidth;
       y1 = this._getPolygonCenter(points).y;
-      x2 - x1 < FUNNEL_LABEL_LINE_LENGTH && (x2 = x1 + FUNNEL_LABEL_LINE_LENGTH);
+      x2 - x1 < this._minLabelLineWidth && (x2 = x1 + this._minLabelLineWidth);
       y2 = y1;
     } else {
       x1 = this._getPolygonCenter(points).x - Math.max(labelWidth / 2, shapeMiddleWidth / 2) - spaceWidth;
       x2 = outerLabelSpec.alignLabel !== false ? outerLabelMarkBounds?.x2 + spaceWidth : x1 - spaceWidth;
       y1 = this._getPolygonCenter(points).y;
-      x1 - x2 < FUNNEL_LABEL_LINE_LENGTH && (x2 = x1 - FUNNEL_LABEL_LINE_LENGTH);
+      x1 - x2 < this._minLabelLineWidth && (x2 = x1 - this._minLabelLineWidth);
       y2 = y1;
     }
     return { x1, x2, y1, y2 };

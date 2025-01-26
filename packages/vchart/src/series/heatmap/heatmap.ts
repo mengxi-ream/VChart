@@ -1,24 +1,21 @@
 /* eslint-disable no-duplicate-imports */
 import { registerCellMark } from './../../mark/cell';
 import { CartesianSeries } from '../cartesian/cartesian';
-import { AttributeLevel } from '../../constant';
+import { AttributeLevel } from '../../constant/attribute';
 import type { Datum } from '../../typings';
-import type { HeatmapAppearPreset } from './animation';
 import { registerHeatmapAnimation } from './animation';
 import { animationConfig, shouldMarkDoMorph, userAnimationConfig } from '../../animation/utils';
-import type { IHeatmapSeriesSpec } from './interface';
+import type { HeatmapAppearPreset, IHeatmapSeriesSpec } from './interface';
 import type { IAxisHelper } from '../../component/axis/cartesian/interface';
-import type { ITextMark } from '../../mark/text';
 import { registerTextMark } from '../../mark/text';
 import type { SeriesMarkMap } from '../interface';
 import { SeriesMarkNameEnum, SeriesTypeEnum } from '../interface/type';
 import type { IStateAnimateSpec } from '../../animation/spec';
-import type { ICellMark } from '../../mark/cell';
 import { normalizePadding, array } from '@visactor/vutils';
 import { HeatmapSeriesTooltipHelper } from './tooltip-helper';
 import { heatmapSeriesMark } from './constant';
 import { Factory } from '../../core/factory';
-import type { IMark } from '../../mark/interface';
+import type { ICellMark, IMark, ITextMark } from '../../mark/interface';
 import { getGroupAnimationParams } from '../util/utils';
 import { HeatmapSeriesSpecTransformer } from './heatmap-transformer';
 import { registerCartesianLinearAxis, registerCartesianBandAxis } from '../../component/axis/cartesian';
@@ -57,20 +54,30 @@ export class HeatmapSeries<T extends IHeatmapSeriesSpec = IHeatmapSeriesSpec> ex
       largeThreshold: this._spec.largeThreshold
     };
 
-    this._cellMark = this._createMark(HeatmapSeries.mark.cell, {
-      morph: shouldMarkDoMorph(this._spec, HeatmapSeries.mark.cell.name),
-      defaultMorphElementKey: this.getDimensionField()[0],
-      isSeriesMark: true,
-      progressive,
-      customShape: this._spec.cell?.customShape,
-      stateSort: this._spec.cell?.stateSort
-    }) as ICellMark;
+    this._cellMark = this._createMark(
+      HeatmapSeries.mark.cell,
+      {
+        isSeriesMark: true,
+        stateSort: this._spec.cell?.stateSort
+      },
+      {
+        ...progressive,
+        setCustomizedShape: this._spec.cell?.customShape,
+        morph: shouldMarkDoMorph(this._spec, HeatmapSeries.mark.cell.name),
+        morphElementKey: this.getDimensionField()[0]
+      }
+    ) as ICellMark;
 
-    this._backgroundMark = this._createMark(HeatmapSeries.mark.cellBackground, {
-      progressive,
-      customShape: this._spec.cellBackground?.customShape,
-      stateSort: this._spec.cellBackground?.stateSort
-    }) as ICellMark;
+    this._backgroundMark = this._createMark(
+      HeatmapSeries.mark.cellBackground,
+      {
+        stateSort: this._spec.cellBackground?.stateSort
+      },
+      {
+        ...progressive,
+        setCustomizedShape: this._spec.cellBackground?.customShape
+      }
+    ) as ICellMark;
   }
 
   initMarkStyle(): void {

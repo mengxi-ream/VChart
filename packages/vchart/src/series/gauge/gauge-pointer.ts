@@ -1,15 +1,13 @@
 /* eslint-disable no-duplicate-imports */
-import type { IMark } from '../../mark/interface';
+import type { IMark, IPathMark, IRectMark } from '../../mark/interface';
 import { MarkTypeEnum } from '../../mark/interface/type';
 import { clamp, isValid, maxInArray, minInArray } from '@visactor/vutils';
 import type { SeriesMarkMap } from '../interface';
 import { SeriesMarkNameEnum, SeriesTypeEnum } from '../interface/type';
 import type { IGaugePointerSeriesSpec, PinMarkSpec, PointerMarkSpec } from './interface';
 import type { Datum } from '../../typings';
-import type { IPathMark } from '../../mark/path';
 import { animationConfig, userAnimationConfig } from '../../animation/utils';
 import { ProgressLikeSeries } from '../polar/progress-like';
-import type { IRectMark } from '../../mark/rect';
 import type { IStateAnimateSpec } from '../../animation/spec';
 import { registerPathMark } from '../../mark/path';
 import { registerRectMark } from '../../mark/rect';
@@ -18,6 +16,7 @@ import { Factory } from '../../core/factory';
 import { registerGaugePointerAnimation } from './animation';
 import { GaugePointerSeriesSpecTransformer } from './gauge-pointer-transformer';
 import { registerPolarBandAxis, registerPolarLinearAxis } from '../../component/axis/polar';
+import { GaugePointerTooltipHelper } from './pointer-tooltip-helper';
 
 export class GaugePointerSeries<
   T extends IGaugePointerSeriesSpec = IGaugePointerSeriesSpec
@@ -106,7 +105,7 @@ export class GaugePointerSeries<
   }
 
   protected initTooltip() {
-    super.initTooltip();
+    this._tooltipHelper = new GaugePointerTooltipHelper(this);
 
     this._pointerMark && this._tooltipHelper.activeTriggerSet.mark.add(this._pointerMark);
   }

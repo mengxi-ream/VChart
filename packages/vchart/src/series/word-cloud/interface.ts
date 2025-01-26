@@ -1,8 +1,20 @@
-import type { ITextMarkSpec, IMarkSpec, ISeriesSpec, ITextFormatMethod } from '../../typings';
+import type { ITextMarkSpec, IMarkSpec, ISeriesSpec, ITextFormatMethod, IRectMarkSpec } from '../../typings';
 import type { IAnimationSpec, IMarkAnimateSpec, IStateAnimateSpec } from '../../animation/spec';
 import type { SeriesMarkNameEnum } from '../interface/type';
-import type { WordcloudAppearPreset } from './animation';
 import type { shapes } from '@visactor/vgrammar-wordcloud';
+import type { GeometricMaskShape, TextShapeMask } from '@visactor/vgrammar-util';
+import type { IAnimationTypeConfig } from '@visactor/vgrammar-core';
+
+export interface IWordcloud3dAnimationParams {
+  radius: number;
+  depth_3d: number;
+}
+
+export interface IWordcloudAnimationParams {
+  animationConfig: () => IAnimationTypeConfig;
+}
+
+export type WordcloudAppearPreset = 'scaleIn' | 'fadeIn';
 
 export type WordCloudShapeType = keyof typeof shapes;
 
@@ -20,6 +32,7 @@ export type EllipsisType = {
 };
 
 export type ZoomToFitType = {
+  repeat?: boolean;
   /**
    * 是否缩小
    */
@@ -186,7 +199,9 @@ export type WordCloudShapeConfigType = {
   fillingRatio?: number;
 };
 
-export interface IWordCloudSeriesBaseSpec extends ISeriesSpec, IAnimationSpec<string, WordcloudAppearPreset> {
+export interface IWordCloudSeriesBaseSpec
+  extends ISeriesSpec,
+    IAnimationSpec<SeriesMarkNameEnum.word, WordcloudAppearPreset> {
   /**
    * 文本字段
    */
@@ -213,8 +228,9 @@ export interface IWordCloudSeriesBaseSpec extends ISeriesSpec, IAnimationSpec<st
   colorHexField?: string;
   /**
    * 颜色模式
+   * TODO: 'linear' 待支持
    */
-  colorMode?: 'linear' | 'ordinal';
+  colorMode?: 'ordinal';
   /**
    * 颜色列表
    */
@@ -237,8 +253,10 @@ export interface IWordCloudSeriesBaseSpec extends ISeriesSpec, IAnimationSpec<st
   /**
    * 词云形状
    * @default 'circle'
+   *
+   * 注意，文字类型和几何形状类型的shape自 1.12.0 版本开始支持
    */
-  maskShape?: string | WordCloudShapeType; // url 或 svg字符串 或 base64，或shape字符串
+  maskShape?: string | WordCloudShapeType | TextShapeMask | GeometricMaskShape; // url 或 svg字符串 或 base64，或shape字符串
   /**
    * TODO: 缩放mask时是否保持比例
    */
@@ -267,10 +285,17 @@ export interface IWordCloudSeriesBaseSpec extends ISeriesSpec, IAnimationSpec<st
    * 形状词云填充词文字图元配置
    * @description hover配置随图元state，此外增加padding: 字体间距
    * @description 不增加formatMethod的原因：形状词云在做布局时，word和fillingWord用的是同一份数据，即text相同，所以fillingWords的format不会生效
+   * @deprecated
    */
   [SeriesMarkNameEnum.fillingWord]?: IMarkSpec<ITextMarkSpec> & {
     padding?: number;
   };
+
+  /**
+   * 当形状词云的形状为文字类型和几何形状类型的时候，支持绘制形状轮廓
+   * @since 1.12.0
+   */
+  [SeriesMarkNameEnum.wordMask]?: IMarkSpec<IRectMarkSpec>;
 
   animationAppear?:
     | boolean

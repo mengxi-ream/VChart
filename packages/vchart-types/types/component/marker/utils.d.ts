@@ -1,8 +1,7 @@
-import type { ISeries } from '../../series/interface';
 import type { DataView } from '@visactor/vdataset';
 import { type IPointLike } from '@visactor/vutils';
-import type { IPoint } from '../../typings';
-import type { IDataPos, IMarkerLabelSpec, IMarkerState, IMarkerSupportSeries, IPolarPoint, MarkerPositionPoint, MarkerStateValue } from './interface';
+import type { Datum, IPoint } from '../../typings';
+import type { IDataPos, IMarkerAttributeContext, IMarkerLabelSpec, IMarkerState, IMarkerSupportSeries, IPolarPoint, MarkerPositionPoint, MarkerStateValue } from './interface';
 import type { IRegion } from '../../region/interface';
 import type { OffsetPoint } from './interface';
 export declare function isAggrSpec(spec: IDataPos): boolean;
@@ -11,16 +10,16 @@ export declare function polarLayout(data: DataView, startRelativeSeries: IMarker
 export declare function geoLayout(data: DataView, relativeSeries: IMarkerSupportSeries): IPoint[][];
 export declare function cartesianCoordinateLayout(data: DataView, relativeSeries: IMarkerSupportSeries, autoRange: boolean, coordinatesOffset: OffsetPoint[] | OffsetPoint): IPoint[];
 export declare function polarCoordinateLayout(data: DataView, relativeSeries: IMarkerSupportSeries, autoRange: boolean): IPolarPoint[];
-export declare function positionLayout(positions: MarkerPositionPoint[], series: ISeries, regionRelative: boolean): IPoint[];
+export declare function positionLayout(positions: MarkerPositionPoint | MarkerPositionPoint[] | ((seriesData: Datum[], relativeSeries: IMarkerSupportSeries) => MarkerPositionPoint) | ((seriesData: Datum[], relativeSeries: IMarkerSupportSeries) => MarkerPositionPoint[]), series: IMarkerSupportSeries, regionRelative: boolean): IPoint[];
 export declare function computeClipRange(regions: IRegion[]): {
     minX: number;
     maxX: number;
     minY: number;
     maxY: number;
 };
-export declare function transformLabelAttributes(label: IMarkerLabelSpec, markerData: any): any;
-export declare function transformState(state: {} | Record<MarkerStateValue, any | IMarkerState<any>>, markerData: DataView): {} | Record<MarkerStateValue, any>;
-export declare function transformStyle(style: any, markerData: DataView): any;
+export declare function transformLabelAttributes(label: IMarkerLabelSpec, markerData: any, markAttributeContext: IMarkerAttributeContext): any;
+export declare function transformState(state: {} | Record<MarkerStateValue, any | IMarkerState<any>>, markerData: DataView, markerAttributeContext: IMarkerAttributeContext): {} | Record<MarkerStateValue, any>;
+export declare function transformStyle(style: any, markerData: DataView, markerAttributeContext: IMarkerAttributeContext): any;
 export declare function transformOffset(offset: string | number | Function, region: IRegion): any;
 export declare function computeOffsetFromRegion(point: IPointLike, offset: string | number, region: IRegion): number;
 export declare function getMarkLineProcessInfo(spec: any): {

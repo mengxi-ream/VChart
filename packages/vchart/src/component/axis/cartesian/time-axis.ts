@@ -1,7 +1,7 @@
 import type { IEffect } from '../../../model/interface';
 import { DataView } from '@visactor/vdataset';
 import { isXAxis } from './util/common';
-import { TimeUtil } from '@visactor/vutils';
+import { isValid, TimeUtil } from '@visactor/vutils';
 import { eachSeries } from '../../../util/model';
 import type { ICartesianSeries } from '../../../series/interface';
 import { CartesianLinearAxis } from './linear-axis';
@@ -13,9 +13,12 @@ import type { LinearAxisMixin } from '../mixin/linear-axis-mixin';
 import type { ICartesianTimeAxisSpec } from './interface';
 import { Factory } from '../../../core/factory';
 import { registerAxis } from '../base-axis';
-import { getAxisItem } from '../util';
+import { getAxisItem, shouldUpdateAxis } from '../util';
 // eslint-disable-next-line no-duplicate-imports
 import { mergeSpec } from '@visactor/vutils-extension';
+import { registerLineAxis, registerLineGrid } from '@visactor/vgrammar-core';
+import { continuousTicks } from '@visactor/vrender-components';
+import { registerDataSetInstanceTransform } from '../../../data/register';
 
 export interface CartesianTimeAxis<T extends ICartesianTimeAxisSpec = ICartesianTimeAxisSpec>
   extends Pick<LinearAxisMixin, 'valueToPosition'>,
@@ -40,9 +43,25 @@ export class CartesianTimeAxis<
         this._regions,
         s => {
           if (isXAxis(this.getOrient())) {
-            (s as ICartesianSeries).setXAxisHelper(this.axisHelper());
+            if (
+              shouldUpdateAxis(
+                (s as ICartesianSeries).getXAxisHelper(),
+                this.axisHelper(),
+                isValid(this._seriesUserId) || isValid(this._seriesIndex)
+              )
+            ) {
+              (s as ICartesianSeries).setXAxisHelper(this.axisHelper());
+            }
           } else {
-            (s as ICartesianSeries).setYAxisHelper(this.axisHelper());
+            if (
+              shouldUpdateAxis(
+                (s as ICartesianSeries).getYAxisHelper(),
+                this.axisHelper(),
+                isValid(this._seriesUserId) || isValid(this._seriesIndex)
+              )
+            ) {
+              (s as ICartesianSeries).setYAxisHelper(this.axisHelper());
+            }
           }
         },
         {
@@ -69,7 +88,7 @@ export class CartesianTimeAxis<
         })
         .transform(
           {
-            type: 'ticks',
+            type: `${this.type}-ticks`,
             options: {
               ...this._tickTransformOption(),
               tickCount: this._spec.layers[1].tickCount,
@@ -139,12 +158,21 @@ export class CartesianTimeAxis<
 
     return items;
   }
+
+  protected registerTicksTransform() {
+    const name = `${this.type}-ticks`;
+    registerDataSetInstanceTransform(this._option.dataSet, name, continuousTicks);
+
+    return name;
+  }
   transformScaleDomain() {
     // do nothing
   }
 }
 
 export const registerCartesianTimeAxis = () => {
+  registerLineAxis();
+  registerLineGrid();
   registerAxis();
   Factory.registerComponent(CartesianTimeAxis.type, CartesianTimeAxis);
 };

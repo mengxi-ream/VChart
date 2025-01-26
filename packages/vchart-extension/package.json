@@ -1,28 +1,33 @@
 {
   "name": "@visactor/vchart-extension",
-  "version": "0.0.1",
-  "description": "",
+  "version": "1.13.4",
+  "description": "vchart extension package, including extension plugins and components",
   "sideEffects": false,
   "main": "cjs/index.js",
-  "module": "es/index.js",
-  "types": "es/index.d.ts",
+  "module": "esm/index.js",
+  "types": "esm/index.d.ts",
   "files": [
     "cjs",
-    "es",
-    "dist"
+    "esm",
+    "build"
   ],
   "scripts": {
     "compile": "tsc --noEmit",
     "eslint": "eslint --debug --fix src/",
     "build": "bundle",
     "build:umd": "bundle --clean -f  umd",
+    "build:es": "bundle --clean -f  es",
+    "build:cjs": "bundle --clean -f  cjs",
     "start": "ts-node __tests__/runtime/browser/scripts/initVite.ts && vite serve __tests__/runtime/browser"
   },
   "dependencies": {
-    "@visactor/vchart": "workspace:1.11.3",
-    "@visactor/vrender-core": "0.19.9",
-    "@visactor/vrender-kits": "0.19.9",
-    "@visactor/vutils": "~0.18.9"
+    "@visactor/vrender-core": "0.21.11",
+    "@visactor/vrender-kits": "0.21.11",
+    "@visactor/vrender-components": "0.21.11",
+    "@visactor/vgrammar-core": "0.15.5",
+    "@visactor/vutils": "~0.19.3",
+    "@visactor/vdataset": "~0.19.3",
+    "@visactor/vchart": "workspace:1.13.4"
   },
   "devDependencies": {
     "@internal/bundler": "workspace:*",
@@ -49,5 +54,10 @@
     "rollup-plugin-bundle-size": "1.0.3",
     "rollup-plugin-sizes": "1.0.5",
     "rollup": "3.20.5"
-  }
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "license": "MIT"
 }

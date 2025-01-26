@@ -1,8 +1,7 @@
-import type { ILabelInfo } from './../../component/label/label';
 import type { PanEventParam, ZoomEventParam } from '../../event/interface';
 import type { IModel } from '../../model/interface';
 import type { DataSet, DataView, ITransformOptions } from '@visactor/vdataset';
-import type { IMark } from '../../mark/interface';
+import type { IGroupMark, ILabelMark, IMark } from '../../mark/interface';
 import type { CoordinateType, IPoint, IPolarPoint } from '../../typings/coordinate';
 import type { IRegion } from '../../region/interface';
 import type { IBaseScale } from '@visactor/vscale';
@@ -11,12 +10,11 @@ import type { IPolarAxisHelper } from '../../component/axis/polar/interface';
 import type { ISeriesSeriesInfo, ISeriesSpecInfo, ISeriesStackData } from './common';
 import type { ISeriesTooltipHelper } from './tooltip-helper';
 import type { IInvalidType, Datum, DirectionType, IGroup, StringOrNumber } from '../../typings';
-import type { ISeriesMarkAttributeContext, StateValueType } from '../../compile/mark';
-import type { StatisticOperations } from '../../data/transforms/dimension-statistics';
-import type { IGroupMark } from '../../mark/group';
+import type { ISeriesMarkAttributeContext, StateValueType } from '../../compile/mark/interface';
 import type { IGeoCoordinateHelper } from '../../component/geo/interface';
-import type { ILabelMark } from '../../mark/label';
-import type { BaseLegend } from '../../component/legend/base-legend';
+import type { ILabelSpec, ILabelInfo } from '../../component/label/interface';
+import type { StatisticOperations } from '../../data/transforms/interface';
+import type { ILegend } from '../../component/legend/interface';
 export interface ISeries extends IModel {
     readonly type: string;
     readonly name?: string;
@@ -46,6 +44,7 @@ export interface ISeries extends IModel {
     reTransformViewData: () => void;
     fillData: () => void;
     isHierarchyData?: () => boolean;
+    getMarkData?: (d: Datum) => Datum;
     getRegion: () => IRegion;
     initMark: () => void;
     getMarks: () => IMark[];
@@ -79,6 +78,8 @@ export interface ISeries extends IModel {
         key: string;
         operations: StatisticOperations;
     }[];
+    getDatumPositionValues: (datum: Datum, fields: string | string[]) => any[];
+    getDatumPositionValue: (datum: Datum, field: string) => any;
     setSeriesField: (field: string) => void;
     handleZoom?: (e: ZoomEventParam) => void;
     handlePan?: (e: PanEventParam) => void;
@@ -94,14 +95,15 @@ export interface ISeries extends IModel {
     getDefaultColorDomain: () => any[];
     getInvalidType: () => IInvalidType;
     getDefaultShapeType: () => string;
-    initLabelMarkStyle?: (labelMark: ILabelMark) => void;
+    initLabelMarkStyle?: (labelMark: ILabelMark, labelSpec: ILabelSpec) => void;
     initTotalLabelMarkStyle?: (labelMark: ILabelMark) => void;
     getTotalLabelComponentStyle?: (info: Pick<ILabelInfo, 'baseMark' | 'labelMark'>) => any;
     getGroupFields: () => string[];
     getSpecInfo: () => ISeriesSpecInfo;
     getMarkAttributeContext: () => ISeriesMarkAttributeContext;
     getSeriesFieldValue: (datum: Datum, seriesField?: string) => any;
-    legendSelectedFilter?: (component: BaseLegend<any>, selectedKeys: StringOrNumber[]) => StringOrNumber[];
+    legendSelectedFilter?: (component: ILegend, selectedKeys: StringOrNumber[]) => StringOrNumber[];
+    parseLabelStyle?: (labelStyle: any, labelSpec: any, labelMark?: ILabelMark) => any;
 }
 export interface ICartesianSeries extends ISeries {
     readonly coordinate: 'cartesian';

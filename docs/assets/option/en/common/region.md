@@ -27,9 +27,10 @@ Available options:
 
 {{ if: ${regionType} === 'geo' }}
 
-### roam(boolean) = false
+### roam(boolean|Object) = false
 
-Allow dragging and scaling
+Allow dragging and scaling.
+Since version `1.12.8`, it supports configuring `roam.blank: true` to enable dragging in the blank area fo region.
 
 ### longitudeField(string)
 
@@ -63,9 +64,17 @@ Geographical mapping type. Built-in projection types are as follows:
 - `stereographic`: Stereographic projection, conformal, accurate local shape, but usually limited to one hemisphere.
 - `transverseMercator`: Transverse Mercator projection, reduces deformation within the area of interest to the greatest extent possible.
 
+#### zoom(number) = 1
+
+Initial scaling factor.
+
+#### center([number, number])
+
+Initial latitude and longitude of the center point.
+
 ### zoomLimit(object)
 
-Maximum and minimum scaling limits
+Maximum and minimum scaling limits.
 
 #### min(number)
 

@@ -51,32 +51,40 @@ y 轴上的标注区域边界，与 markArea.y 共同构造标注区域。可以
 {{ use: component-marker-aggregation-type() }}
 
 ### angle(string|number|function)
-自`1.11.0`版本开始支持, 该参考线在极坐标系的angle轴上，可以配置angle轴上的值, 或者聚合计算，或者以回调的形式通过数据自行计算。
+
+自`1.11.0`版本开始支持, 该参考线在极坐标系的 angle 轴上，可以配置 angle 轴上的值, 或者聚合计算，或者以回调的形式通过数据自行计算。
 
 **注意该属性的使用场景为极坐标系下：**
-1. 配合配置 angle 和 angle1属性，用于绘制由angle和angle1的围成的扇区标注区域
-2. 配合配置 radius, radius1, angle 和 angle1 属性，用于绘制内外半径分别为radius、radius1，且角度为angle到angle1的环形标注范围。
+
+1. 配合配置 angle 和 angle1 属性，用于绘制由 angle 和 angle1 的围成的扇区标注区域
+2. 配合配置 radius, radius1, angle 和 angle1 属性，用于绘制内外半径分别为 radius、radius1，且角度为 angle 到 angle1 的环形标注范围。
 
 ### radius(string|number|function)
-自`1.11.0`版本开始支持, 该参考线在极坐标系的radius轴上，可以配置radius轴上的值, 或者聚合计算，或者以回调的形式通过数据自行计算。
+
+自`1.11.0`版本开始支持, 该参考线在极坐标系的 radius 轴上，可以配置 radius 轴上的值, 或者聚合计算，或者以回调的形式通过数据自行计算。
 
 **注意该属性的使用场景为极坐标系下：**
-1. 配合配置 radius 和 radius1 属性，用于绘制内外半径分别为radius、radius1的环形标注范围。
-2. 配合配置 radius, radius1, angle 和 angle1 属性，用于绘制内外半径分别为radius、radius1，且角度为angle到angle1的环形标注范围。
+
+1. 配合配置 radius 和 radius1 属性，用于绘制内外半径分别为 radius、radius1 的环形标注范围。
+2. 配合配置 radius, radius1, angle 和 angle1 属性，用于绘制内外半径分别为 radius、radius1，且角度为 angle 到 angle1 的环形标注范围。
 
 ### angle1(string|number|function)
-自`1.11.0`版本开始支持, 该参考线在极坐标系的angle轴上，可以配置angle轴上的值, 或者聚合计算，或者以回调的形式通过数据自行计算。
+
+自`1.11.0`版本开始支持, 该参考线在极坐标系的 angle 轴上，可以配置 angle 轴上的值, 或者聚合计算，或者以回调的形式通过数据自行计算。
 
 **注意该属性的使用场景为极坐标系下：**
-1. 配合配置 angle 和 angle1属性，用于绘制由angle和angle1的围成的扇区标注区域
-2. 配合配置 radius, radius1, angle 和 angle1 属性，用于绘制内外半径分别为radius、radius1，且角度为angle到angle1的环形标注范围。
+
+1. 配合配置 angle 和 angle1 属性，用于绘制由 angle 和 angle1 的围成的扇区标注区域
+2. 配合配置 radius, radius1, angle 和 angle1 属性，用于绘制内外半径分别为 radius、radius1，且角度为 angle 到 angle1 的环形标注范围。
 
 ### radius1(string|number|function)
-自`1.11.0`版本开始支持, 该参考线在极坐标系的radius轴上，可以配置radius轴上的值, 或者聚合计算，或者以回调的形式通过数据自行计算。
+
+自`1.11.0`版本开始支持, 该参考线在极坐标系的 radius 轴上，可以配置 radius 轴上的值, 或者聚合计算，或者以回调的形式通过数据自行计算。
 
 **注意该属性的使用场景为极坐标系下：**
-1. 配合配置 radius 和 radius1 属性，用于绘制内外半径分别为radius、radius1的环形标注范围。
-2. 配合配置 radius, radius1, angle 和 angle1 属性，用于绘制内外半径分别为radius、radius1，且角度为angle到angle1的环形标注范围。
+
+1. 配合配置 radius 和 radius1 属性，用于绘制内外半径分别为 radius、radius1 的环形标注范围。
+2. 配合配置 radius, radius1, angle 和 angle1 属性，用于绘制内外半径分别为 radius、radius1，且角度为 angle 到 angle1 的环形标注范围。
 
 ### coordinates(Array)
 
@@ -109,6 +117,7 @@ y 轴上的标注区域边界，与 markArea.y 共同构造标注区域。可以
 ) }}
 
 ### area(Object)
+
 标注区域的区域状态和样式。
 
 {{ use: component-marker-state(
@@ -139,6 +148,7 @@ y 轴上的标注区域边界，与 markArea.y 共同构造标注区域。可以
 可选值：
 
 直角坐标系下:
+
 - `'left'`: 区域外部左侧
 - `'right'`: 区域外部右侧
 - `'top'`: 区域外部上侧
@@ -148,8 +158,18 @@ y 轴上的标注区域边界，与 markArea.y 共同构造标注区域。可以
 - `'insideRight'`: 区域内部右侧
 - `'insideTop'`: 区域内部上侧
 - `'insideBottom'`: 区域内部下侧
+  自 1.13.4 版本支持:
+- `'topLeft'`: 区域外侧左上侧,
+- `'topRight'`: 区域外侧右上侧,
+- `'bottomLeft'`: 区域外侧左下侧,
+- `'bottomRight'`: 区域外侧右下侧,
+- `'insideTopLeft'`: 区域内侧左上侧,
+- `'insideTopRight'`: 区域内侧右上侧,
+- `'insideBottomLeft'`: 区域内侧右上侧,
+- `'insideBottomRight'`: 区域内侧右下侧
 
 极坐标系下:
+
 - `'arcInnerStart'`: 弧线起点内侧
 - `'arcInnerEnd'`: 弧线终点内侧
 - `'arcInnerMiddle'` : 弧线中点内侧
@@ -162,7 +182,6 @@ y 轴上的标注区域边界，与 markArea.y 共同构造标注区域。可以
   prefix = '###',
   noMarkerRef = true
 ) }}
-
 
 {{ use: component-marker-animation(
   prefix = '##',

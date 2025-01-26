@@ -29,11 +29,12 @@ export interface IComponent extends ILayoutModel {
     changeRegions: (regions: IRegion[]) => void;
     getVRenderComponents: () => IGraphic[];
     clear: () => void;
+    getDatum: (childGraphic?: IGraphic) => any | undefined;
 }
 export interface IComponentConstructor extends IModelConstructor {
     type: string;
     specKey?: string;
-    getSpecInfo: (chartSpec: any, chartSpecInfo?: IChartSpecInfo) => Maybe<IModelSpecInfo[]>;
+    getSpecInfo?: (chartSpec: any, chartSpecInfo?: IChartSpecInfo) => Maybe<IModelSpecInfo[]>;
     createComponent: (specInfo: IModelSpecInfo, options: IComponentOption) => IComponent;
     new (spec: any, options: IComponentOption): IComponent;
 }

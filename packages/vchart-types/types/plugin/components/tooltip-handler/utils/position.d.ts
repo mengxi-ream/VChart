@@ -1,14 +1,11 @@
-import type { IDimensionInfo } from '../../../../event';
-import type { ICartesianSeries } from '../../../../series';
-import type { ILayoutPoint } from '../../../../typings';
+import type { IDimensionData } from '../../../../event';
+import { type ILayoutPoint } from '../../../../typings';
 import type { IFixedTooltipPositionPattern, IGlobalTooltipPositionPattern, TooltipFixedPosition } from '../../../../typings/tooltip/position';
 export declare const getActualTooltipPositionValue: (position: number | ((event: MouseEvent) => number), event: MouseEvent) => number;
-export type TooltipHorizontalPositionType = 'left' | 'right' | 'center' | 'centerLeft' | 'centerRight';
-export type TooltipVerticalPositionType = 'top' | 'bottom' | 'center' | 'centerTop' | 'centerBottom';
-export declare const positionType: Record<TooltipFixedPosition, [TooltipHorizontalPositionType, TooltipVerticalPositionType]>;
-export declare const getHorizontalPositionType: (position: TooltipFixedPosition, defaultCase?: TooltipHorizontalPositionType) => TooltipHorizontalPositionType;
-export declare const getVerticalPositionType: (position: TooltipFixedPosition, defaultCase?: TooltipVerticalPositionType) => TooltipVerticalPositionType;
-export declare const getCartesianCrosshairRect: (dimensionInfo: IDimensionInfo[], series: ICartesianSeries, layoutStartPoint: ILayoutPoint) => {
+export type TooltipPositionType = -2 | -1 | 0 | 1 | 2;
+export declare const positionType: Record<TooltipFixedPosition, [TooltipPositionType, TooltipPositionType]>;
+export declare const getPositionType: (position: TooltipFixedPosition, dim: 'x' | 'y', defaultCase?: TooltipPositionType) => TooltipPositionType;
+export declare const getCartesianCrosshairRect: (dimensionData: IDimensionData, layoutStartPoint: ILayoutPoint) => {
     visible: boolean;
     start: {
         x: number;

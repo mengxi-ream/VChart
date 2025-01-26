@@ -3,29 +3,28 @@ import { Matrix, isValid, isValidNumber } from '@visactor/vutils';
 import type { FeatureData } from '@visactor/vgrammar-core';
 import { registerProjection } from '@visactor/vgrammar-projection';
 import { DataView } from '@visactor/vdataset';
-import type { IPathMark } from '../../mark/path';
 import { geoSourceMap, registerMapSource, unregisterMapSource } from './geo-source';
 import { lookup } from '../../data/transforms/lookup';
-import type { Maybe, Datum, StringOrNumber } from '../../typings';
+import type { Datum, StringOrNumber } from '../../typings';
 import { GeoSeries } from '../geo/geo';
 import { DEFAULT_MAP_LOOK_UP_KEY, map } from '../../data/transforms/map';
 import { copyDataView } from '../../data/transforms/copy-data-view';
 import { registerDataSetInstanceTransform } from '../../data/register';
 import { MapSeriesTooltipHelper } from './tooltip-helper';
-import { AttributeLevel, DEFAULT_DATA_SERIES_FIELD, DEFAULT_DATA_INDEX } from '../../constant/index';
+import { DEFAULT_DATA_SERIES_FIELD, DEFAULT_DATA_INDEX } from '../../constant/data';
+import { AttributeLevel } from '../../constant/attribute';
 import type { SeriesMarkMap } from '../interface';
 import { SeriesMarkNameEnum, SeriesTypeEnum } from '../interface/type';
-import type { IMapSeriesSpec, IMapSeriesTheme } from './interface';
+import type { IMapSeriesSpec } from './interface';
 import { SeriesData } from '../base/series-data';
 import type { PanEventParam, ZoomEventParam } from '../../event/interface';
 import { animationConfig, shouldMarkDoMorph, userAnimationConfig } from '../../animation/utils';
 import { registerFadeInOutAnimation } from '../../animation/config';
 import { registerPathMark } from '../../mark/path';
 import { mapSeriesMark } from './constant';
-import type { ILabelMark } from '../../mark/label';
 import { Factory } from '../../core/factory';
 import { registerGeoCoordinate } from '../../component/geo';
-import type { IMark } from '../../mark/interface';
+import type { ILabelMark, IMark, IPathMark } from '../../mark/interface';
 import { TransformLevel } from '../../data/initialize';
 import { MapSeriesSpecTransformer } from './map-transformer';
 
@@ -118,17 +117,27 @@ export class MapSeries<T extends IMapSeriesSpec = IMapSeriesSpec> extends GeoSer
     this._mapViewData = new SeriesData(this._option, mapData);
   }
 
+  compileData() {
+    super.compileData();
+    this._mapViewData?.compile();
+  }
+
   // mark
   initMark() {
-    this._pathMark = this._createMark(MapSeries.mark.area, {
-      morph: shouldMarkDoMorph(this._spec, MapSeries.mark.area.name),
-      defaultMorphElementKey: this.getDimensionField()[0],
-      groupKey: this.getDimensionField()[0],
-      isSeriesMark: true,
-      skipBeforeLayouted: true,
-      dataView: this._mapViewData.getDataView(),
-      dataProductId: this._mapViewData.getProductId()
-    }) as IPathMark;
+    this._pathMark = this._createMark(
+      MapSeries.mark.area,
+      {
+        groupKey: this.getDimensionField()[0],
+        isSeriesMark: true,
+        skipBeforeLayouted: true,
+        dataView: this._mapViewData.getDataView(),
+        dataProductId: this._mapViewData.getProductId()
+      },
+      {
+        morph: shouldMarkDoMorph(this._spec, MapSeries.mark.area.name),
+        morphElementKey: this.getDimensionField()[0]
+      }
+    ) as IPathMark;
   }
 
   initMarkStyle() {

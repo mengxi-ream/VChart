@@ -1,6 +1,8 @@
+import type { IPointLike } from '@visactor/vutils';
 import type { IPolarAxisSpec } from '../../component/axis/polar/interface';
 import type { IPolarCrosshairSpec } from '../../component/crosshair/interface';
-import type { IChartSpec, ILayoutRect, IPoint } from '../../typings';
+import type { IChartSpec, ILayoutRect } from '../../typings';
+import type { IIndicatorSpec } from '../../component/indicator/interface';
 
 export interface IPolarChartSpec extends IChartSpec {
   /**
@@ -17,5 +19,10 @@ export interface IPolarChartSpec extends IChartSpec {
   /**
    * @since 1.11.2
    */
-  layoutRadius?: 'auto' | number | ((layoutRect: ILayoutRect, center: IPoint) => number);
+  layoutRadius?: 'auto' | number | ((layoutRect: ILayoutRect, center: IPointLike) => number);
+
+  /**
+   * 指标卡配置
+   */
+  indicator?: IIndicatorSpec | IIndicatorSpec[];
 }

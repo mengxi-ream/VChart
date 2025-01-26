@@ -1,8 +1,7 @@
 import { HTMLTouchEvent } from './event';
-import { DefaultTicker } from './ticker';
-import { VChart as VChartConstructor, vglobal, registerHarmonyEnv } from './vchart_dist';
+import { HarmonyTicker } from './ticker';
+import { VChart as VChartConstructor, vglobal } from './index-harmony.es.min.js';
 
-registerHarmonyEnv();
 vglobal.setEnv('harmony');
 
 interface IWH {
@@ -80,7 +79,7 @@ export struct VChart {
   private context: CanvasRenderingContext2D = new CanvasRenderingContext2D(this.settings)
   private w: number = 300;
   private h: number = 300;
-  @Prop @Watch('onSpecUpdate') private spec: Object | null = null;
+  @Link @Watch('onSpecUpdate') private spec: Object | null;
   private vchart: VChartConstructor | null = null;
   @State time: string = '';
 
@@ -135,7 +134,6 @@ export struct VChart {
       Canvas(this.context)
         .width(this.w)
         .height(this.h)
-        .backgroundColor('#F5DC62')
         .onReady(() => {
           if (!this.spec) {
             return;
@@ -146,7 +144,7 @@ export struct VChart {
           spec.height = this.h;
           // 必须用类的形式
           const renderCanvas = new RenderCanvas(this.w, this.h, this.context);
-          const ticker = new DefaultTicker();
+          const ticker = new HarmonyTicker();
           this.vchart = new VChartConstructor(this.spec, {
             renderCanvas,
             mode: 'harmony',

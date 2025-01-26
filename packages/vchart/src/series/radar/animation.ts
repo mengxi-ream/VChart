@@ -1,21 +1,10 @@
 import type { Datum, IAnimationTypeConfig, IElement, MarkAnimationSpec } from '@visactor/vgrammar-core';
-import type { IPoint, Maybe } from '../../typings';
 import { ClipAngleAnimate } from '@visactor/vrender-core';
-import type { IPolarAxisHelper } from '../../component/axis';
 import { Factory } from '../../core/factory';
 import { PolarPointUpdate, PolarTagPointsUpdate } from '../polar/animation';
 import { DEFAULT_ANIMATION_CONFIG } from '../../animation/config';
 import { registerArc } from '@visactor/vrender-kits';
-
-export interface IRadarAnimationParams {
-  center: () => Maybe<IPoint>;
-  radius: () => number;
-  startAngle: number;
-  pointToCoord: IPolarAxisHelper['pointToCoord'];
-  coordToPoint: IPolarAxisHelper['coordToPoint'];
-}
-
-export type RadarAppearPreset = 'grow' | 'fadeIn' | 'clipIn';
+import type { IRadarAnimationParams, RadarAppearPreset } from './interface';
 
 export const radarFadeAnimation = (animationType: 'in' | 'out') => ({
   type: animationType === 'in' ? 'fadeIn' : 'fadeOut'
@@ -107,10 +96,10 @@ export const registerRadarAnimation = () => {
       disappear: preset === 'clipIn' ? undefined : radarPresetAnimation(params, preset, 'out'),
       update: [
         {
-          options: { excludeChannels: ['points', 'defined'] }
+          options: { excludeChannels: ['points', 'defined', 'center'] }
         },
         {
-          channel: ['points'],
+          channel: ['points', 'center'],
           custom: PolarTagPointsUpdate,
           customParameters: params,
           duration: DEFAULT_ANIMATION_CONFIG.update.duration,
@@ -129,10 +118,10 @@ export const registerRadarAnimation = () => {
         disappear: preset === 'clipIn' ? undefined : radarSymbolPresetAnimation(params, preset, 'out'),
         update: [
           {
-            options: { excludeChannels: ['x', 'y'] }
+            options: { excludeChannels: ['x', 'y', 'center'] }
           },
           {
-            channel: ['x', 'y'],
+            channel: ['x', 'y', 'center'],
             custom: PolarPointUpdate,
             customParameters: params,
             duration: DEFAULT_ANIMATION_CONFIG.update.duration,

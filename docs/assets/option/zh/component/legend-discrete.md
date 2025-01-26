@@ -459,7 +459,7 @@ formatMethod: text => {
 };
 ```
 
-更详细的富文本使用方式请参考[富文本教程](/vchart/guide/tutorial_docs/Richtext_and_Dom)
+更详细的富文本使用方式请参考[富文本教程](/vchart/guide/tutorial_docs/extend/Richtext_and_Dom)
 
 ##### style(Object|Function)
 
@@ -908,6 +908,35 @@ value: {
 
 该配置仅对滚动条翻页器生效
 滚动条的位置是否支持展示在分页的中间
+
+#### scrollMask(Object)
+
+自`1.12.11`版本开始支持。
+
+滚动时，图例区域未到尽头时的前后遮罩。
+
+##### visible(boolean) = false
+
+是否展示遮罩。
+
+##### gradientLength(number) = 16
+
+遮罩渐变区域长度。
+
+##### gradientStops(Object)
+
+遮罩的渐变填充色配置，例如：
+
+```ts
+scrollMask: {
+  visible: true,
+  gradientStops: [
+    { offset: 0, color: 'rgba(255,255,255,1)' },
+    { offset: 0.5, color: 'rgba(255,255,255,0.8)' },
+    { offset: 1, color: 'rgba(255,255,255,0)' }
+  ]
+}
+```
 
 ### data(Function)
 

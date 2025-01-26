@@ -33,5 +33,7 @@ export declare const enum ChartTypeEnum {
     heatmap = "heatmap",
     correlation = "correlation",
     liquid = "liquid",
-    venn = "venn"
+    venn = "venn",
+    mosaic = "mosaic",
+    pictogram = "pictogram"
 }

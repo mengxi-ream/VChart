@@ -15,6 +15,7 @@ import type { Datum, IPoint, StringOrNumber } from '../../typings';
 import { isPercent, transformToGraphic } from '../../util';
 import type {
   IDataPos,
+  IMarkerAttributeContext,
   IMarkerLabelSpec,
   IMarkerState,
   IMarkerSupportSeries,
@@ -389,20 +390,45 @@ export function polarCoordinateLayout(data: DataView, relativeSeries: IMarkerSup
   return points;
 }
 
-export function positionLayout(positions: MarkerPositionPoint[], series: ISeries, regionRelative: boolean): IPoint[] {
+function convertPosition(position: MarkerPositionPoint, relativeWidth: number, relativeHeight: number): IPoint {
+  let { x, y } = position;
+  if (isPercent(x)) {
+    x = convertPercentToValue(x, relativeWidth);
+  }
+  if (isPercent(y)) {
+    y = convertPercentToValue(y, relativeHeight);
+  }
+
+  return {
+    x: x as number,
+    y: y as number
+  };
+}
+
+export function positionLayout(
+  positions:
+    | MarkerPositionPoint
+    | MarkerPositionPoint[]
+    | ((seriesData: Datum[], relativeSeries: IMarkerSupportSeries) => MarkerPositionPoint)
+    | ((seriesData: Datum[], relativeSeries: IMarkerSupportSeries) => MarkerPositionPoint[]),
+  series: IMarkerSupportSeries,
+  regionRelative: boolean
+): IPoint[] {
+  let transformPositions;
+  if (isFunction(positions)) {
+    transformPositions = array(positions(series.getData().getLatestData(), series));
+  } else {
+    transformPositions = array(positions);
+  }
+
   if (regionRelative) {
     const region = series.getRegion();
     const { x: regionStartX, y: regionStartY } = region.getLayoutStartPoint();
     const { width: regionWidth, height: regionHeight } = region.getLayoutRect();
-    return positions.map(position => {
-      let { x, y } = position;
-      if (isPercent(x)) {
-        x = convertPercentToValue(x, regionWidth);
-      }
+    return transformPositions.map(position => {
+      let { x, y } = convertPosition(position, regionWidth, regionHeight);
+
       x = (x as number) + regionStartX;
-      if (isPercent(y)) {
-        y = convertPercentToValue(y, regionHeight);
-      }
       y = (y as number) + regionStartY;
 
       return {
@@ -413,18 +439,8 @@ export function positionLayout(positions: MarkerPositionPoint[], series: ISeries
   }
 
   const { width: canvasWidth, height: canvasHeight } = series.getOption().getChart().getViewRect();
-  return positions.map(position => {
-    let { x, y } = position;
-    if (isPercent(x)) {
-      x = convertPercentToValue(x, canvasWidth);
-    }
-    if (isPercent(y)) {
-      y = convertPercentToValue(y, canvasHeight);
-    }
-    return {
-      x: x as number,
-      y: y as number
-    };
+  return transformPositions.map(position => {
+    return convertPosition(position, canvasWidth, canvasHeight);
   });
 }
 
@@ -452,7 +468,11 @@ export function computeClipRange(regions: IRegion[]) {
   return { minX, maxX, minY, maxY };
 }
 
-export function transformLabelAttributes(label: IMarkerLabelSpec, markerData: any) {
+export function transformLabelAttributes(
+  label: IMarkerLabelSpec,
+  markerData: any,
+  markAttributeContext: IMarkerAttributeContext
+) {
   const { labelBackground = {}, style, shape, ...restLabel } = label;
 
   if (label.visible !== false) {
@@ -472,7 +492,8 @@ export function transformLabelAttributes(label: IMarkerLabelSpec, markerData: an
     if (labelBackground.visible !== false) {
       labelAttrs.panel = {
         visible: true,
-        ...transformStyle(transformToGraphic(labelBackground.style), markerData)
+        customShape: labelBackground.customShape,
+        ...transformStyle(transformToGraphic(labelBackground.style), markerData, markAttributeContext)
       };
       if (isValid(labelBackground.padding)) {
         labelAttrs.padding = normalizePadding(labelBackground.padding);
@@ -485,7 +506,7 @@ export function transformLabelAttributes(label: IMarkerLabelSpec, markerData: an
     }
 
     if (style) {
-      labelAttrs.textStyle = transformStyle(transformToGraphic(style), markerData);
+      labelAttrs.textStyle = transformStyle(transformToGraphic(style), markerData, markAttributeContext);
     }
     return labelAttrs;
   }
@@ -494,18 +515,22 @@ export function transformLabelAttributes(label: IMarkerLabelSpec, markerData: an
   };
 }
 
-export function transformState(state: {} | Record<MarkerStateValue, any | IMarkerState<any>>, markerData: DataView) {
+export function transformState(
+  state: {} | Record<MarkerStateValue, any | IMarkerState<any>>,
+  markerData: DataView,
+  markerAttributeContext: IMarkerAttributeContext
+) {
   for (const stateKey in state) {
     if (isFunction(state[stateKey])) {
-      state[stateKey] = state[stateKey](markerData);
+      state[stateKey] = state[stateKey](markerData, markerAttributeContext);
     }
   }
   return state;
 }
 
-export function transformStyle(style: any, markerData: DataView) {
+export function transformStyle(style: any, markerData: DataView, markerAttributeContext: IMarkerAttributeContext) {
   if (isFunction(style)) {
-    return style(markerData);
+    return style(markerData, markerAttributeContext);
   }
   return style;
 }

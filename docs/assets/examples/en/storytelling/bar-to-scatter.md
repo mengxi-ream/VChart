@@ -4,7 +4,7 @@ group: storytelling
 title: Global animation for switching between bar charts and scatter plots
 keywords: animation,morphing,bar,scatter,barChart,scatterChart
 order: 42-1
-cover: http://lf9-dp-fe-cms-tos.byteorg.com/obj/bit-cloud/morph-bar-to-scatter.gif
+cover: https://lf9-dp-fe-cms-tos.byteorg.com/obj/bit-cloud/morph-bar-to-scatter.gif
 option: commonChart#series-bar.animationUpdate
 ---
 
@@ -20,6 +20,14 @@ Global animation enhances the observer's tracking of data changes in certain sce
 ## Demo source
 
 ```javascript livedemo
+/**
+ * 自1.12.0后，全局形变动画需要手动注册才能生效
+ *
+ * import { registerMorph } from '@visactor/vchart';
+ *
+ * registerMorph();
+ */
+VCHART_MODULE.registerMorph();
 function calculateAverage(data, dim) {
   let total = 0;
   for (let i = 0; i < data.length; i++) {
